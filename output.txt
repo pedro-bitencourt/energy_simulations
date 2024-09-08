@@ -1,0 +1,288 @@
+[7, 7]
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+exogenous_variables_grid[variable]=array([0.1, 0.3, 0.5, 0.7, 0.9, 1. , 1.1])
+exogenous_variables_grid[variable]=array([377.25      , 303.41666667, 229.58333333, 155.75      ,
+        81.91666667,  45.        ,   8.08333333])
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_1_377
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_1_377/inv_zero_mc_thermal_1_377.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_1_377/inv_zero_mc_thermal_1_377.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_1_377')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_3_303
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_3_303/inv_zero_mc_thermal_3_303.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_3_303/inv_zero_mc_thermal_3_303.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_3_303')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_5_229
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_5_229/inv_zero_mc_thermal_5_229.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_5_229/inv_zero_mc_thermal_5_229.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_5_229')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_7_155
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_7_155/inv_zero_mc_thermal_7_155.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_7_155/inv_zero_mc_thermal_7_155.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_7_155')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_9_81
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_9_81/inv_zero_mc_thermal_9_81.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_9_81/inv_zero_mc_thermal_9_81.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_9_81')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_10_45
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_10_45/inv_zero_mc_thermal_10_45.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_10_45/inv_zero_mc_thermal_10_45.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_10_45')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
+#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time=7:00:00 
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --mem=6G 
+#SBATCH --job-name=inv_zero_mc_thermal_11_8
+#SBATCH --output=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_11_8/inv_zero_mc_thermal_11_8.out
+#SBATCH --error=/projects/p32342/output/inv_zero_mc_thermal/inv_zero_mc_thermal_11_8/inv_zero_mc_thermal_11_8.err
+#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-type=ALL
+#SBATCH --exclude=qhimem[0207-0208]
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+print('Solving the investment_problem problem inv_zero_mc_thermal_11_8')
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from investment_module import InvestmentProblem
+
+investment_data = json.loads('{"name_experiment": "inv_zero_mc_thermal", "exogenous_variables": {"hydro_factor": {"pattern": "HYDRO_FACTOR", "value": 1.1}, "thermal": {"pattern": "THERMAL_CAPACITY", "value": 8.0833333333333}}, "endogenous_variables": {"wind": {"pattern": "WIND_CAPACITY"}, "solar": {"pattern": "SOLAR_CAPACITY"}}, "general_parameters": {"daily": false, "name_subfolder": "PRUEBA", "xml_basefile": "/projects/p32342/code/xml/inv_zero_mc_thermal.xml", "name_function": {"hydro_factor": {"position": 0, "multiplier": 10}, "thermal": {"position": 1, "multiplier": 1}, "wind": {"position": 2, "multiplier": 1}, "solar": {"position": 3, "multiplier": 1}}}}')
+investment_problem = InvestmentProblem(**investment_data)
+print('Successfully loaded the investments problem data')
+sys.stdout.flush()
+sys.stderr.flush()
+investment_problem.solve_investment()
+print(f'InvestmentProblem calculation completed:') 
+print(f'{investment_problem.optimization_trajectory=}')
+END
+
+successfully created .sh file
