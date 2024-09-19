@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from constants import SCENARIOS, POSTE_FILEPATH, ANNUAL_INTEREST_RATE, COSTS, DATETIME_FORMAT
-from auxiliary import cache
+#from auxiliary import cache
 
 from processing_module import extract_dataframe, get_present_value
 
@@ -77,7 +77,7 @@ class Participant:
         dataframe_configuration['output_filename'] = f'{key_participant}_production'
         return dataframe_configuration
 
-    @cache(lambda self: f'{self.output_folder}/{self.key}_production_by_datetime.csv')
+#    @cache(lambda self: f'{self.output_folder}/{self.key}_production_by_datetime.csv')
     def get_production_data(self, daily: bool = False) -> Optional[pd.DataFrame]:
         # extract the production data
         extracted_dataframe = extract_dataframe(

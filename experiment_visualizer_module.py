@@ -27,8 +27,10 @@ class RunResults:
         self.experiment_folder = experiment_folder
 
         # Construct the paths to the price distribution and results files
-        price_distribution_path: Path = self.experiment_folder/f"{self.name}_price_distribution.csv"
-        results_path: Path = self.experiment_folder / f"{self.name}_results.json"
+        price_distribution_path: Path = self.experiment_folder / \
+            f"{self.name}_price_distribution.csv"
+        results_path: Path = self.experiment_folder / \
+            f"{self.name}_results.json"
 
         # check if the files exist
         self.results_exist: bool = price_distribution_path.exists() and results_path.exists()
@@ -48,7 +50,7 @@ class RunResults:
         # the 'hour_of_week_bin' column is a string in the format "(start_hour, end_hour]"
         # convert it to just the start hour
         price_distribution['hour_of_week_bin'] = (
-                price_distribution['hour_of_week_bin'].str.extract(r'(\d+)'))
+            price_distribution['hour_of_week_bin'].str.extract(r'(\d+)'))
         return price_distribution
 
     def price_distribution_wide(self) -> pd.DataFrame:
@@ -63,6 +65,7 @@ class RunResults:
         wide_df = wide_df.sort_index(axis=1).reset_index(drop=True)
         return wide_df
 
+
 class ExperimentVisualizer:
     '''
     Reads the results of an experiment from a specified folder. The results must be
@@ -72,11 +75,13 @@ class ExperimentVisualizer:
             - {run_name}_results.json
             - {run_name}_price_distribution.csv
     '''
+
     def __init__(self, experiment_folder: Path):
         self.experiment_folder: Path = experiment_folder
         self.name: str = experiment_folder.name
 
-        self.dict_of_run_results: dict[str, RunResults] = self.initialize_run_results()
+        self.dict_of_run_results: dict[str,
+                                       RunResults] = self.initialize_run_results()
         self.save_paths: dict[str, Path] = {
             'heatmaps': self.experiment_folder / "heatmaps",
             'price_distributions': self.experiment_folder / "price_distributions"
@@ -93,7 +98,7 @@ class ExperimentVisualizer:
         Reads the results of the experiment into RunResults objects. 
         '''
         # from the experiment folder, read {run.name}_results.csv and
-        # {run.name}_price_distribution.csv and store them in a dict of RunResults 
+        # {run.name}_price_distribution.csv and store them in a dict of RunResults
         dict_of_run_results: dict[str, RunResults] = {}
         for file in self.experiment_folder.iterdir():
             # get the filename
@@ -104,14 +109,15 @@ class ExperimentVisualizer:
                 dict_of_run_results.update({run_name: run_results})
 
         # sort the dict by the run name
-        dict_of_run_results: dict[str, RunResults] = dict(sorted(dict_of_run_results.items()))
+        dict_of_run_results: dict[str, RunResults] = dict(
+            sorted(dict_of_run_results.items()))
 
         return dict_of_run_results
 
-
     def plot_pca_price_distributions(self):
         price_distributions = pd.concat(
-            [run_results.price_distribution_wide() for run_results in self.dict_of_run_results.values()],
+            [run_results.price_distribution_wide()
+             for run_results in self.dict_of_run_results.values()],
             keys=self.dict_of_run_results.keys(),
             names=['run']
         )
@@ -139,22 +145,23 @@ class ExperimentVisualizer:
         # Now proceed with plotting as before
         pc_fig, _ = vis.create_principal_components_plot(pca)
         eigenvalue_fig, _ = vis.create_eigenvalue_decay_plot(pca)
-        components_df = vis.output_principal_components_for_runs(pca_result, runs)
+        components_df = vis.output_principal_components_for_runs(
+            pca_result, runs)
 
         # add hydro_factor and thermal_capacity to the components_df
         components_df['hydro_factor'] = [self.dict_of_run_results[run]
-            .results_dict['hydro_factor']
-            for run in runs]
+                                         .results_dict['hydro_factor']
+                                         for run in runs]
         components_df['thermal_capacity'] = [self.dict_of_run_results[run]
-            .results_dict['thermal_capacity']
-            for run in runs]
+                                             .results_dict['thermal_capacity']
+                                             for run in runs]
         # Save plots and data
         pc_fig.savefig(self.save_paths['price_distributions'] /
-            f"{self.name}_principal_components.png", dpi=300)
+                       f"{self.name}_principal_components.png", dpi=300)
         eigenvalue_fig.savefig(self.save_paths['price_distributions'] /
-            f"{self.name}_eigenvalue_decay.png", dpi=300)
+                               f"{self.name}_eigenvalue_decay.png", dpi=300)
         components_df.to_csv(self.save_paths['price_distributions'] /
-            f"{self.name}_principal_components.csv")
+                             f"{self.name}_principal_components.csv")
 
     def plot_intraweek_price_distributions(self):
         plots_list = []
@@ -164,14 +171,16 @@ class ExperimentVisualizer:
             title = f"Hydro factor: {results_dict['hydro_factor']:.1f}, Thermal capacity: {results_dict['thermal_capacity']:.1f}"
             plots_list.append({'data': price_distribution, 'title': title})
 
-        save_path = self.save_paths['price_distributions'] / f"{self.name}_price_distributions.png" 
+        save_path = self.save_paths['price_distributions'] / \
+            f"{self.name}_price_distributions.png"
         vis.plot_stacked_price_distributions(plots_list, save_path)
 
     def plot_heatmaps(self):
         for hm_config in HEATMAP_CONFIGS:
             heatmap_config = hm_config
             title = f"{self.name} - {heatmap_config['title']}"
-            save_path = self.save_paths['heatmaps'] / heatmap_config['filename']
+            save_path = self.save_paths['heatmaps'] / \
+                heatmap_config['filename']
             vis.plot_heatmap(
                 self.results_df, heatmap_config['variables'], save_path, title)
 
@@ -183,6 +192,8 @@ HEATMAP_CONFIGS = [
      'filename': 'price_avg_heatmap.png',
      'title': 'Price Heatmap'}
 ]
+
+
 def perform_pca(price_distributions: pd.DataFrame) -> Tuple[PCA, np.ndarray, StandardScaler]:
     scaler = StandardScaler()
     price_distributions.columns = price_distributions.columns.astype(str)

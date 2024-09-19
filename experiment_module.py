@@ -6,6 +6,7 @@ Description: This script submits multiple jobs using the MOP software.
 """
 from pathlib import Path
 import json
+import shutil
 import logging
 import pandas as pd
 from typing import Optional
@@ -15,6 +16,7 @@ from auxiliary import submit_slurm_job, wait_for_jobs
 from visualize_module import plot_stacked_price_distributions, plot_heatmap
 from run_module import Run
 from run_processor_module import RunProcessor
+from experiment_visualizer_module import ExperimentVisualizer
 
 from constants import (
     BASE_PATH)
@@ -37,17 +39,17 @@ def main():
     grid_thermal: np.ndarray = np.linspace(8, 100, 5)
 
     variables_grid: dict[str, np.ndarray] = {
-            'hydro_factor': grid_hydro, 
-            'thermal_capacity': grid_thermal
+        'hydro_factor': grid_hydro,
+        'thermal_capacity': grid_thermal
     }
     variables: dict = {
-                    "hydro_factor": {"pattern": "HYDRO_FACTOR*"},
-                    "thermal_capacity": {"pattern": "THERMAL_CAPACITY"}
-                }
-
+        "hydro_factor": {"pattern": "HYDRO_FACTOR*"},
+        "thermal_capacity": {"pattern": "THERMAL_CAPACITY"}
+    }
 
     # initialize the experiment
-    experiment = Experiment(name, variables, variables_grid, general_parameters)
+    experiment = Experiment(
+        name, variables, variables_grid, general_parameters)
 
     # run the experiment
     # experiment.submit_experiment()
@@ -62,6 +64,7 @@ class Experiment:
     Represents an experiment. Creates multiple runs from a set of values and a
     .xml basefile.
     """
+
     def __init__(self,
                  name: str,
                  variables: dict[str, dict],
@@ -98,11 +101,11 @@ class Experiment:
         results_df: pd.DataFrame = self.gather_results()
 
         # save the results to a .csv file
-        results_df.to_csv((f"{BASE_PATH}/result/{self.name}.csv"), index=False)
+        results_df.to_csv(
+            (f"{BASE_PATH}/result/{self.name}_results.csv"), index=False)
 
         # print the results
         print(f'{results_df=}')
-
 
     def submit_processor_jobs(self):
         job_ids: list = []
@@ -112,11 +115,16 @@ class Experiment:
                 logging.error("Run %s could not be processed.",
                               run.run_name)
                 continue
+            if run_processor.get_processed_status():
+                logging.info("Run %s already processed", run.run_name)
+                continue
+
             bash_script: Path = run_processor.create_bash_script()
             job_id = submit_slurm_job(bash_script)
             job_ids.append(job_id)
+            logging.info("Submitted processor job with id %s for run %s",
+                         job_id, run.run_name)
         return job_ids
-        
 
     def gather_results(self):
         # initialize the results array
@@ -129,7 +137,17 @@ class Experiment:
                 with open(json_path, 'r') as file:
                     # append the results to the results array
                     results_run: dict = json.load(file)
+                    if results_run is None:
+                        print(f"Error: for {run.run_name} results_run is None")
                     results.append(results_run)
+                # copy to experiment folder
+                shutil.copy2(json_path, self.paths['output'])
+
+            price_distribution_path: Path = run.paths['price_distribution']
+            save_path: Path = self.paths['output'] / \
+                f'{run.run_name}_price_distribution.csv'
+            if price_distribution_path.exists():
+                shutil.copy2(price_distribution_path, save_path)
 
         # transform results into a pandas dataframe
         results_df: pd.DataFrame = pd.DataFrame(results)
@@ -218,7 +236,6 @@ class Experiment:
         visualizer = ExperimentVisualizer(self)
         visualizer.plot_intraweek_price_distributions()
         visualizer.plot_heatmaps()
-
 
 
 if __name__ == "__main__":

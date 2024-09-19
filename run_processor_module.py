@@ -83,8 +83,7 @@ class RunProcessor:
             return True
         return False
 
-    
-    @auxiliary.cache(lambda self: self.paths['marginal_cost'])
+#    @auxiliary.cache(lambda self: self.paths['marginal_cost'])
     def extract_marginal_costs_df(self) -> Optional[pd.DataFrame]:
         '''
         Extracts the marginal cost dataframe from the simulation folder.
@@ -135,7 +134,7 @@ class RunProcessor:
 
         return marginal_cost_df
 
-    @auxiliary.cache(lambda self: self.paths['price_distribution'])
+#    @auxiliary.cache(lambda self: self.paths['price_distribution'])
     def get_price_distribution(self) -> Optional[pd.DataFrame]:
         # load the price data
         price_df: Optional[pd.DataFrame] = self.extract_marginal_costs_df()
@@ -179,7 +178,7 @@ class RunProcessor:
         # initialize results dictionary
         production_results: dict = {}
 
-        # get total production by resource 
+        # get total production by resource
         production_by_resource: dict[str, float] = res.total_production_by_resource(
             self.paths['sim'])
 
@@ -189,16 +188,17 @@ class RunProcessor:
                 for resource in production_by_resource})
 
         # get total production by plant
-        production_by_plant: dict[str, float] = res.total_production_by_plant(self.paths['sim'])
+        production_by_plant: dict[str, float] = res.total_production_by_plant(
+            self.paths['sim'])
 
-        # get the total production for the new thermal plant 
-        new_thermal_production: float = production_by_plant.get('new_thermal', 0)
+        # get the total production for the new thermal plant
+        new_thermal_production: float = production_by_plant.get(
+            'new_thermal', 0)
 
         # append new_thermal_production to the results dictionary
         production_results['new_thermal_production'] = new_thermal_production
 
         return production_results
-
 
     def get_price_results(self):
         # load the price data
@@ -227,7 +227,6 @@ class RunProcessor:
                          'price_weighted_avg': price_weighted_avg}
 
         return results
-
 
     def get_profits(self):
         if not self.run.successful_function():
@@ -285,6 +284,7 @@ class RunProcessor:
             'variables': self.run.variables,
             'output_folder': str(self.paths['output'])
         }
+        run_data = json.dumps(run_data)
 
         requested_time: str = '0:30:00'
 
@@ -320,7 +320,7 @@ sys.stdout.flush()
 sys.stderr.flush()
 
 # load the run data
-run_data = {json.dumps(run_data)}
+run_data = {json.loads(run_data)}
 # create Run object
 run = Run(**run_data)
 # create RunProcessor object
@@ -339,6 +339,7 @@ END
 ''')
 
         return self.paths['bash_script']
+
 
 def process_marginal_cost(marginal_cost_df: pd.DataFrame) -> pd.DataFrame:
     # log the head of marginal_cost_df for debugging purposes

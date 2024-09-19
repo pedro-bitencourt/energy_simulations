@@ -59,11 +59,13 @@ def main():
     experiment = InvestmentExperiment(name, exogenous_variables, exogenous_variables_grid,
                                       endogenous_variables, general_parameters)
 
-    results_df = experiment.recover_results()
-    print("Results so far:")
-    print(f'{results_df=}')
+    # results_df = experiment.recover_results()
+    # print("Results so far:")
+    # print(f'{results_df=}')
 
-    experiment.submit_jobs()
+    # experiment.submit_jobs()
+
+    experiment.process_results()
 
 
 class InvestmentExperiment:
@@ -138,13 +140,13 @@ class InvestmentExperiment:
             inv_prob.run_on_quest()
             logger.info(f'Submitted job for {inv_prob.name}')
 
-
     def process_results(self):
-        # recover results
+        # recover optimization results
         results_df: pd.DataFrame = self.recover_results()
 
-        # save results to csv
-        output_csv_path: Path = self.output_folder / f'{self.name}.csv'
+        # save optimization results to csv
+        output_csv_path: Path = self.output_folder / \
+            f'{self.name}_opt_results.csv'
         results_df.to_csv(output_csv_path, index=False)
 
         # create experiment from investment experiment
@@ -153,14 +155,12 @@ class InvestmentExperiment:
         # process as experiment
         experiment.process_experiment()
 
-        # sleep for 15 minutes
-        time.sleep(900)
+        # visualize results
+        # experiment.visualize_experiment()
 
-        # visualize results 
+    def visualize_results(self):
+        experiment: Experiment = self.experiment_from_investment_experiment()
         experiment.visualize_experiment()
-
-        
-
 
     def experiment_from_investment_experiment(self):
         equilibrium_runs_array: list[Run] = []
@@ -172,11 +172,10 @@ class InvestmentExperiment:
         variables: dict = {**self.exogenous_variables,
                            **self.endogenous_variables}
         experiment = Experiment(self.name,
-                                variables, 
+                                variables,
                                 self.general_parameters,
-                                runs_array = equilibrium_runs_array)
+                                runs_array=equilibrium_runs_array)
         return experiment
-
 
     def recover_results(self):
         rows: list = []

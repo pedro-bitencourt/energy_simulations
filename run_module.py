@@ -17,6 +17,7 @@ class Run:
     """
     Representes a run and implements some general purpose methods for it.
     """
+
     def __init__(self,
                  input_folder: Path,
                  general_parameters: dict,
@@ -29,7 +30,7 @@ class Run:
 
         # initialize the run name and output folder
         if output_folder:
-            self.run_name: str = output_folder.name
+            self.run_name: str = Path(output_folder).name
         elif experiment_folder:
             run_name_function_params: dict = general_parameters['name_function']
 
@@ -81,6 +82,8 @@ class Run:
         run_paths['input'] = Path(f"{input_folder}")
         run_paths['results_json'] = Path(
             f"{output_folder}/{self.run_name}_results.json")
+        run_paths['price_distribution'] = Path(
+            f"{output_folder}/price_distribution.csv")
         return run_paths
 
     @classmethod

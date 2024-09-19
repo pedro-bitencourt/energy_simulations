@@ -14,11 +14,9 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def main():
     pass
-
-
-
 
 
 def create_principal_components_plot(pca: PCA, n_components: int = 4) -> Tuple[plt.Figure, List[plt.Axes]]:
@@ -31,6 +29,7 @@ def create_principal_components_plot(pca: PCA, n_components: int = 4) -> Tuple[p
     fig.tight_layout()
     return fig, axs
 
+
 def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(np.cumsum(pca.explained_variance_ratio_))
@@ -38,6 +37,7 @@ def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
     ax.set_ylabel('Cumulative Explained Variance')
     ax.set_title('Eigenvalue Decay')
     return fig, ax
+
 
 def output_principal_components_for_runs(pca_result: np.ndarray, original_index: pd.Index, n_components: int = 4) -> pd.DataFrame:
     components_df = pd.DataFrame(
@@ -55,6 +55,7 @@ def output_principal_components_for_runs(pca_result: np.ndarray, original_index:
 ####################
 # Plotting functions
 
+
 def plot_intraweek_price_distribution(ax,
                                       dataframe: pd.DataFrame,
                                       title=None):
@@ -67,11 +68,10 @@ def plot_intraweek_price_distribution(ax,
         ax.text(i*24 + 12, ax.get_ylim()[1], day, ha='center', va='bottom')
 
     ax.set_ylabel('Avg Price')
-    
+
     # Add title with adjusted position
     if title:
         ax.set_title(title, pad=20)
-    
 
     # Remove top and right spines
     ax.spines['top'].set_visible(False)
@@ -169,6 +169,7 @@ def simple_plot(dataframe: pd.DataFrame, x_variable: Dict[str, str],
     if title:
         plt.title(title)
     plt.savefig(save_path)
+
 
 if __name__ == "__main__":
     main()
