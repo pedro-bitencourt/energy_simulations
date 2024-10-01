@@ -160,7 +160,7 @@ class InvestmentExperiment:
 
     def visualize_results(self):
         experiment: Experiment = self.experiment_from_investment_experiment()
-        experiment.visualize_experiment()
+        experiment.visualize_experiment(grid_dimension=2)
 
     def experiment_from_investment_experiment(self):
         equilibrium_runs_array: list[Run] = []

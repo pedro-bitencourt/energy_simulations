@@ -6,7 +6,7 @@ experiment.
 from pathlib import Path
 from dataclasses import dataclass
 import json
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union, Tuple, Optional
 import pandas as pd
 import seaborn as sns
 from sklearn.decomposition import PCA
@@ -18,16 +18,6 @@ import numpy as np
 def main():
     pass
 
-
-def create_principal_components_plot(pca: PCA, n_components: int = 4) -> Tuple[plt.Figure, List[plt.Axes]]:
-    fig, axs = plt.subplots(n_components, 1, figsize=(10, 3*n_components))
-    for i in range(n_components):
-        axs[i].plot(pca.components_[i])
-        axs[i].set_title(f'Principal Component {i+1}')
-        axs[i].set_xlabel('Hour of Week')
-        axs[i].set_ylabel('Weight')
-    fig.tight_layout()
-    return fig, axs
 
 
 def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
@@ -50,35 +40,68 @@ def output_principal_components_for_runs(pca_result: np.ndarray, original_index:
     print("Principal components for each run saved to 'principal_components_per_run.csv'")
     return components_df
 
+def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[plt.Figure, List[plt.Axes]]:
+    fig, axs = plt.subplots(n_components, 1, figsize=(12, 4*n_components))
+    for i in range(n_components):
+        # Create a DataFrame with the principal component data
+        pc_df = pd.DataFrame({
+            'hour_of_week_bin': range(167),
+            'price_avg': pca.components_[i]
+        })
+        # Use plot_intraweek_price_distribution for each component
+        plot_intraweek_price_distribution(axs[i], pc_df, title=f'Principal Component {i+1}')
+    fig.tight_layout()
+    return fig, axs
 # Assuming price_distributions is your DataFrame
 # main(price_distributions)
 ####################
 # Plotting functions
 
 
-def plot_intraweek_price_distribution(ax,
-                                      dataframe: pd.DataFrame,
-                                      title=None):
-    ax.plot(dataframe['hour_of_week_bin'], dataframe['price_avg'])
+
+def plot_intraweek_price_distribution(ax, dataframe: pd.DataFrame, title=None):
+    # Plot the price distribution
+    ax.plot(dataframe['hour_of_week_bin'], dataframe['price_avg'], color='#1f77b4')
 
     # Add vertical lines and labels for each day
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     for i, day in enumerate(days):
-        ax.axvline(x=i*24, color='red', linestyle='--', alpha=0.5)
-        ax.text(i*24 + 12, ax.get_ylim()[1], day, ha='center', va='bottom')
+        ax.axvline(x=i*24, color='#d62728', linestyle='--', alpha=0.5)
+        ax.text(i*24 + 12, ax.get_ylim()[1], day, ha='center', va='bottom', fontweight='bold')
 
-    ax.set_ylabel('Avg Price')
+    # Highlight day and night times
+    for i in range(7):
+        # Day time (6 AM to 6 PM)
+        ax.axvspan(i*24 + 6, i*24 + 18, facecolor='#ffff99', alpha=0.3)
+        # Night time (6 PM to 6 AM)
+        ax.axvspan(i*24 + 18, i*24 + 30, facecolor='#e6e6e6', alpha=0.3)
 
-    # Add title with adjusted position
+    # Highlight peak usage times (assuming 7-9 AM and 5-7 PM are peak times)
+    for i in range(7):
+        ax.axvspan(i*24 + 7, i*24 + 9, facecolor='#ff9999', alpha=0.3)
+        ax.axvspan(i*24 + 17, i*24 + 19, facecolor='#ff9999', alpha=0.3)
+
+    ax.set_ylabel('Weight', fontweight='bold')
+    ax.set_xlabel('Hour of Week', fontweight='bold')
     if title:
-        ax.set_title(title, pad=20)
+        ax.set_title(title, fontweight='bold', fontsize=14, pad=20)
 
     # Remove top and right spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-
     ax.set_xlim(0, 167)
 
+    # Add a legend
+    ax.fill_between([], [], color='#ffff99', alpha=0.3, label='Day Time')
+    ax.fill_between([], [], color='#e6e6e6', alpha=0.3, label='Night Time')
+    ax.fill_between([], [], color='#ff9999', alpha=0.3, label='Peak Usage')
+    ax.legend(loc='upper right', frameon=False)
+
+    # Add grid for better readability
+    ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+
+    # Adjust y-axis to start from 0
+    #ax.set_ylim(bottom=0)
 
 def plot_stacked_price_distributions(plots_list: list,
                                      save_path: Union[str, Path]) -> None:
@@ -153,18 +176,22 @@ def plot_heatmap(dataframe: pd.DataFrame, variables: Dict[str, Dict[str, str]],
     plt.savefig(save_path, dpi=300)
 
 
-def simple_plot(dataframe: pd.DataFrame, x_variable: Dict[str, str],
-                y_variables: List[Dict[str, str]], y_label: str,
-                save_path: str, title: str = None) -> None:
+def simple_plot(dataframe: pd.DataFrame, x_key: str,
+                y_variables: List[Dict[str, str]],
+                axis_labels: Dict[str, str],
+                save_path: str, title: Optional[str] = None) -> None:
     """
     This function creates a simple plot from a dataframe.
     """
     plt.figure(figsize=(12, 6))
+    # iterate over the y variables to plot
     for y_variable in y_variables:
-        plt.plot(dataframe[x_variable['key']], dataframe[y_variable['key']],
-                 label=y_variable['label'])
-    plt.xlabel(x_variable['label'])
-    plt.ylabel(y_label)
+        plt.plot(dataframe[x_key],
+                 dataframe[y_variable['key']],
+                 label=y_variable.get('label', None)
+        )
+    plt.xlabel(axis_labels['x'])
+    plt.ylabel(axis_labels['y'])
     plt.legend()
     if title:
         plt.title(title)

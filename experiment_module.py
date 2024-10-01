@@ -232,10 +232,9 @@ class Experiment:
 
         return successful
 
-    def visualize_experiment(self):
+    def visualize_experiment(self, grid_dimension: int):
         visualizer = ExperimentVisualizer(self)
-        visualizer.plot_intraweek_price_distributions()
-        visualizer.plot_heatmaps()
+        visualizer.visualize(grid_dimension)
 
 
 if __name__ == "__main__":

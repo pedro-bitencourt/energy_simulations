@@ -9,6 +9,13 @@ from sklearn.preprocessing import StandardScaler
 
 import visualize_module as vis
 
+def main():
+    experiment_folder: Path = Path('/Users/pedrobitencourt/quest/data/renewables/inv_zero_mc_thermal')
+    experiment_visualizer = ExperimentVisualizer(experiment_folder)
+    experiment_visualizer.visualize(grid_dimension=1)
+
+
+
 
 @dataclass
 class RunResults:
@@ -84,14 +91,25 @@ class ExperimentVisualizer:
                                        RunResults] = self.initialize_run_results()
         self.save_paths: dict[str, Path] = {
             'heatmaps': self.experiment_folder / "heatmaps",
-            'price_distributions': self.experiment_folder / "price_distributions"
+            'price_distributions': self.experiment_folder / "price_distributions",
+            'one_d_plots': self.experiment_folder / "one_d_plots"
         }
         # create the directories if they don't exist
         for _, path in self.save_paths.items():
             path.mkdir(parents=True, exist_ok=True)
         # load results_df
-        results_df_path: Path = self.experiment_folder / f"{self.name}.csv"
+        results_df_path: Path = self.experiment_folder / f"{self.name}_results.csv"
         self.results_df: pd.DataFrame = pd.read_csv(results_df_path)
+
+    def visualize(self, grid_dimension: int):
+        self.plot_pca_price_distributions()
+        self.plot_intraweek_price_distributions()
+
+        if grid_dimension == 2:
+            self.plot_heatmaps()
+        elif grid_dimension == 1:
+            self.one_d_plots()
+            
 
     def initialize_run_results(self):
         '''
@@ -101,6 +119,9 @@ class ExperimentVisualizer:
         # {run.name}_price_distribution.csv and store them in a dict of RunResults
         dict_of_run_results: dict[str, RunResults] = {}
         for file in self.experiment_folder.iterdir():
+            # check if file contains the experiment name
+            if self.name in file.name:
+                continue
             # get the filename
             filename = file.stem
             if filename.endswith("_results"):
@@ -125,24 +146,21 @@ class ExperimentVisualizer:
         price_distributions = price_distributions.reset_index(level='run')
         # Separate the 'run' column and use the rest for PCA
         runs = price_distributions['run']
+        # transform runs to a list of strings
+        runs = [str(run) for run in runs]
+
         price_data = price_distributions.drop('run', axis=1)
-        # print the price_distribution dimensions
-        print("Price distributions shape:")
-        print(price_data.shape)
-        # print the price_distribution head
-        print("Price distributions head:")
-        print(price_data.head())
-        # get the principal components and eigenvalues for the price distributions
-        pca, pca_result, scaler = perform_pca(price_distributions)
-        print("Principal components:")
-        print(pca.components_)
-        print("Explained variance ratio:")
-        print(pca.explained_variance_ratio_)
-        print("Principal components shape:")
-        print(pca_result.shape)
+
+
         # Perform PCA
         pca, pca_result, scaler = perform_pca(price_data)
-        # Now proceed with plotting as before
+
+        # save explained variance ratio
+        with open(self.save_paths['price_distributions'] / f"{self.name}_explained_variance_ratio.txt", 'w') as file:
+            file.write("Explained variance ratio:\n")
+            file.write(str(pca.explained_variance_ratio_))
+
+        # Plot principal components
         pc_fig, _ = vis.create_principal_components_plot(pca)
         eigenvalue_fig, _ = vis.create_eigenvalue_decay_plot(pca)
         components_df = vis.output_principal_components_for_runs(
@@ -152,9 +170,17 @@ class ExperimentVisualizer:
         components_df['hydro_factor'] = [self.dict_of_run_results[run]
                                          .results_dict['hydro_factor']
                                          for run in runs]
-        components_df['thermal_capacity'] = [self.dict_of_run_results[run]
-                                             .results_dict['thermal_capacity']
-                                             for run in runs]
+        if 'thermal_capacity' in self.dict_of_run_results[runs[0]].results_dict:
+            components_df['thermal_capacity'] = [self.dict_of_run_results[run]
+                                                 .results_dict['thermal_capacity']
+                                                 for run in runs]
+        # get the correlation matrix
+        correlation_df = components_df.corr()
+
+        # Drop the cross-correlation of the principal components
+        correlation_df = correlation_df.drop(columns=[col for col in correlation_df.columns if 'PC' in col])
+
+
         # Save plots and data
         pc_fig.savefig(self.save_paths['price_distributions'] /
                        f"{self.name}_principal_components.png", dpi=300)
@@ -162,13 +188,18 @@ class ExperimentVisualizer:
                                f"{self.name}_eigenvalue_decay.png", dpi=300)
         components_df.to_csv(self.save_paths['price_distributions'] /
                              f"{self.name}_principal_components.csv")
+        correlation_df.to_csv(self.save_paths['price_distributions'] / 
+                            f"{self.name}_correlation_matrix_principal_components.csv")
 
     def plot_intraweek_price_distributions(self):
         plots_list = []
         for run_results in self.dict_of_run_results.values():
             price_distribution = run_results.price_distribution
             results_dict = run_results.results_dict
-            title = f"Hydro factor: {results_dict['hydro_factor']:.1f}, Thermal capacity: {results_dict['thermal_capacity']:.1f}"
+            if 'thermal_capacity' in results_dict:
+                title = f"Hydro factor: {results_dict['hydro_factor']:.1f}, Thermal capacity: {results_dict['thermal_capacity']:.1f}"
+            else:
+                title = f"Hydro factor: {results_dict['hydro_factor']:.1f}"
             plots_list.append({'data': price_distribution, 'title': title})
 
         save_path = self.save_paths['price_distributions'] / \
@@ -184,6 +215,18 @@ class ExperimentVisualizer:
             vis.plot_heatmap(
                 self.results_df, heatmap_config['variables'], save_path, title)
 
+    def one_d_plots(self):
+        for plot_config in ONE_D_PLOTS_CONFIGTS:
+            x_key = plot_config['x_key']
+            y_variables = plot_config['y_variables']
+            axis_labels = plot_config['axis_labels']
+            save_path = self.save_paths['one_d_plots'] / plot_config['filename']
+            title = plot_config.get('title', None)
+            print(self.results_df)
+            vis.simple_plot(self.results_df, x_key,
+                            y_variables, axis_labels,
+                            save_path, title)
+
 
 HEATMAP_CONFIGS = [
     {'variables': {'x': {'key': 'hydro_factor', 'label': 'Hydro Factor'},
@@ -191,6 +234,61 @@ HEATMAP_CONFIGS = [
                    'z': {'key': 'price_avg', 'label': 'Profit'}},
      'filename': 'price_avg_heatmap.png',
      'title': 'Price Heatmap'}
+]
+
+ONE_D_PLOTS_CONFIGTS = [
+    # Optimal capacities of wind and solar
+    {
+        'x_key': 'hydro_factor',
+        'y_variables': [
+            {'key': 'wind', 'label': 'Optimal Wind Capacity'},
+            {'key': 'solar', 'label': 'Optimal Solar Capacity'}
+        ],
+        'axis_labels': {'x': 'Hydro Factor', 'y': 'Capacity (MW)'},
+        'title': 'Optimal Wind and Solar Capacities',
+        'filename': 'wind_solar_capacities.png'
+    },
+    # Total production by resources
+    {
+        'x_key': 'hydro_factor',
+        'y_variables': [
+            {'key': 'total_production_hydros', 'label': 'Hydro'},
+            {'key': 'total_production_thermals', 'label': 'Thermal'},
+            {'key': 'total_production_combined_cycle',
+                'label': 'Combined Cycle'},
+            {'key': 'total_production_wind', 'label': 'Wind'},
+            {'key': 'total_production_solar', 'label': 'Solar'},
+            {'key': 'total_production_import_export',
+                'label': 'Import/Export'},
+            {'key': 'total_production_demand', 'label': 'Demand'},
+            {'key': 'total_production_blackout', 'label': 'Blackout'},
+
+        ],
+        'axis_labels': {'x': 'Hydro Factor', 'y': 'Total Production (GWh)'},
+        'title': 'Total Production by Resources',
+        'filename': 'total_production.png'
+    },
+    # New thermal production
+    {
+        'x_key': 'hydro_factor',
+        'y_variables': [
+            {'key': 'total_production_hydros', 'label': 'Hydro'},
+            {'key': 'new_thermal_production', 'label': 'New Thermal'}
+        ],
+        'axis_labels': {'x': 'Hydro Factor', 'y': 'Total Production (GWh)'},
+        'title': 'Production of Hydros and New Thermal',
+        'filename': 'total_production_new_thermal.png'
+    },
+    # Average price
+    {
+        'x_key': 'hydro_factor',
+        'y_variables': [
+            {'key': 'price_avg', 'label': 'Average Price'}
+        ],
+        'axis_labels': {'x': 'Hydro Factor', 'y': 'Price ($/MWh)'},
+        'title': 'Average Price',
+        'filename': 'average_price.png'
+    }
 ]
 
 
@@ -201,3 +299,7 @@ def perform_pca(price_distributions: pd.DataFrame) -> Tuple[PCA, np.ndarray, Sta
     pca = PCA()
     pca_result: np.ndarray = pca.fit_transform(scaled_data)
     return pca, pca_result, scaler
+
+
+if __name__ == "__main__":
+    main()

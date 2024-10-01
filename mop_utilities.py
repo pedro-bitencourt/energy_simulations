@@ -132,11 +132,12 @@ function_data = [
 
         """,
         'x_label': 'height (m)',
-        'y_label': 'min flow (m3/s)'
+        'y_label': 'min flow (m3/s)',
+        'x_range': (80, 100)
     }
 ]
 
-plot_multiple_functions(function_data)
+#plot_multiple_functions(function_data)
 
 
 
@@ -278,4 +279,6 @@ volumen_cota=[
     }
 ]
 
-plot_multiple_functions(erogado_min)
+if __name__ == '__main__':
+    plot_multiple_functions(volumen_cota)
+    plot_multiple_functions(erogado_min)
