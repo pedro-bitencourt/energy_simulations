@@ -59,6 +59,11 @@ class OptimizationPathEntry:
 
         curr_prof_wind = np.abs(profits['wind'])
         curr_prof_solar = np.abs(profits['solar'])
+        
+        if curr_prof_wind < 0 and curr_prof_solar < 0:
+            if self.current_investment['solar'] == 0 and self.current_investment['wind'] == 0:
+                return True
+
         return curr_prof_wind < THRESHOLD_WIND and curr_prof_solar < THRESHOLD_SOLAR
 
     def next_iteration(self) -> 'OptimizationPathEntry':
@@ -85,6 +90,9 @@ class OptimizationPathEntry:
 
         # Round new_investment to nearest 10
         new_investment_array = np.round(new_investment_array, -1)
+
+        # Get rid of negative investment
+        new_investment_array = np.maximum(new_investment_array, 0)
 
         # Transform the new investment into a dictionary
         new_investment_dict: dict[str, float] = {

@@ -15,6 +15,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+YEARS_RUN: int = 7
 
 @dataclass
 class ParticipantConfig:
@@ -196,9 +197,9 @@ def compute_statistcs(present_value_df,
 def lifetime_costs_per_mw_fun(oem_cost: float,
                               installation_cost: float):
     if ANNUAL_INTEREST_RATE > 0:
-        annuity_factor = (1-(1+ANNUAL_INTEREST_RATE)**-20)/ANNUAL_INTEREST_RATE
+        annuity_factor = (1-(1+ANNUAL_INTEREST_RATE)**-YEARS_RUN)/ANNUAL_INTEREST_RATE
     else:
-        annuity_factor = 20
+        annuity_factor = YEARS_RUN
 
     lifetime_costs_per_mw = (installation_cost + oem_cost * annuity_factor)
     return lifetime_costs_per_mw

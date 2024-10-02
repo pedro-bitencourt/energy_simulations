@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 def main():
     # initialize base parameters
-    name: str = 'inv_zero_mc_thermal'
-    xml_basefile: str = f'{BASE_PATH}/code/xml/inv_zero_mc_thermal.xml'
+    name: str = 'inv_zero_mc_new'
+    xml_basefile: str = f'{BASE_PATH}/code/xml/inv_zero_mc_new.xml'
 
     run_name_function_params = {'hydro_factor': {'position': 0, 'multiplier': 10},
                                 'thermal': {'position': 1, 'multiplier': 1},
@@ -38,7 +38,8 @@ def main():
     # discrete_grid: list[float] = [1]
 
     # removing 1 for now due to negative investment issues
-    discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1, 1.1]
+    discrete_grid: list[float] = [1]
+    #discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1, 1.1]
     exogenous_variables: dict[str, dict] = {
         'hydro_factor': {'pattern': 'HYDRO_FACTOR'},
         'thermal': {'pattern': 'THERMAL_CAPACITY'}
@@ -63,9 +64,9 @@ def main():
     # print("Results so far:")
     # print(f'{results_df=}')
 
-    # experiment.submit_jobs()
+    experiment.submit_jobs()
 
-    experiment.process_results()
+    # experiment.process_results()
 
 
 class InvestmentExperiment:

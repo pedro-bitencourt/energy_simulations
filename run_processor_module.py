@@ -83,7 +83,7 @@ class RunProcessor:
             return True
         return False
 
-#    @auxiliary.cache(lambda self: self.paths['marginal_cost'])
+    #@auxiliary.cache(lambda self: self.paths['marginal_cost'])
     def extract_marginal_costs_df(self) -> Optional[pd.DataFrame]:
         '''
         Extracts the marginal cost dataframe from the simulation folder.
@@ -131,7 +131,9 @@ class RunProcessor:
         # force datetime column to be in DATETIME_FORMAT
         marginal_cost_df['datetime'] = pd.to_datetime(
             marginal_cost_df['datetime'], format=DATETIME_FORMAT)
-
+        
+        # save marginal cost dataframe
+        marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
         return marginal_cost_df
 
 #    @auxiliary.cache(lambda self: self.paths['price_distribution'])
