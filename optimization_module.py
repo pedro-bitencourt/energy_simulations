@@ -92,7 +92,7 @@ class OptimizationPathEntry:
         new_investment_array = np.round(new_investment_array, -1)
 
         # Get rid of negative investment
-        new_investment_array = np.maximum(new_investment_array, 0)
+        new_investment_array = np.maximum(new_investment_array, 1)
 
         # Transform the new investment into a dictionary
         new_investment_dict: dict[str, float] = {

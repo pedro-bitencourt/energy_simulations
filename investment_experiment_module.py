@@ -34,7 +34,7 @@ def main():
 
     # create the grid of exogenous variables
     current_hydro_capacity: int = 2215
-    current_thermal_capacity_per_module: int = 45
+    current_thermal_capacity_per_module: int = 0
 
     discrete_grid: list[float] = [1]
     # discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1, 1.1]
