@@ -17,7 +17,7 @@ from constants import DATETIME_FORMAT
 
 
 MOCK_OUTPUT_FOLDER = Path(
-    '/Users/pedrobitencourt/quest/data/renewables/tests/11_80_20000_3000')
+'/Users/pedrobitencourt/quest/data/renewables/zero_mc_thermal/10_45_0_180')
 MOCK_INPUT_FOLDER = Path('~')
 
 
@@ -35,12 +35,12 @@ class TestRun(unittest.TestCase):
             name: str = f"{hydro_key}_{thermal_key}_{wind_key}_{solar_key}"
             return name
 
-        self.mock_general_parameters = {'daily': False,
-                                        'name_subfolder': 'PRUEBA',
+        self.mock_general_parameters = {'daily': True,
+                                        'name_subfolder': 'CAD-2024-DIARIA',
                                         'name_function': run_name_function}
 
-        self.mock_variables = {'wind': {'value': 2000, 'pattern': 'WIND_CAPACITY'},
-                               'solar': {'value': 300, 'pattern': 'SOLAR_CAPACITY'}}
+        self.mock_variables = {'wind': {'value': 0, 'pattern': 'WIND_CAPACITY'},
+                               'solar': {'value': 180, 'pattern': 'SOLAR_CAPACITY'}}
         self.mock_run = Run(self.mock_input_folder,
                             self.mock_general_parameters,
                             self.mock_variables,
@@ -74,6 +74,7 @@ class TestRun(unittest.TestCase):
 
     def test_get_profits(self):
         profits = self.mock_run_processor.get_profits()
+        print(profits)
         self.assertIsNotNone(profits)
 
 

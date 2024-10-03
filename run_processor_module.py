@@ -26,7 +26,7 @@ class RunProcessor:
     # if run was not successfuly, do not initialize
     def __new__(cls, run: Run):
         # check if the run was successful
-        if not run.successful_function():
+        if not run.successful():
             logging.error(f'Run {run.run_name} was not successful.')
             return None
         return super(RunProcessor, cls).__new__(cls)
@@ -51,7 +51,7 @@ class RunProcessor:
 
     def results_run(self):
         # check if the run was successful
-        if not self.run.successful:
+        if not self.run.successful():
             logging.error(f'Run {self.run.run_name} was not successful.')
             return None
 
@@ -231,7 +231,7 @@ class RunProcessor:
         return results
 
     def get_profits(self):
-        if not self.run.successful_function():
+        if not self.run.successful():
             logging.warning("Run %s was not succesfully computed",
                             self.run.run_name)
             return None

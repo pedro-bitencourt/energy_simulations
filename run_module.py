@@ -49,11 +49,8 @@ class Run:
         self.paths: dict = self.initialize_paths(
             input_folder, output_folder, general_parameters)
 
-        # determine if the run was already successful
-        self.successful = self.successful_function()
-
     def __repr__(self):
-        return f"Run(run_name={self.run_name}, paths = {self.paths}, successful = {self.successful}"
+        return f"Run(run_name={self.run_name}, paths = {self.paths}, successful = {self.successful()}"
 
     def initialize_paths(self, input_folder, output_folder, general_parameters):
         """
@@ -129,7 +126,7 @@ class Run:
                         continue
         return temp_paths
 
-    def successful_function(self):
+    def successful(self):
         """
         Check if the run was successful by searching for a res* file
         in the sim folder.
@@ -140,6 +137,10 @@ class Run:
             resumen_file = auxiliary.try_get_file(sim_folder, r'resumen*')
             if resumen_file:
                 return True
+        else:
+            logging.error('No sim folder found for run %s in folder %s',
+                          self.run_name,
+                          self.paths['output_complete'])
         return False
 
     def submit_run(self, run_time=None):
@@ -147,12 +148,12 @@ class Run:
         Submits a run to the cluster.
         """
         # break if already successful
-        if self.successful:
+        if self.successful():
             print(f"Run {self.run_name} already successful, skipping.")
             return True
 
         print(f"""Preparing to submit run {self.run_name},
-                    with successful status {self.successful}""")
+                    with successful status {self.successful()}""")
 
         # create the RunSubmitter object
         submitter = RunSubmitter(self, run_time)

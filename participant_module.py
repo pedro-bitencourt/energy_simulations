@@ -1,5 +1,6 @@
 import os
 import copy
+import numpy as np
 import pandas as pd
 import logging
 from datetime import datetime, timedelta
@@ -156,6 +157,7 @@ class Participant:
 
         if np.isnan(results[f'profits_{self.key}']):
             print(f'Nan profits for {self.key}')
+            print(results)
 
         # free memory
         del marginal_cost_df, participant_df
