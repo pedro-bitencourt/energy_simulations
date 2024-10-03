@@ -19,27 +19,25 @@ logger = logging.getLogger(__name__)
 
 def main():
     # initialize base parameters
-    name: str = 'inv_zero_mc_new'
-    xml_basefile: str = f'{BASE_PATH}/code/xml/inv_zero_mc_new.xml'
+    name: str = 'zero_mc_thermal'
+    xml_basefile: str = f'{BASE_PATH}/code/xml/{name}.xml'
 
     run_name_function_params = {'hydro_factor': {'position': 0, 'multiplier': 10},
                                 'thermal': {'position': 1, 'multiplier': 1},
                                 'wind': {'position': 2, 'multiplier': 1},
                                 'solar': {'position': 3, 'multiplier': 1}}
 
-    general_parameters: dict = {'daily': False,
-                                'name_subfolder': 'PRUEBA',
+    general_parameters: dict = {'daily': True,
+                                'name_subfolder': 'CAD-2024-DIARIA',
                                 'xml_basefile': xml_basefile,
                                 'name_function': run_name_function_params}
 
     # create the grid of exogenous variables
     current_hydro_capacity: int = 2215
     current_thermal_capacity_per_module: int = 45
-    # discrete_grid: list[float] = [1]
 
-    # removing 1 for now due to negative investment issues
     discrete_grid: list[float] = [1]
-    #discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1, 1.1]
+    # discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1, 1.1]
     exogenous_variables: dict[str, dict] = {
         'hydro_factor': {'pattern': 'HYDRO_FACTOR'},
         'thermal': {'pattern': 'THERMAL_CAPACITY'}

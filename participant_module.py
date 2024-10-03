@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from constants import SCENARIOS, POSTE_FILEPATH, ANNUAL_INTEREST_RATE, COSTS, DATETIME_FORMAT
-#from auxiliary import cache
+# from auxiliary import cache
 
 from processing_module import extract_dataframe, get_present_value
 
@@ -16,6 +16,7 @@ logging.basicConfig(
 )
 
 YEARS_RUN: int = 7
+
 
 @dataclass
 class ParticipantConfig:
@@ -148,9 +149,13 @@ class Participant:
             oem_cost, installation_cost)
         results[f'lifetime_costs_{self.key}_per_mw'] = lifetime_costs_per_mw
 
-        # compute the profits
+        # Compute the profits. Currently, this computes the profits per year
+        # per MW.
         results[f'profits_{self.key}'] = (
-            results[f'avg_revenue_{self.key}_per_mw'] - lifetime_costs_per_mw)
+            results[f'avg_revenue_{self.key}_per_mw']/YEARS_RUN - lifetime_costs_per_mw/YEARS_RUN)
+
+        if np.isnan(results[f'profits_{self.key}']):
+            print(f'Nan profits for {self.key}')
 
         # free memory
         del marginal_cost_df, participant_df
@@ -197,7 +202,8 @@ def compute_statistcs(present_value_df,
 def lifetime_costs_per_mw_fun(oem_cost: float,
                               installation_cost: float):
     if ANNUAL_INTEREST_RATE > 0:
-        annuity_factor = (1-(1+ANNUAL_INTEREST_RATE)**-YEARS_RUN)/ANNUAL_INTEREST_RATE
+        annuity_factor = (1-(1+ANNUAL_INTEREST_RATE)**-
+                          YEARS_RUN)/ANNUAL_INTEREST_RATE
     else:
         annuity_factor = YEARS_RUN
 
@@ -264,8 +270,16 @@ def present_value_per_scenario(participant_df, marginal_cost_df):
 
 def convert_from_poste_to_datetime(participant_df: pd.DataFrame, daily: bool) -> pd.DataFrame:
     if daily:
+        # print(participant_df.head())
+        # print(participant_df.dtypes)
+        # Remove the duplicate 'paso_start' column at the end
+        if participant_df.columns[-1] == 'paso_start' and 'paso_start' in participant_df.columns[:-1]:
+            participant_df = participant_df.iloc[:, :-1]
+        # Convert 'paso_start' to datetime
+        participant_df['paso_start'] = pd.to_datetime(
+            participant_df['paso_start'], format='%Y/%m/%d/%H:%M:%S')
         participant_df['datetime'] = participant_df.apply(
-            lambda row: row['paso_start'] + timedelta(hours=row['poste']), axis=1)
+            lambda row: row['paso_start'] + timedelta(hours=float(row['poste'])), axis=1)
         return participant_df
     return convert_from_poste_to_datetime_weekly(participant_df)
 

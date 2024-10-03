@@ -3,7 +3,7 @@ from pathlib import Path
 import platform
 
 # auto checks whether we're on quest or on a local mac machine
-LOCAL: bool = platform.system() == 'Darwin' 
+LOCAL: bool = platform.system() == 'Darwin'
 
 # slurm configurations
 HOURS_REQUEST_RUN: int = 2
@@ -16,7 +16,7 @@ DATETIME_FORMAT = '%m/%d/%y %H:%M'
 SCENARIOS = [f'{i}' for i in range(0, 114)]
 
 # economic data
-ANNUAL_INTEREST_RATE = 0.05
+ANNUAL_INTEREST_RATE = 0.00
 COSTS = {
     'wind': {'oem': 20_000, 'installation': 1_300_000},
     'solar': {'oem': 7_300, 'installation': 1_160_000}
@@ -105,7 +105,7 @@ DEMAND_DF = {
 
 ################################################################################################
 # RESUMEN MODULE
-#REVENUES_BY_RESOURCE_TABLE = {
+# REVENUES_BY_RESOURCE_TABLE = {
 #    'key': 'revenues_discounted',
 #    'filename': r'resUnico*.xlt',
 #    'table_pattern': {
@@ -147,9 +147,9 @@ DEMAND_DF = {
 #        'demandaPrueba_EscFalla2': 'demandaPrueba_EscFalla2',
 #        'demandaPrueba_EscFalla3': 'demandaPrueba_EscFalla3',
 #    }
-#}
+# }
 #
-#COSTS_BY_PARTICIPANT_TABLE = {
+# COSTS_BY_PARTICIPANT_TABLE = {
 #    'key': 'costs',
 #    'filename': r'resUnico*.xlt',
 #    'table_pattern': {
@@ -179,9 +179,9 @@ DEMAND_DF = {
 #        'demandaPrueba_EscFalla2': 'demandaPrueba_EscFalla2',
 #        'demandaPrueba_EscFalla3': 'demandaPrueba_EscFalla3'
 #    }
-#}
+# }
 #
-#CAPACITIES = {
+# CAPACITIES = {
 #    'key': 'capacities',
 #    'filename': r'resUnico*.xlt',
 #    'table_pattern': {
@@ -209,8 +209,7 @@ DEMAND_DF = {
 #        'solar': 'solarDeci'
 #    },
 #    'current_value': True
-#}
+# }
 #
-#RES_FILES_RESULTS = [PRODUCTION_BY_RESOURCE_TABLE, REVENUES_BY_RESOURCE_TABLE,
+# RES_FILES_RESULTS = [PRODUCTION_BY_RESOURCE_TABLE, REVENUES_BY_RESOURCE_TABLE,
 #                     COSTS_BY_PARTICIPANT_TABLE, CAPACITIES]
-

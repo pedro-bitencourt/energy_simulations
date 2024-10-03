@@ -59,7 +59,7 @@ class OptimizationPathEntry:
 
         curr_prof_wind = np.abs(profits['wind'])
         curr_prof_solar = np.abs(profits['solar'])
-        
+
         if curr_prof_wind < 0 and curr_prof_solar < 0:
             if self.current_investment['solar'] == 0 and self.current_investment['wind'] == 0:
                 return True
