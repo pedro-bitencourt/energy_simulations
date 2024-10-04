@@ -91,11 +91,17 @@ class Experiment:
         self.runs_array: list[Run] = self.initialize_runs()
 
     def process_experiment(self):
-        # for each run, submit a processor job
-        job_ids = self.submit_processor_jobs()
+        # if experiment has more than 10 runs, submit jobs to cluster
+        if len(self.runs_array) > 10:
+            # for each run, submit a processor job
+            job_ids = self.submit_processor_jobs()
 
-        # wait for the jobs to finish
-        wait_for_jobs(job_ids)
+            # wait for the jobs to finish
+            wait_for_jobs(job_ids)
+        else:
+            for run in self.runs_array:
+                run_processor = RunProcessor(run)
+                run_processor.results_run()
 
         # gather the results
         results_df: pd.DataFrame = self.gather_results()

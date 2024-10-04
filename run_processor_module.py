@@ -7,6 +7,7 @@ from pathlib import Path
 import json
 from typing import Optional
 from datetime import timedelta
+import numpy as np
 import auxiliary
 import processing_module as proc
 import participant_module as part
@@ -72,6 +73,10 @@ class RunProcessor:
         # concatenate the results
         results: dict = {**header, **price_results, **production_results}
 
+        # convert from int64 for json
+        results = {key: int(value) if isinstance(value, np.int64) else value
+                   for key, value in results.items()}
+
         # save the results to a json file
         with open(self.paths['results_json'], 'w') as file:
             json.dump(results, file, indent=4)
@@ -83,7 +88,7 @@ class RunProcessor:
             return True
         return False
 
-    #@auxiliary.cache(lambda self: self.paths['marginal_cost'])
+    # @auxiliary.cache(lambda self: self.paths['marginal_cost'])
     def extract_marginal_costs_df(self) -> Optional[pd.DataFrame]:
         '''
         Extracts the marginal cost dataframe from the simulation folder.
@@ -131,7 +136,7 @@ class RunProcessor:
         # force datetime column to be in DATETIME_FORMAT
         marginal_cost_df['datetime'] = pd.to_datetime(
             marginal_cost_df['datetime'], format=DATETIME_FORMAT)
-        
+
         # save marginal cost dataframe
         marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
         return marginal_cost_df
@@ -280,6 +285,8 @@ class RunProcessor:
 
     def create_bash_script(self):
         # create the data dictionary
+        variables = {key: int(value) if isinstance(
+            value, np.int64) else value for key, value in variables.items()}
         run_data = {
             'input_folder': str(self.paths['input']),
             'general_parameters': self.run.general_parameters,
