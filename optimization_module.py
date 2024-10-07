@@ -1,3 +1,4 @@
+# File name: optimization_module.py
 # Description: Module containing the classes and functions for the optimization process
 import logging
 import sys
@@ -9,14 +10,14 @@ ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
 
 logger = logging.getLogger(__name__)
 
-THRESHOLD_WIND: int = 4_000
-THRESHOLD_SOLAR: int = 4_000
+THRESHOLD_DEFAULT: int = 0.01  # Default threshold for convergence
 
 
 @dataclass
 class OptimizationPathEntry:
     iteration: int
     current_investment: dict[str, float]
+    endogenous_variables: list[str]
     successful: bool
     profits: Optional[dict[str, float]] = None
     profits_derivatives: Optional[dict[str, dict[str, float]]] = None
@@ -25,6 +26,7 @@ class OptimizationPathEntry:
         return {
             'iteration': self.iteration,
             'current_investment': self.current_investment,
+            'endogenous_variables': self.endogenous_variables,
             'successful': self.successful,
             'profits': self.profits,
             'profits_derivatives': self.profits_derivatives
@@ -35,44 +37,34 @@ class OptimizationPathEntry:
         return cls(**data)
 
     def current_investment_array(self) -> np.ndarray:
-        return np.array([self.current_investment['wind'], self.current_investment['solar']])
+        return np.array([self.current_investment[var] for var in self.endogenous_variables])
 
     def profits_array(self) -> Optional[np.ndarray]:
         if self.profits is None:
             return None
-        return np.array([self.profits['wind'], self.profits['solar']])
+        return np.array([self.profits[var] for var in self.endogenous_variables])
 
     def profits_derivatives_array(self) -> Optional[np.ndarray]:
         if self.profits_derivatives is None:
             return None
         return np.array([
-            [self.profits_derivatives['wind']['wind'],
-                self.profits_derivatives['wind']['solar']],
-            [self.profits_derivatives['solar']['wind'],
-                self.profits_derivatives['solar']['solar']]
+            [self.profits_derivatives[row_var][col_var] for col_var in self.endogenous_variables]
+            for row_var in self.endogenous_variables
         ])
 
     def check_convergence(self) -> bool:
-        profits = self.profits
-        if profits is None:
+        if self.profits is None:
             return False
-
-        curr_prof_wind = profits['wind']
-        curr_prof_solar = profits['solar']
-
-        if self.current_investment['solar'] == 1:
-            curr_prof_solar = np.maximum(curr_prof_solar, 0)
-
-        if self.current_investment['wind'] == 1:
-            curr_prof_wind = np.maximum(curr_prof_wind, 0)
-
-        curr_prof_wind = np.abs(curr_prof_wind)
-        curr_prof_solar = np.abs(curr_prof_wind)
-
-        return curr_prof_wind < THRESHOLD_WIND and curr_prof_solar < THRESHOLD_SOLAR
+        for var in self.endogenous_variables:
+            profit = self.profits[var]
+            if self.current_investment[var] == 1:
+                profit = np.maximum(profit, 0)
+            if np.abs(profit) >= THRESHOLD_DEFAULT:
+                return False
+        return True
 
     def next_iteration(self) -> 'OptimizationPathEntry':
-        # check if the current iteration was Successfully
+        # check if the current iteration was successful
         if not self.successful:
             logger.critical('Iteration %s was not successful before calling next_iteration. Aborting.',
                             self.iteration)
@@ -101,14 +93,14 @@ class OptimizationPathEntry:
 
         # Transform the new investment into a dictionary
         new_investment_dict: dict[str, float] = {
-            'wind': float(new_investment_array[0]),
-            'solar': float(new_investment_array[1])
+            var: float(new_investment_array[i]) for i, var in enumerate(self.endogenous_variables)
         }
 
         # Create and return a new OptimizationPathEntry
         return OptimizationPathEntry(
             iteration=self.iteration + 1,
             current_investment=new_investment_dict,
+            endogenous_variables=self.endogenous_variables,
             successful=False,  # This will be set to True after profits are computed
             profits=None,
             profits_derivatives=None
@@ -125,6 +117,7 @@ def newton_iteration(profits_array: np.ndarray,
         new_investment_array = current_investment_array - investment_change
     except np.linalg.LinAlgError:
         # Handle singular matrix error
+        logger.critical("Jacobian matrix: %s", profits_derivatives_array)
         logger.critical(
             "Singular matrix encountered. Aborting.")
         sys.exit(1)
@@ -132,16 +125,12 @@ def newton_iteration(profits_array: np.ndarray,
     return new_investment_array
 
 
-def derivatives_from_profits(profits: dict, delta: float):
-    # convention:
-    # profits['current'][r1] = profit from current investment in r1
-    renewables = ['wind', 'solar']
+def derivatives_from_profits(profits: dict, delta: float, endogenous_variables: list[str]):
     derivatives = {}
-    for r1 in renewables:
+    for r1 in endogenous_variables:
         derivatives[r1] = {}
-        for r2 in renewables:
+        for r2 in endogenous_variables:
             profit_change = profits[r2][r1] - profits['current'][r1]
-            # convention: derivatives[r1][r2] = derivative of profit from r1 with respect to investment in r2
             derivatives[r1][r2] = profit_change / delta
     return derivatives
 

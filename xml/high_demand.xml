@@ -1,549 +1,191 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <corrida>
-  <parametrosGenerales>
-    <nombre>PRUEBA</nombre>
-    <descripcion>PRUEBA</descripcion>
-    <postizacion tipo="interna"/>
-    <valpostizacion tipo="interna"/>
-    <tipoSimulacion>enHaz</tipoSimulacion>
-    <inicioCorrida>21 05 2023 00:00:00</inicioCorrida>
-    <finCorrida>31 12 2044 23:59:59</finCorrida>
-    <cantEscenarios>114</cantEscenarios>
-    <tasaAnual>0.1</tasaAnual>
-    <topeSpot>250.0</topeSpot>
-    <despachoSinExportacion>
-      <despSinExp>false</despSinExp>
-      <iteracionSinExp>1</iteracionSinExp>
-      <paisesACortar>Argentina,Brasil</paisesACortar>
-    </despachoSinExportacion>
-    <lineaTiempo>
-      <inicioTiempo>21 05 2023 00:00:00</inicioTiempo>
-      <periodoIntegracion>
-        <activo>false</activo>
-        <durPeriodoIntegracion>0</durPeriodoIntegracion>
-      </periodoIntegracion>
-      <listaBloques>
-        <bloque>
-          <cantPasos>31</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>1</cantPasos>
-          <durPaso unidad="segundos">691200</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>51</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>1</cantPasos>
-          <durPaso unidad="segundos">777600</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,21600,43200,162000,162000,162000,216000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>51</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>1</cantPasos>
-          <durPaso unidad="segundos">691200</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>51</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>1</cantPasos>
-          <durPaso unidad="segundos">691200</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>51</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>1</cantPasos>
-          <durPaso unidad="segundos">691200</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>51</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>1</cantPasos>
-          <durPaso unidad="segundos">777600</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-          <cantPostes>9</cantPostes>
-          <duracionPostes>3600,3600,3600,21600,43200,162000,162000,162000,216000</duracionPostes>
-          <periodoBloque>0</periodoBloque>
-          <cronologico>false</cronologico>
-        </bloque>
-        <bloque>
-          <cantPasos>51</cantPasos>
-          <durPaso unidad="segundos">604800</durPaso>
-          <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">777600</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,21600,43200,162000,162000,162000,216000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">777600</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,21600,43200,162000,162000,162000,216000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">777600</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,21600,43200,162000,162000,162000,216000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">691200</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,39600,144000,144000,144000,190800</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>51</cantPasos>
-  <durPaso unidad="segundos">604800</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,18000,36000,126000,126000,126000,162000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-<bloque>
-  <cantPasos>1</cantPasos>
-  <durPaso unidad="segundos">777600</durPaso>
-  <intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-  <cantPostes>9</cantPostes>
-  <duracionPostes>3600,3600,3600,21600,43200,162000,162000,162000,216000</duracionPostes>
-  <periodoBloque>0</periodoBloque>
-  <cronologico>false</cronologico>
-</bloque>
-</listaBloques>
-    </lineaTiempo>
-    <compsGlobales>
-      <tipoDemanda>residual</tipoDemanda>
-      <tipoResolucionValoresBellman>incrementos</tipoResolucionValoresBellman>
-    </compsGlobales>
-    <rutaSalidas>Z:\projects\p32342\software</rutaSalidas>
-    <iteraciones>
-      <maximoIteraciones>1</maximoIteraciones>
-      <numeroIteraciones>1</numeroIteraciones>
-      <criterioParada>porNumeroIteraciones</criterioParada>
-    </iteraciones>
-    <semilla>1354</semilla>
-    <cantSorteosMont>
-      <ev tipo="const">5</ev>
-    </cantSorteosMont>
-    <salidaTexto>
-      <enerResumen>TRUE</enerResumen>
-      <enercron>TRUE</enercron>
-      <potPoste>TRUE</potPoste>
-      <costoResumen>TRUE</costoResumen>
-      <costocron>TRUE</costocron>
-      <costoPoste>TRUE</costoPoste>
-      <cosmarResumen>TRUE</cosmarResumen>
-      <cosmarCron>TRUE</cosmarCron>
-      <cantMod>FALSE</cantMod>
-      <salidaDetalladaPaso>TRUE</salidaDetalladaPaso>
-      <costoPasoCron>FALSE</costoPasoCron>
-    </salidaTexto>
-    <salidaSimDet>
-      <salSim>false</salSim>
-      <pasoIni>0</pasoIni>
-      <pasoFin>150</pasoFin>
-      <escIni>1</escIni>
-      <escFin>3</escFin>
-    </salidaSimDet>
-    <salidaOpt>
-      <salOpt>false</salOpt>
-      <pasoIni>185</pasoIni>
-      <pasoFin>186</pasoFin>
-      <estadoIni>0,0,0,0</estadoIni>
-      <estadoFin>5,10,5,0</estadoFin>
-      <sortIni>0</sortIni>
-      <sortFin>1</sortFin>
-    </salidaOpt>
-  </parametrosGenerales>
-  <procesosEstocasticos>
-    <pEstocastico>
-      <nombre>upm1iniBootstrap</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(ESTADO-UPM1ini;1.0)</estadosIniciales>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>upm2Bootstrap</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(ESTADO-UPM2;1.0)</estadosIniciales>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>upm2iniBootstrap</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(ESTADO-UPM2ini;1.0)</estadosIniciales>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>biomasaBootstrap</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(BIOMASA;1.0)</estadosIniciales>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>historicoMarkovC20Abr2023</nombre>
-      <tipo>historico</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>false</muestreado>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>mdpBootstrap</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(ESTADO-MDP;1.0)</estadosIniciales>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>eoloSolMayo2023</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(EOLOSOL;1.0)</estadosIniciales>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>markovSemC20Abr2023</nombre>
-      <tipo>Markov</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>true</discretoExhaustivo>
-      <muestreado>false</muestreado>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>anioBaseSemanaMayo23ConVE_45</nombre>
-      <tipo>demandaAnioBase</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-    </pEstocastico>
-    <pEstocastico>
-      <nombre>upm1Bootstrap</nombre>
-      <tipo>bootstrapDiscreto</tipo>
-      <tipoSoporte>archivo</tipoSoporte>
-      <discretoExhaustivo>false</discretoExhaustivo>
-      <muestreado>true</muestreado>
-      <estadosIniciales>(ESTADO-UPM1;1.0)</estadosIniciales>
-    </pEstocastico>
-  </procesosEstocasticos>
+	<parametrosGenerales>
+		<nombre>CAD-2024-DIARIA</nombre>
+		<descripcion>CAD-2024-DIARIA</descripcion>
+		<postizacion tipo="interna"/>
+		<valpostizacion tipo="interna"/>
+		<tipoSimulacion>enHaz</tipoSimulacion>
+		<inicioCorrida>20 05 2023 00:00:00</inicioCorrida>
+		<finCorrida>31 12 2029 23:59:59</finCorrida>
+		<cantEscenarios>114</cantEscenarios>
+		<tasaAnual>0.1</tasaAnual>
+		<!-- tasa por 1 -->
+		<topeSpot>250.0</topeSpot>
+		<!-- En USD/MWh -->
+		<despachoSinExportacion>
+			<despSinExp>false</despSinExp>
+			<!-- Si es true en la simulación se obtiene el despacho sin exportacion en la iteración especificada abajo -->
+			<iteracionSinExp>1</iteracionSinExp>
+			<!-- Se usa la primera iteración sin exportación -->
+			<paisesACortar>Argentina,Brasil</paisesACortar>
+		</despachoSinExportacion>
+		<lineaTiempo unidad="segundos">
+			<inicioTiempo>20 05 2023 00:00:00</inicioTiempo>
+			<periodoIntegracion>
+				<activo>false</activo>
+				<durPeriodoIntegracion>0</durPeriodoIntegracion>
+			</periodoIntegracion>
+			<listaBloques>
+				<bloque>
+					<cantPasos>2418</cantPasos>
+					<!--2023 2029-->
+					<durPaso unidad="segundos">86400</durPaso>
+					<intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
+					<cantPostes>24</cantPostes>
+					<duracionPostes unidad="segundos">3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600</duracionPostes>
+					<periodoBloque>0</periodoBloque>
+					<cronologico>true</cronologico>
+				</bloque>				
+			</listaBloques>
+		</lineaTiempo>
+		<compsGlobales>
+			<tipoResolucionValoresBellman>incrementos</tipoResolucionValoresBellman>
+			<tipoDemanda>residual</tipoDemanda>
+		</compsGlobales>
+		<rutaSalidas>Z:\projects\p32342\output</rutaSalidas>
+		<iteraciones>
+			<maximoIteraciones>1</maximoIteraciones>
+			<numeroIteraciones>1</numeroIteraciones>
+			<criterioParada>porNumeroIteraciones</criterioParada>
+		</iteraciones>
+		<semilla>1354</semilla>
+		<cantSorteosMont>
+			<ev tipo="const">1</ev>
+		</cantSorteosMont>
+		<escenariosSerializados>FALSE</escenariosSerializados>
+		<salidaTexto>
+			<enerResumen>TRUE</enerResumen>
+			<enercron>TRUE</enercron>
+			<potPoste>TRUE</potPoste>
+			<indPot>TRUE</indPot>
+			<costoResumen>TRUE</costoResumen>
+			<costocron>TRUE</costocron>
+			<costoPoste>TRUE</costoPoste>
+			<indCostoPoste>TRUE</indCostoPoste>
+			<cosmarResumen>TRUE</cosmarResumen>
+			<cosmarCron>TRUE</cosmarCron>
+			<indCosmarCron>TRUE</indCosmarCron>
+			<cantMod>FALSE</cantMod>
+			<indAtriDetallado>TRUE</indAtriDetallado>
+			<salidaDetalladaPaso>TRUE</salidaDetalladaPaso>
+			<costoPasoCron>FALSE</costoPasoCron>
+		</salidaTexto>
+	<salidaSimDet>
+			<salSim>false</salSim>
+			<pasoIni>0</pasoIni>
+			<pasoFin>150</pasoFin>
+			<escIni>1</escIni>
+			<escFin>3</escFin>
+		</salidaSimDet>
+		<salidaOpt>
+			<salOpt>false</salOpt>
+			<pasoIni>185</pasoIni>
+			<pasoFin>186</pasoFin>
+			<estadoIni>0,0,0</estadoIni>
+			<estadoFin>5,10,5</estadoFin>
+			<sortIni>0</sortIni>
+			<sortFin>1</sortFin>
+		</salidaOpt>
+	</parametrosGenerales>
+	<procesosEstocasticos>
+		<pEstocastico>
+			<nombre>historicoMarkovC20Abr2023</nombre>
+			<tipo>historico</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>false</muestreado>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>markovSemC20Abr2023</nombre>
+			<tipo>Markov</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>true</discretoExhaustivo>
+			<muestreado>false</muestreado>
+		</pEstocastico>
+		<!--
+	<pEstocastico>
+			<nombre>eoloSolBootstrap_serie5anos</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(EOLOSOL;1)</estadosIniciales>
+		</pEstocastico>
+		-->
+		<pEstocastico>
+			<nombre>upm1Bootstrap</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(ESTADO-UPM1;1)</estadosIniciales>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>upm1iniBootstrap</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(ESTADO-UPM1ini;1)</estadosIniciales>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>upm2Bootstrap</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(ESTADO-UPM2;1)</estadosIniciales>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>upm2iniBootstrap</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(ESTADO-UPM2ini;1)</estadosIniciales>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>mdpBootstrap</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(ESTADO-MDP;1)</estadosIniciales>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>biomasaBootstrap</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(BIOMASA;1)</estadosIniciales>
+		</pEstocastico>
+		<pEstocastico>
+			<nombre>high_demand</nombre>
+			<tipo>demandaAnioBase</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+		</pEstocastico>
+		<!--
+ <pEstocastico>
+			<nombre>anioBaseTranspElecMayo22</nombre>
+			<tipo>demandaAnioBase</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+		</pEstocastico>
+		-->
+		<pEstocastico>
+			<nombre>eoloSolMayo2023</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(EOLOSOL;1)</estadosIniciales>
+		</pEstocastico>
+	</procesosEstocasticos>
   <participantes>
     <generadores>
       <termicos>
@@ -552,58 +194,9 @@
             <ev tipo="const">SinMinTec</ev>
           </compMinimosTecnicos>
         </compsPorDefecto>
-        <listaUtilizados>PTigreA,CTR,APR,motores,Bio_desp,Bio_nodesp,thermal_new</listaUtilizados>
+        <listaUtilizados>PTigreA,CTR,APR,motores,Bio_desp,Bio_nodesp,new_thermal</listaUtilizados>
         <listaAtributos>potencias,energias,costos</listaAtributos>
         <listaGTermico>
-        <gTermico>
-						<compsGenerales>
-							<compMinimosTecnicos>
-								<ev tipo="const">SinMinTec</ev>
-							</compMinimosTecnicos>
-						</compsGenerales>
-						<datosParticipante>
-							<nombre>thermal_new</nombre>
-							<propietario>UTE</propietario>
-							<barra>barraPrueba1</barra>
-							<cantModInst>
-								<ev tipo="porInstantes">(01 01 2022;6)</ev>
-							</cantModInst>
-							<listaCombustibles>gasOil</listaCombustibles>
-							<listaBarrasComb>barraGasOil1</listaBarrasComb>
-							<potMin unidad="MW">
-								<ev tipo="const">5</ev>
-							</potMin>
-							<potMax unidad="MW">
-								<ev tipo="const">2215</ev>
-							</potMax>
-							<rendPotMin>
-								<ev tipo="const">0.374</ev>
-							</rendPotMin>
-							<rendPotMax>
-								<ev tipo="const">0.374</ev>
-							</rendPotMax>
-							<flexibilidadMin>horaria</flexibilidadMin>
-							<dispModulos tipo="exponencial">
-								<cantModIni>6</cantModIni>
-								<dispMedia>
-									<ev tipo="porInstantes">(01 1 2020;0.9)</ev>
-								</dispMedia>
-								<tMedioArreglo unidad="dias">
-									<ev tipo="const">7</ev>
-								</tMedioArreglo>
-							</dispModulos>
-							<mantProgramado>
-								<ev tipo="const">0</ev>
-							</mantProgramado>
-							<costoFijo>
-								<ev tipo="const">0</ev>
-							</costoFijo>
-							<costoVariable>
-								<ev tipo="const">11.5</ev>
-							</costoVariable>
-							<salidaDetallada>true</salidaDetallada>
-						</datosParticipante>
-					</gTermico>
           <gTermico>
             <compsGenerales>
               <compMinimosTecnicos>
@@ -758,6 +351,55 @@
               </compMinimosTecnicos>
             </compsGenerales>
             <datosParticipante>
+              <nombre>new_thermal</nombre>
+              <propietario>UTE</propietario>
+              <barra>barraPrueba1</barra>
+              <cantModInst>
+                <ev tipo="const">6</ev>
+              </cantModInst>
+              <listaCombustibles>freeGasOil</listaCombustibles>
+              <listaBarrasComb>barraFreeGasOil1</listaBarrasComb>
+              <potMin>
+                <ev tipo="const">5.0</ev>
+              </potMin>
+              <potMax>
+                <ev tipo="const">THERMAL_CAPACITY</ev>
+              </potMax>
+              <rendPotMin>
+                <ev tipo="const">0.374</ev>
+              </rendPotMin>
+              <rendPotMax>
+                <ev tipo="const">0.374</ev>
+              </rendPotMax>
+              <flexibilidadMin>horaria</flexibilidadMin>
+              <dispModulos tipo="exponencial">
+                <cantModIni>6</cantModIni>
+                <dispMedia>
+                  <ev tipo="porInstantes">(01 01 2020;0.9)</ev>
+                </dispMedia>
+                <tMedioArreglo unidad="dias">
+                  <ev tipo="const">7.0</ev>
+                </tMedioArreglo>
+              </dispModulos>
+              <mantProgramado>
+                <ev tipo="const">0</ev>
+              </mantProgramado>
+              <costoFijo>
+                <ev tipo="const">0.0</ev>
+              </costoFijo>
+              <costoVariable>
+                <ev tipo="const">0</ev>
+              </costoVariable>
+              <salidaDetallada>true</salidaDetallada>
+            </datosParticipante>
+          </gTermico>
+          <gTermico>
+            <compsGenerales>
+              <compMinimosTecnicos>
+                <ev tipo="const">SinMinTec</ev>
+              </compMinimosTecnicos>
+            </compsGenerales>
+            <datosParticipante>
               <nombre>PTigreA</nombre>
               <propietario>UTE</propietario>
               <barra>barraPrueba1</barra>
@@ -770,7 +412,7 @@
                 <ev tipo="const">5.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">45.0</ev>
+                <ev tipo="const">45</ev>
               </potMax>
               <rendPotMin>
                 <ev tipo="const">0.374</ev>
@@ -1007,8 +649,8 @@
             </datosParticipante>
           </cicloCombinado>
         </listaCCombinado>
-      </ciclosCombinados>
-      <hidraulicos>
+		</ciclosCombinados>
+		<hidraulicos>
         <compsPorDefecto>
           <compLago>
             <ev tipo="const">SinLago</ev>
@@ -1017,8 +659,8 @@
             <ev tipo="const">CoefEnergConstantes</ev>
           </compCoefEnergetico>
         </compsPorDefecto>
-        <listaUtilizados></listaUtilizados>
-        <listaAtributos>energias,cotaAguasArriba</listaAtributos>
+        <listaUtilizados>bonete,baygorria,palmar,salto</listaUtilizados>
+        <listaAtributos></listaAtributos>
         <listaGHidraulico>
           <gHidraulico>
             <compsGenerales>
@@ -1044,7 +686,7 @@
                 <ev tipo="const">0.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">38.8</ev>
+                <ev tipo="const">HYDRO_FACTOR*38.8</ev>
               </potMax>
               <rendMin>
                 <ev tipo="const">0.87</ev>
@@ -1169,200 +811,200 @@
               <costoVariable>
                 <ev tipo="const">0.0</ev>
               </costoVariable>
-              <salidaDetallada>true</salidaDetallada>
-              <hayReservaEstrategica>false</hayReservaEstrategica>
-              <volumenReservaEstrategica>
-                <ev tipo="const">891.0</ev>
-              </volumenReservaEstrategica>
-              <valorMinReserva>
-                <ev tipo="const">65000.0</ev>
-              </valorMinReserva>
-              <valorAplicaEnOptim>true</valorAplicaEnOptim>
-              <hayControldeCotasMinimas>true</hayControldeCotasMinimas>
-              <volumenControlMinimo>
-                <ev tipo="const">1000.0</ev>
-              </volumenControlMinimo>
-              <penalidadControlMinimo>
-                <ev tipo="const">1.042</ev>
-              </penalidadControlMinimo>
-              <hayControldeCotasMaximas>true</hayControldeCotasMaximas>
-              <volumenControlMaximo>
-                <ev tipo="const">7050.0</ev>
-              </volumenControlMaximo>
-              <penalidadControlMaximo>
-                <ev tipo="const">0.5</ev>
-              </penalidadControlMaximo>
-              <vertimientoConstante>false</vertimientoConstante>
-              <hayVolumenObjetivoVertimiento>true</hayVolumenObjetivoVertimiento>
-              <volumenObjetivoVertimiento>
-                <ev tipo="const">7016.0</ev>
-              </volumenObjetivoVertimiento>
-            </datosParticipante>
-            <variablesEstado>
-              <variableEstado>
-                <nombre>volumen</nombre>
-                <estadoInicial unidad="hm3">1576.0</estadoInicial>
-                <ev tipo="const">
-                  <discretizacion tipo="equiespaciada">
-                    <minimo>0.0</minimo>
-                    <maximo>8200.0</maximo>
-                    <cantidadPuntos>10</cantidadPuntos>
-                  </discretizacion>
-                </ev>
-                <valorRecursoSuperior>
-                  <ev tipo="const">0.0</ev>
-                </valorRecursoSuperior>
-                <discreta>false</discreta>
-                <ordinal>false</ordinal>
-                <discretaIncremental>false</discretaIncremental>
-              </variableEstado>
-            </variablesEstado>
-          </gHidraulico>
-          <gHidraulico>
-            <compsGenerales>
-              <compLago>
-                <ev tipo="const">SinLago</ev>
-              </compLago>
-              <compCoefEnergetico>
-                <ev tipo="const">CoefEnergConstantes</ev>
-              </compCoefEnergetico>
-            </compsGenerales>
-            <datosParticipante>
-              <nombre>baygorria</nombre>
-              <propietario>UTE</propietario>
-              <barra>barraPrueba2</barra>
-              <cantModInst>
-                <ev tipo="porInstantes">(01 01 2023;3),(01 02 2025;2),(01 12 2028;3)</ev>
-              </cantModInst>
-              <factorCompartir>1.0</factorCompartir>
-              <epsilonCaudalErogadoIteracion unidad="m3/s">10.0</epsilonCaudalErogadoIteracion>
-              <listaGHAguasArriba>bonete</listaGHAguasArriba>
-              <generadorAguasAbajo>palmar</generadorAguasAbajo>
-              <potMin>
-                <ev tipo="const">0.0</ev>
-              </potMin>
-              <potMax>
-                <ev tipo="const">36.0</ev>
-              </potMax>
-              <rendMin>
-                <ev tipo="const">0.87</ev>
-              </rendMin>
-              <rendMax>
-                <ev tipo="const">0.87</ev>
-              </rendMax>
-              <fCotaAguasAbajo>
-                <ev tipo="const">
-                  <funcion tipo="porRangos">
-                    <fueraRango>
-                      <funcion tipo="poliMulti">
-                        <funcion tipo="poli" var="CotaAguasAbajo">39.0</funcion>
-                        <funcion tipo="poli" var="QErogado">0.0</funcion>
-                      </funcion>
-                    </fueraRango>
-                    <rangos>(0.0;370.0),(370.0;646.0),(466.0;945.0),(945.0;20000.0)</rangos>
-                    <funcion tipo="poliMulti">
-                      <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.8246</funcion>
-                      <funcion tipo="poli" var="QErogado">6.968, 0.0</funcion>
-                    </funcion>
-                    <funcion tipo="poliMulti">
-                      <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.8246</funcion>
-                      <funcion tipo="poli" var="QErogado">6.72, 6.7E-4</funcion>
-                    </funcion>
-                    <funcion tipo="poliMulti">
-                      <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.6647</funcion>
-                      <funcion tipo="poli" var="QErogado">12.39, 0.00168</funcion>
-                    </funcion>
-                    <funcion tipo="poliMulti">
-                      <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.5591</funcion>
-                      <funcion tipo="poli" var="QErogado">16.4, 0.00145</funcion>
-                    </funcion>
-                  </funcion>
-                </ev>
-              </fCotaAguasAbajo>
-              <volFijo>
-                <ev tipo="const">210.0</ev>
-              </volFijo>
-              <qTur1Max>
-                <ev tipo="const">276.0</ev>
-              </qTur1Max>
-              <saltoMinimo>9.0</saltoMinimo>
-              <cotaInundacionAguasAbajo>54.4</cotaInundacionAguasAbajo>
-              <cotaInundacionAguasArriba>56.0</cotaInundacionAguasArriba>
-              <fCoVo>
-                <ev tipo="const">
-                  <funcion tipo="poli">51.998, 0.010101, 3.7375E-5, -3.4306E-7, 1.0827E-9, -1.168E-12</funcion>
-                </ev>
-              </fCoVo>
-              <fVoCo>
-                <ev tipo="const">
-                  <funcion tipo="poli">-1557273.0, 0.0, 5433.876, -202.992, 2.842973, -0.0141512</funcion>
-                </ev>
-              </fVoCo>
-              <fQEroMin>
-                <ev tipo="const">
-                  <funcion tipo="poliConCotas">
-                    <xmin>54.1</xmin>
-                    <xmax>55.2</xmax>
-                    <valmin>0.0</valmin>
-                    <valmax>10000.0</valmax>
-                    <coefs>393228.0, -22508.966, 282.2677</coefs>
-                  </funcion>
-                </ev>
-              </fQEroMin>
-              <coefEvaporacion>
-                <ev tipo="periodica">
-                  <definicionPeriodo>(01 01 2018;230.0),(01 02 2018;170.0),(01 03 2018;154.0),(01 04 2018;90.0),(01 05 2018;65.0),(01 06 2018;40.0),(01 07 2018;45.0),(01 08 2018;65.0),(01 09 2018;80.0),(01 10 2018;120.0),(01 11 2018;160.0),(01 12 2018;230.0)</definicionPeriodo>
-                  <periodo>año</periodo>
-                  <cantPeriodo>40</cantPeriodo>
-                </ev>
-              </coefEvaporacion>
-              <fEvaporacion>
-                <ev tipo="const">
-                  <funcion tipo="poli">0.579784, -0.02548, 2.86E-4</funcion>
-                </ev>
-              </fEvaporacion>
-              <fFiltracion>
-                <ev tipo="const">
-                  <funcion tipo="poli">-34.8889, 0.74074</funcion>
-                </ev>
-              </fFiltracion>
-              <fQVerMax unidad="m3/s">
-                <ev tipo="const">
-                  <funcion tipo="poliConCotas">
-                    <xmin>52.0</xmin>
-                    <xmax>56.0</xmax>
-                    <valmin>0.0</valmin>
-                    <valmax>20000.0</valmax>
-                    <coefs>7369316.5, -416004.48, 7815.825, -48.8182</coefs>
-                  </funcion>
-                </ev>
-              </fQVerMax>
-              <aporte unidad="m3/s">
-                <variableAleat>
-                  <procSimulacion>historicoMarkovC20Abr2023</procSimulacion>
-                  <procOptimizacion>markovSemC20Abr2023</procOptimizacion>
-                  <nombre>APORTE-BAYGORRIA</nombre>
-                </variableAleat>
-              </aporte>
-              <dispModulos tipo="exponencial">
-                <cantModIni>3</cantModIni>
-                <dispMedia>
-                  <ev tipo="const">0.994</ev>
-                </dispMedia>
-                <tMedioArreglo unidad="dias">
-                  <ev tipo="const">0.0</ev>
-                </tMedioArreglo>
-              </dispModulos>
-              <mantProgramado>
-                <ev tipo="const">0</ev>
-              </mantProgramado>
-              <costoFijo>
-                <ev tipo="const">0.0</ev>
-              </costoFijo>
-              <costoVariable>
-                <ev tipo="const">0.0</ev>
-              </costoVariable>
-              <salidaDetallada>true</salidaDetallada>
+	  <salidaDetallada>false</salidaDetallada>
+	  <hayReservaEstrategica>false</hayReservaEstrategica>
+	  <volumenReservaEstrategica>
+		<ev tipo="const">891.0</ev>
+	  </volumenReservaEstrategica>
+	  <valorMinReserva>
+		<ev tipo="const">65000.0</ev>
+	  </valorMinReserva>
+	  <valorAplicaEnOptim>true</valorAplicaEnOptim>
+	  <hayControldeCotasMinimas>true</hayControldeCotasMinimas>
+	  <volumenControlMinimo>
+		<ev tipo="const">1000.0</ev>
+	  </volumenControlMinimo>
+	  <penalidadControlMinimo>
+		<ev tipo="const">1.042</ev>
+	  </penalidadControlMinimo>
+	  <hayControldeCotasMaximas>true</hayControldeCotasMaximas>
+	  <volumenControlMaximo>
+		<ev tipo="const">7050.0</ev>
+	  </volumenControlMaximo>
+	  <penalidadControlMaximo>
+		<ev tipo="const">0.5</ev>
+	  </penalidadControlMaximo>
+	  <vertimientoConstante>false</vertimientoConstante>
+	  <hayVolumenObjetivoVertimiento>true</hayVolumenObjetivoVertimiento>
+	  <volumenObjetivoVertimiento>
+		<ev tipo="const">7016.0</ev>
+	  </volumenObjetivoVertimiento>
+	</datosParticipante>
+	<variablesEstado>
+	  <variableEstado>
+		<nombre>volumen</nombre>
+		<estadoInicial unidad="hm3">1576.0</estadoInicial>
+		<ev tipo="const">
+		  <discretizacion tipo="equiespaciada">
+			<minimo>0.0</minimo>
+			<maximo>8200.0</maximo>
+			<cantidadPuntos>10</cantidadPuntos>
+		  </discretizacion>
+		</ev>
+		<valorRecursoSuperior>
+		  <ev tipo="const">0.0</ev>
+		</valorRecursoSuperior>
+		<discreta>false</discreta>
+		<ordinal>false</ordinal>
+		<discretaIncremental>false</discretaIncremental>
+	  </variableEstado>
+	</variablesEstado>
+  </gHidraulico>
+  <gHidraulico>
+	<compsGenerales>
+	  <compLago>
+		<ev tipo="const">SinLago</ev>
+	  </compLago>
+	  <compCoefEnergetico>
+		<ev tipo="const">CoefEnergConstantes</ev>
+	  </compCoefEnergetico>
+	</compsGenerales>
+	<datosParticipante>
+	  <nombre>baygorria</nombre>
+	  <propietario>UTE</propietario>
+	  <barra>barraPrueba2</barra>
+	  <cantModInst>
+		<ev tipo="porInstantes">(01 01 2023;3),(01 02 2025;2),(01 12 2028;3)</ev>
+	  </cantModInst>
+	  <factorCompartir>1.0</factorCompartir>
+	  <epsilonCaudalErogadoIteracion unidad="m3/s">10.0</epsilonCaudalErogadoIteracion>
+	  <listaGHAguasArriba>bonete</listaGHAguasArriba>
+	  <generadorAguasAbajo>palmar</generadorAguasAbajo>
+	  <potMin>
+		<ev tipo="const">0.0</ev>
+	  </potMin>
+	  <potMax>
+		<ev tipo="const">HYDRO_FACTOR*36.0</ev>
+	  </potMax>
+	  <rendMin>
+		<ev tipo="const">0.87</ev>
+	  </rendMin>
+	  <rendMax>
+		<ev tipo="const">0.87</ev>
+	  </rendMax>
+	  <fCotaAguasAbajo>
+		<ev tipo="const">
+		  <funcion tipo="porRangos">
+			<fueraRango>
+			  <funcion tipo="poliMulti">
+				<funcion tipo="poli" var="CotaAguasAbajo">39.0</funcion>
+				<funcion tipo="poli" var="QErogado">0.0</funcion>
+			  </funcion>
+			</fueraRango>
+			<rangos>(0.0;370.0),(370.0;646.0),(466.0;945.0),(945.0;20000.0)</rangos>
+			<funcion tipo="poliMulti">
+			  <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.8246</funcion>
+			  <funcion tipo="poli" var="QErogado">6.968, 0.0</funcion>
+			</funcion>
+			<funcion tipo="poliMulti">
+			  <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.8246</funcion>
+			  <funcion tipo="poli" var="QErogado">6.72, 6.7E-4</funcion>
+			</funcion>
+			<funcion tipo="poliMulti">
+			  <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.6647</funcion>
+			  <funcion tipo="poli" var="QErogado">12.39, 0.00168</funcion>
+			</funcion>
+			<funcion tipo="poliMulti">
+			  <funcion tipo="poli" var="CotaAguasAbajo">0.0, 0.5591</funcion>
+			  <funcion tipo="poli" var="QErogado">16.4, 0.00145</funcion>
+			</funcion>
+		  </funcion>
+		</ev>
+	  </fCotaAguasAbajo>
+	  <volFijo>
+		<ev tipo="const">210.0</ev>
+	  </volFijo>
+	  <qTur1Max>
+		<ev tipo="const">276.0</ev>
+	  </qTur1Max>
+	  <saltoMinimo>9.0</saltoMinimo>
+	  <cotaInundacionAguasAbajo>54.4</cotaInundacionAguasAbajo>
+	  <cotaInundacionAguasArriba>56.0</cotaInundacionAguasArriba>
+	  <fCoVo>
+		<ev tipo="const">
+		  <funcion tipo="poli">51.998, 0.010101, 3.7375E-5, -3.4306E-7, 1.0827E-9, -1.168E-12</funcion>
+		</ev>
+	  </fCoVo>
+	  <fVoCo>
+		<ev tipo="const">
+		  <funcion tipo="poli">-1557273.0, 0.0, 5433.876, -202.992, 2.842973, -0.0141512</funcion>
+		</ev>
+	  </fVoCo>
+	  <fQEroMin>
+		<ev tipo="const">
+		  <funcion tipo="poliConCotas">
+			<xmin>54.1</xmin>
+			<xmax>55.2</xmax>
+			<valmin>0.0</valmin>
+			<valmax>10000.0</valmax>
+			<coefs>393228.0, -22508.966, 282.2677</coefs>
+		  </funcion>
+		</ev>
+	  </fQEroMin>
+	  <coefEvaporacion>
+		<ev tipo="periodica">
+		  <definicionPeriodo>(01 01 2018;230.0),(01 02 2018;170.0),(01 03 2018;154.0),(01 04 2018;90.0),(01 05 2018;65.0),(01 06 2018;40.0),(01 07 2018;45.0),(01 08 2018;65.0),(01 09 2018;80.0),(01 10 2018;120.0),(01 11 2018;160.0),(01 12 2018;230.0)</definicionPeriodo>
+		  <periodo>año</periodo>
+		  <cantPeriodo>40</cantPeriodo>
+		</ev>
+	  </coefEvaporacion>
+	  <fEvaporacion>
+		<ev tipo="const">
+		  <funcion tipo="poli">0.579784, -0.02548, 2.86E-4</funcion>
+		</ev>
+	  </fEvaporacion>
+	  <fFiltracion>
+		<ev tipo="const">
+		  <funcion tipo="poli">-34.8889, 0.74074</funcion>
+		</ev>
+	  </fFiltracion>
+	  <fQVerMax unidad="m3/s">
+		<ev tipo="const">
+		  <funcion tipo="poliConCotas">
+			<xmin>52.0</xmin>
+			<xmax>56.0</xmax>
+			<valmin>0.0</valmin>
+			<valmax>20000.0</valmax>
+			<coefs>7369316.5, -416004.48, 7815.825, -48.8182</coefs>
+		  </funcion>
+		</ev>
+	  </fQVerMax>
+	  <aporte unidad="m3/s">
+		<variableAleat>
+		  <procSimulacion>historicoMarkovC20Abr2023</procSimulacion>
+		  <procOptimizacion>markovSemC20Abr2023</procOptimizacion>
+		  <nombre>APORTE-BAYGORRIA</nombre>
+		</variableAleat>
+	  </aporte>
+	  <dispModulos tipo="exponencial">
+		<cantModIni>3</cantModIni>
+		<dispMedia>
+		  <ev tipo="const">0.994</ev>
+		</dispMedia>
+		<tMedioArreglo unidad="dias">
+		  <ev tipo="const">0.0</ev>
+		</tMedioArreglo>
+	  </dispModulos>
+	  <mantProgramado>
+		<ev tipo="const">0</ev>
+	  </mantProgramado>
+	  <costoFijo>
+		<ev tipo="const">0.0</ev>
+	  </costoFijo>
+	  <costoVariable>
+		<ev tipo="const">0.0</ev>
+	  </costoVariable>
+	  <salidaDetallada>false</salidaDetallada>
               <hayReservaEstrategica>false</hayReservaEstrategica>
               <volumenReservaEstrategica>
                 <ev tipo="const">900.0</ev>
@@ -1416,7 +1058,7 @@
                 <ev tipo="const">0.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">111.0</ev>
+                <ev tipo="const">HYDRO_FACTOR*111.0</ev>
               </potMax>
               <rendMin>
                 <ev tipo="const">0.9</ev>
@@ -1519,7 +1161,7 @@
               <costoVariable>
                 <ev tipo="const">0.0</ev>
               </costoVariable>
-              <salidaDetallada>true</salidaDetallada>
+              <salidaDetallada>false</salidaDetallada>
               <hayReservaEstrategica>false</hayReservaEstrategica>
               <volumenReservaEstrategica>
                 <ev tipo="const">900.0</ev>
@@ -1592,7 +1234,7 @@
                 <ev tipo="const">0.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">135.0</ev>
+                <ev tipo="const">HYDRO_FACTOR*135.0</ev>
               </potMax>
               <rendMin>
                 <ev tipo="const">0.9</ev>
@@ -1704,7 +1346,7 @@
               <costoVariable>
                 <ev tipo="const">0.0</ev>
               </costoVariable>
-              <salidaDetallada>true</salidaDetallada>
+              <salidaDetallada>false</salidaDetallada>
               <hayReservaEstrategica>false</hayReservaEstrategica>
               <volumenReservaEstrategica>
                 <ev tipo="const">900.0</ev>
@@ -1772,7 +1414,7 @@
 								<ev tipo="const">0.0</ev>
 							</potMin>
 							<potMax unidad="MW">
-								<ev tipo="const">WIND_POTENCY</ev>
+								<ev tipo="const">WIND_CAPACITY</ev>
                                 </potMax>
 							<factor>
 								<variableAleat>
@@ -1821,7 +1463,7 @@
 								<ev tipo="const">0.0</ev>
 							</potMin>
 							<potMax unidad="MW">
-								<ev tipo="const">SOLAR_POTENCY</ev>
+									<ev tipo="const">SOLAR_CAPACITY</ev>
                                 </potMax>
 							<factor>
 								<variableAleat>
@@ -1866,7 +1508,7 @@
     </generadores>
     <comercioEnergia>
       <impoExpos>
-        <listaUtilizados>impoEstacArg,impoBraRiv,impoBrMelo,excedentes,sumidero,expLago</listaUtilizados>
+        <listaUtilizados></listaUtilizados>
         <listaAtributos>energias,potencias,costos</listaAtributos>
         <listaImpoExpos>
           <impoExpo>
@@ -2214,7 +1856,7 @@
     </comercioEnergia>
     <demandas>
       <listaUtilizados>demandaPrueba</listaUtilizados>
-      <listaAtributos>energias</listaAtributos>
+      <listaAtributos>potencias</listaAtributos>
       <listaDemanda>
         <demanda>
           <datosDemanda>
@@ -2303,48 +1945,10 @@
       </listaFallas>
     </fallas>
     <impactosAmbientales>
-      <listaUtilizados>caudalEcologicoBonete,caudalMinimoSinPenSalto</listaUtilizados>
+      <listaUtilizados></listaUtilizados>
       <listaAtributos>costos,magnitudes</listaAtributos>
       <listaImpactos>
-        <impacto>
-          <datosImpacto>
-            <nombre>caudalMinimoSinPenSalto</nombre>
-            <activo>
-              <ev tipo="porInstantes">(01 01 2019;false),(01 10 2022;true)</ev>
-            </activo>
-            <costo>
-              <ev tipo="const">1.1E8</ev>
-            </costo>
-            <limite>
-              <ev tipo="const">600.0</ev>
-            </limite>
-            <porPoste>true</porPoste>
-            <participantesInvolucrados>salto</participantesInvolucrados>
-            <tipoImpacto>caudalEcologico</tipoImpacto>
-            <porUnidadDeTiempo>false</porUnidadDeTiempo>
-            <salidaDetallada>true</salidaDetallada>
-          </datosImpacto>
-        </impacto>
-        <impacto>
-          <datosImpacto>
-            <nombre>caudalEcologicoBonete</nombre>
-            <activo>
-              <ev tipo="porInstantes">(01 01 2019;false),(01 05 2023;true)</ev>
-            </activo>
-            <costo>
-              <ev tipo="const">1100000.0</ev>
-            </costo>
-            <limite>
-              <ev tipo="const">80.0</ev>
-            </limite>
-            <porPoste>true</porPoste>
-            <participantesInvolucrados>bonete</participantesInvolucrados>
-            <tipoImpacto>caudalEcologico</tipoImpacto>
-            <porUnidadDeTiempo>false</porUnidadDeTiempo>
-            <salidaDetallada>true</salidaDetallada>
-          </datosImpacto>
-        </impacto>
-      </listaImpactos>
+	</listaImpactos>
     </impactosAmbientales>
     <redElectrica>
       <compsGenerales>
@@ -2439,7 +2043,7 @@
       </ramas>
     </redElectrica>
     <combustibles>
-      <listaUtilizados>fuelOil,gasOil,gasNat,fuelOilMotores,biomasa_nd,biomasa_d</listaUtilizados>
+      <listaUtilizados>fuelOil,gasOil,gasNat,fuelOilMotores,biomasa_nd,biomasa_d,freeGasOil</listaUtilizados>
       <listaCombustibles>
         <combustible>
           <datosCombustible>
@@ -2746,6 +2350,110 @@
                   </caudalMax>
                   <precioComb unidad="USD/m3">
                     <ev tipo="porInstantes">(01 01 2021;680.5),(01 01 2022;586.63),(01 01 2023;601.91),(01 01 2024;607.62),(01 01 2025;575.9),(01 01 2026;580.73),(01 01 2027;583.18),(01 01 2028;586.49),(01 01 2029;589.92),(01 01 2030;593.92),(01 01 2031;597.17),(01 01 2032;601.92),(01 01 2033;604.59),(01 01 2034;608.57),(01 01 2035;613.53),(01 01 2036;613.53),(01 01 2037;620.72),(01 01 2038;623.82),(01 01 2039;626.96),(01 01 2040;629.96),(01 01 2041;633.12)</ev>
+                  </precioComb>
+                  <salidaDetallada>true</salidaDetallada>
+                </datosContratoCanioSimple>
+              </contratoCanioSimple>
+            </listaContratosCombustibleCanioSimple>
+          </red>
+        </combustible>
+        <combustible>
+          <datosCombustible>
+            <nombre>freeGasOil</nombre>
+            <pci unidad="MWh/m3">10.06</pci>
+            <unidad>m3</unidad>
+            <densidad unidad="kg/m3">832.0</densidad>
+            <salidaDetallada>true</salidaDetallada>
+          </datosCombustible>
+          <red>
+            <compsGenerales>
+              <compUsoRed>
+                <ev tipo="const">uninodal</ev>
+              </compUsoRed>
+            </compsGenerales>
+            <listaBarrasComb>
+              <barraComb>
+                <datosBarra>
+                  <nombre>barraFreeGasOil1</nombre>
+                  <salidaDetallada>true</salidaDetallada>
+                </datosBarra>
+              </barraComb>
+              <barraComb>
+                <datosBarra>
+                  <nombre>barraFreeGasOil2</nombre>
+                  <salidaDetallada>true</salidaDetallada>
+                </datosBarra>
+              </barraComb>
+            </listaBarrasComb>
+            <listaDuctosComb>
+              <ductoComb>
+                <datosDuctoComb>
+                  <nombre>ramaFreeGasOil1</nombre>
+                  <cantModInst>
+                    <ev tipo="const">1</ev>
+                  </cantModInst>
+                  <dispModulos tipo="exponencial">
+                    <cantModIni>1</cantModIni>
+                    <dispMedia>
+                      <ev tipo="const">1.0</ev>
+                    </dispMedia>
+                    <tMedioArreglo unidad="dias">
+                      <ev tipo="const">0.0</ev>
+                    </tMedioArreglo>
+                  </dispModulos>
+                  <mantProgramado>
+                    <ev tipo="const">0</ev>
+                  </mantProgramado>
+                  <costoFijo>
+                    <ev tipo="const">0.0</ev>
+                  </costoFijo>
+                  <barra1>barraFreeGasOil1</barra1>
+                  <barra2>barraFreeGasOil2</barra2>
+                  <capacidad12>
+                    <ev tipo="const">100.0</ev>
+                  </capacidad12>
+                  <capacidad21>
+                    <ev tipo="const">100.0</ev>
+                  </capacidad21>
+                  <perdidas12>
+                    <ev tipo="const">0.0</ev>
+                  </perdidas12>
+                  <perdidas21>
+                    <ev tipo="const">0.0</ev>
+                  </perdidas21>
+                </datosDuctoComb>
+                <salidaDetallada>true</salidaDetallada>
+              </ductoComb>
+            </listaDuctosComb>
+            <listaContratosCombustibleCanioSimple>
+              <contratoCanioSimple>
+                <datosContratoCanioSimple>
+                  <nombre>contratoUnicoFreeGasOil</nombre>
+                  <barra>barraFreeGasOil1</barra>
+                  <combustible>freeGasOil</combustible>
+                  <cantModInst>
+                    <ev tipo="const">1</ev>
+                  </cantModInst>
+                  <dispModulos tipo="exponencial">
+                    <cantModIni>1</cantModIni>
+                    <dispMedia>
+                      <ev tipo="const">1.0</ev>
+                    </dispMedia>
+                    <tMedioArreglo unidad="dias">
+                      <ev tipo="const">0.0</ev>
+                    </tMedioArreglo>
+                  </dispModulos>
+                  <mantProgramado>
+                    <ev tipo="const">0</ev>
+                  </mantProgramado>
+                  <costoFijo>
+                    <ev tipo="const">0.0</ev>
+                  </costoFijo>
+                  <caudalMax unidad="m3/h">
+                    <ev tipo="const">3000.0</ev>
+                  </caudalMax>
+                  <precioComb unidad="USD/m3">
+                    <ev tipo="const">0.0</ev>
                   </precioComb>
                   <salidaDetallada>true</salidaDetallada>
                 </datosContratoCanioSimple>
@@ -3073,9 +2781,10 @@
       <listaContratos/>
     </contratos>
   </participantes>
-  <datosUTE>
-    <migracionDemanda>
-      <listaSectores/>
-    </migracionDemanda>
-  </datosUTE>
+	<datosUTE>
+		<migracionDemanda>
+			<listaSectores/>
+			<dirEnResources>coeficientesMigracion</dirEnResources>
+		</migracionDemanda>
+	</datosUTE>
 </corrida>

@@ -17,9 +17,11 @@ SCENARIOS = [f'{i}' for i in range(0, 114)]
 
 # economic data
 ANNUAL_INTEREST_RATE = 0.00
+# costs are in USD per MW for installation and USD per MW per year for O&M
 COSTS = {
-    'wind': {'oem': 20_000, 'installation': 1_300_000},
-    'solar': {'oem': 7_300, 'installation': 1_160_000}
+    'wind': {'oem': 20_000, 'installation': 1_300_000, 'lifetime': 25},
+    'solar': {'oem': 7_300, 'installation': 1_160_000, 'lifetime': 35},
+    'thermal': {'oem': 12_000, 'installation': 9_750_000, 'lifetime': 20}
 }
 
 # relevant paths

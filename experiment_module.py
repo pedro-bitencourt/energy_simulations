@@ -84,6 +84,7 @@ class Experiment:
 
         if variables_grid:
             self.variables_grid: dict[str, np.ndarray] = variables_grid
+            self.original_runs_array: list[Run] = None
         if runs_array:
             self.original_runs_array: list[Run] = runs_array
 
@@ -181,6 +182,8 @@ class Experiment:
 
         # check if the grids have the same lengths
         if len(set(lengths)) != 1:
+            logging.critical("Grid lengths: %s", lengths)
+            logging.critical("Variables grid: %s", self.variables_grid)
             raise ValueError("The grids have different lengths. Aborting.")
 
         # get the length of the grid

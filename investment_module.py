@@ -24,8 +24,8 @@ from constants import BASE_PATH, REQUESTED_TIME_RUN
 MAX_ITER: int = 15
 UNSUCCESSFUL_RUN: int = 2
 
-INITIAL_GUESS_WIND: int = 1800
-INITIAL_GUESS_SOLAR: int = 500
+DELTA: float = 50
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +47,11 @@ def main():
 
     exogenous_variables: dict[str, dict] = {
         'hydro_factor': {'pattern': 'HYDRO_FACTOR', 'value': 1},
-        'thermal': {'pattern': 'THERMAL_CAPACITY', 'value': 45}
     }
     endogenous_variables: dict[str, dict] = {
-        'wind': {'pattern': 'WIND_CAPACITY'},
-        'solar': {'pattern': 'SOLAR_CAPACITY'}
+        'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1800},
+        'solar': {'pattern': 'SOLAR_CAPACITY', 'initial_guess': 500},
+        'thermal': {'pattern': 'THERMAL_CAPACITY', 'initial_guess': 2000}
     }
 
     # create the investment problem
@@ -107,8 +107,7 @@ class InvestmentProblem:
         # hard coding now
         hydro_key: int = int(
             10*self.exogenous_variables['hydro_factor']['value'])
-        thermal_key: int = int(self.exogenous_variables['thermal']['value'])
-        name: str = f"{self.name_experiment}_{hydro_key}_{thermal_key}"
+        name: str = f"{self.name_experiment}_{hydro_key}"
         return name
 
     def initialize_optimization_trajectory(self):
@@ -134,7 +133,10 @@ class InvestmentProblem:
             iteration_0 = OptimizationPathEntry(
                 iteration=0,
                 current_investment={
-                    'wind': INITIAL_GUESS_WIND, 'solar': INITIAL_GUESS_SOLAR},
+                    endogenous_variable: entry['initial_guess']
+                    for endogenous_variable, entry in self.endogenous_variables.items()
+                },
+                endogenous_variables=list(self.endogenous_variables.keys()),
                 successful=False,
             )
             optimization_trajectory.append(iteration_0)
@@ -216,6 +218,7 @@ class InvestmentProblem:
         return OptimizationPathEntry(
             iteration=current_iteration.iteration,
             current_investment=current_investment,
+            endogenous_variables=current_iteration.endogenous_variables,
             successful=True,
             profits=profits,
             profits_derivatives=profits_derivatives
@@ -224,31 +227,23 @@ class InvestmentProblem:
     def profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
         '''
         Computes the profits and derivatives for a given level of investment_problem 
-        in wind and solar
         '''
-        delta = 50
 
         def create_and_submit_run(investment):
             run = self.create_run(investment)
             return run, run.submit_run(REQUESTED_TIME_RUN)
 
         # create dict of investments
-        investments_dict: dict = {
-            'current': current_investment,
-            'wind': {
-                'wind': current_investment['wind'] + delta,
-                'solar': current_investment['solar']
-            },
-            'solar': {
-                'wind': current_investment['wind'],
-                'solar': current_investment['solar'] + delta
-            }
-        }
+        investments_dict = {'current': current_investment}
+        for var in self.endogenous_variables.keys():
+            investment = current_investment.copy()
+            investment[var] += DELTA
+            investments_dict[var] = investment
 
         # create and submit runs
         runs_and_jobs = {
-            renewable: create_and_submit_run(investment)
-            for renewable, investment in investments_dict.items()
+            resource: create_and_submit_run(investment)
+            for resource, investment in investments_dict.items()
         }
 
         # wait for all jobs to complete
@@ -256,11 +251,11 @@ class InvestmentProblem:
 
         # process results
         profits_perturb = {}
-        for renewable, (run, _) in runs_and_jobs.items():
+        for resource, (run, _) in runs_and_jobs.items():
             run_processor = RunProcessor(run)
             # check if run was successful
             if run_processor:
-                profits_perturb[renewable] = run_processor.get_profits()
+                profits_perturb[resource] = run_processor.get_profits()
             # if not, abort
             else:
                 logging.critical(
@@ -268,13 +263,13 @@ class InvestmentProblem:
                 sys.exit(UNSUCCESSFUL_RUN)
 
         # compute derivatives from the profits
-        derivatives = derivatives_from_profits(profits_perturb, delta)
+        derivatives = derivatives_from_profits(profits_perturb, DELTA, list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
     def create_run(self, current_investment: dict):
         """
-        Creates a Run object from a level of current investment_problem in wind 
-        and solar
+        Creates a Run object from a level of current investment_problem in the 
+        endogenous capacities
         """
         # create a values array with the same order as the variables
         endogenous_variables_temp: dict = {
@@ -300,27 +295,6 @@ class InvestmentProblem:
 
     def print_optimization_trajectory(self):
         print_optimization_trajectory_function(self.optimization_trajectory)
-
-    #########################################
-    # Methods to process the results
-    def process_results(self):
-        # get the last successful iteration
-        last_iteration: OptimizationPathEntry = get_last_successful_iteration(
-            self.optimization_trajectory)
-        # check if the last iteration converged
-        if last_iteration.check_convergence():
-            # initialize a dictionary to store the results
-            results_dict: dict = {}
-
-            # get results on the iterative algorithm
-            convergence_reached: bool = last_iteration.check_convergence()
-            iteration_number: int = last_iteration.iteration
-            exo_vars: dict = {key: entry['value']
-                              for key, entry in self.exogenous_variables.items()}
-
-            return results_dict
-        else:
-            return False
 
     def equilibrium_run(self):
         """

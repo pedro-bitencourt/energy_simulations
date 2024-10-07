@@ -235,7 +235,7 @@ class RunProcessor:
 
         return results
 
-    def get_profits(self):
+    def get_profits(self, endogenous_variables_names: list[str]) -> Optional[dict]:
         if not self.run.successful():
             logging.warning("Run %s was not succesfully computed",
                             self.run.run_name)
@@ -249,21 +249,21 @@ class RunProcessor:
         # free memory
         del marginal_cost_df
 
-        # hardcoded for now
-        renewables = ['wind', 'solar']
-        capacities = {'wind': self.run.variables['wind']['value'],
-                      'solar': self.run.variables['solar']['value']}
+        capacities: dict = {
+            endo_var: self.run.variables[endo_var]['value']
+            for endo_var in endogenous_variables_names
+        }
 
-        # iterate over the renewables
+        # iterate over the endogenous variables
         profits = {}
-        for renewable in renewables:
+        for endo_var in endogenous_variables_names:
             # load the participant
-            participant_capacity = capacities[renewable]
+            participant_capacity = capacities[endo_var]
             participant_object = part.Participant(
-                renewable, participant_capacity, self.paths)
+                endo_var, participant_capacity, self.paths)
 
             logging.info('Processing participant %s with capacity %s.',
-                         renewable, participant_capacity)
+                         endo_var, participant_capacity)
 
             # process the participant
             results_participant = participant_object.process_participant(
@@ -272,14 +272,14 @@ class RunProcessor:
             # check whether the participant was processed successfully
             if results_participant is not None:
                 logging.info(
-                    'Participant %s processed successfully.', renewable)
+                    'Participant %s processed successfully.', endo_var)
                 logging.debug(f'{results_participant=}')
 
                 # update the profits dictionary
-                profits[renewable] = results_participant[f'profits_{renewable}']
+                profits[endo_var] = results_participant[f'profits_{endo_var}']
             else:
                 logging.critical(
-                    f'Could not process {renewable} for run {self.run.run_name}')
+                    f'Could not process {endo_var} for run {self.run.run_name}')
 
         return profits
 

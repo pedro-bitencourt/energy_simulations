@@ -1,6 +1,8 @@
 import sys
 sys.path.append('..')
 import numpy as np 
+from experiment_module import Experiment
+from constants import BASE_PATH
 
 name: str = "mrs_experiment"
 
@@ -16,6 +18,7 @@ general_parameters: dict = {
 # to change
 grid_hydro: np.ndarray = np.linspace(0.2, 1, 5)
 grid_thermal: np.ndarray = np.linspace(8, 100, 5)
+# print shapes of the grids
 
 variables_grid: dict[str, np.ndarray] = {
         'hydro_factor': grid_hydro, 
@@ -29,11 +32,11 @@ variables: dict = {
 
 # initialize the experiment
 experiment = Experiment(name, variables, variables_grid, general_parameters)
-
-# run the experiment
-# experiment.submit_experiment()
-# experiment.process_experiment()
-
-# visualize the results
-experiment.visualize_experiment()
-
+#
+## run the experiment
+## experiment.submit_experiment()
+## experiment.process_experiment()
+#
+## visualize the results
+#experiment.visualize_experiment()
+#

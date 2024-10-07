@@ -5,6 +5,7 @@ import sys
 import auxiliary
 import pandas as pd
 from datetime import datetime, timedelta
+
 # Global variables
 READING_ERROR = -12
 
