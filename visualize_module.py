@@ -19,7 +19,6 @@ def main():
     pass
 
 
-
 def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(np.cumsum(pca.explained_variance_ratio_))
@@ -40,6 +39,7 @@ def output_principal_components_for_runs(pca_result: np.ndarray, original_index:
     print("Principal components for each run saved to 'principal_components_per_run.csv'")
     return components_df
 
+
 def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[plt.Figure, List[plt.Axes]]:
     fig, axs = plt.subplots(n_components, 1, figsize=(12, 4*n_components))
     for i in range(n_components):
@@ -49,7 +49,8 @@ def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[p
             'price_avg': pca.components_[i]
         })
         # Use plot_intraweek_price_distribution for each component
-        plot_intraweek_price_distribution(axs[i], pc_df, title=f'Principal Component {i+1}')
+        plot_intraweek_price_distribution(
+            axs[i], pc_df, title=f'Principal Component {i+1}')
     fig.tight_layout()
     return fig, axs
 # Assuming price_distributions is your DataFrame
@@ -58,16 +59,17 @@ def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[p
 # Plotting functions
 
 
-
 def plot_intraweek_price_distribution(ax, dataframe: pd.DataFrame, title=None):
     # Plot the price distribution
-    ax.plot(dataframe['hour_of_week_bin'], dataframe['price_avg'], color='#1f77b4')
+    ax.plot(dataframe['hour_of_week_bin'],
+            dataframe['price_avg'], color='#1f77b4')
 
     # Add vertical lines and labels for each day
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     for i, day in enumerate(days):
         ax.axvline(x=i*24, color='#d62728', linestyle='--', alpha=0.5)
-        ax.text(i*24 + 12, ax.get_ylim()[1], day, ha='center', va='bottom', fontweight='bold')
+        ax.text(i*24 + 12, ax.get_ylim()
+                [1], day, ha='center', va='bottom', fontweight='bold')
 
     # Highlight day and night times
     for i in range(7):
@@ -101,7 +103,8 @@ def plot_intraweek_price_distribution(ax, dataframe: pd.DataFrame, title=None):
     ax.grid(True, axis='y', linestyle='--', alpha=0.7)
 
     # Adjust y-axis to start from 0
-    #ax.set_ylim(bottom=0)
+    # ax.set_ylim(bottom=0)
+
 
 def plot_stacked_price_distributions(plots_list: list,
                                      save_path: Union[str, Path]) -> None:
@@ -189,7 +192,7 @@ def simple_plot(dataframe: pd.DataFrame, x_key: str,
         plt.plot(dataframe[x_key],
                  dataframe[y_variable['key']],
                  label=y_variable.get('label', None)
-        )
+                 )
     plt.xlabel(axis_labels['x'])
     plt.ylabel(axis_labels['y'])
     plt.legend()

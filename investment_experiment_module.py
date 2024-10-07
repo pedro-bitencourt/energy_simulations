@@ -18,57 +18,63 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    mrs_list = [0.25, 0.5, 0.75]
+    mrs_list = [0.5, 1]
     for mrs in mrs_list:
-        # initialize base parameters
-        mrs = 0.5
+        zero_mc_thermal_experiment(mrs)
+
+
+def zero_mc_thermal_experiment(mrs: float):
+    if mrs == 1:
+        name: str = 'zero_mc_thermal'
+    else:
         name: str = f'zero_mc_thermal_mrs_{mrs}'
-        xml_basefile: str = f'{BASE_PATH}/code/xml/zero_mc_thermal.xml'
+    xml_basefile: str = f'{BASE_PATH}/code/xml/zero_mc_thermal.xml'
 
-        run_name_function_params = {'hydro_factor': {'position': 0, 'multiplier': 10},
-                                    'thermal': {'position': 1, 'multiplier': 1},
-                                    'wind': {'position': 2, 'multiplier': 1},
-                                    'solar': {'position': 3, 'multiplier': 1}}
+    run_name_function_params = {'hydro_factor': {'position': 0, 'multiplier': 10},
+                                'thermal': {'position': 1, 'multiplier': 1},
+                                'wind': {'position': 2, 'multiplier': 1},
+                                'solar': {'position': 3, 'multiplier': 1}}
 
-        general_parameters: dict = {'daily': True,
-                                    'name_subfolder': 'CAD-2024-DIARIA',
-                                    'xml_basefile': xml_basefile,
-                                    'name_function': run_name_function_params}
+    general_parameters: dict = {'daily': True,
+                                'name_subfolder': 'CAD-2024-DIARIA',
+                                'xml_basefile': xml_basefile,
+                                'name_function': run_name_function_params}
 
-        # create the grid of exogenous variables
-        current_hydro_capacity: int = 2215
-        current_thermal_capacity_per_module: int = 0
+    # create the grid of exogenous variables
+    current_hydro_capacity: int = 2215
+    current_thermal_capacity_per_module: int = 0
 
-        # discrete_grid: list[float] = [1]
-        discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
-        exogenous_variables: dict[str, dict] = {
-            'hydro_factor': {'pattern': 'HYDRO_FACTOR'},
-            'thermal': {'pattern': 'THERMAL_CAPACITY'}
-        }
-        endogenous_variables: dict[str, dict] = {
-            'wind': {'pattern': 'WIND_CAPACITY'},
-            'solar': {'pattern': 'SOLAR_CAPACITY'}
-        }
+    # discrete_grid: list[float] = [1]
+    discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
+    exogenous_variables: dict[str, dict] = {
+        'hydro_factor': {'pattern': 'HYDRO_FACTOR'},
+        'thermal': {'pattern': 'THERMAL_CAPACITY'}
+    }
+    endogenous_variables: dict[str, dict] = {
+        'wind': {'pattern': 'WIND_CAPACITY'},
+        'solar': {'pattern': 'SOLAR_CAPACITY'}
+    }
 
-        grid_hydro_factor: np.ndarray = np.array(discrete_grid)
-        grid_thermal_capacity: np.ndarray = mrs*(
-            current_thermal_capacity_per_module + (1-grid_hydro_factor)*current_hydro_capacity/6)
-        # concatenate the two arrays
-        exogenous_variables_grid: dict[str, np.ndarray] = {'hydro_factor': grid_hydro_factor,
-                                                           'thermal': grid_thermal_capacity}
+    grid_hydro_factor: np.ndarray = np.array(discrete_grid)
+    grid_thermal_capacity: np.ndarray = mrs*(
+        current_thermal_capacity_per_module + (1-grid_hydro_factor)*current_hydro_capacity/6)
+    # concatenate the two arrays
+    exogenous_variables_grid: dict[str, np.ndarray] = {'hydro_factor': grid_hydro_factor,
+                                                       'thermal': grid_thermal_capacity}
 
-        # create the experiment
-        experiment = InvestmentExperiment(name, exogenous_variables, exogenous_variables_grid,
-                                          endogenous_variables, general_parameters)
+    # create the experiment
+    experiment = InvestmentExperiment(name, exogenous_variables, exogenous_variables_grid,
+                                      endogenous_variables, general_parameters)
 
-        # results_df = experiment.recover_results()
-        # print("Results so far:")
-        # print(f'{results_df=}')
+    results_df = experiment.recover_results()
+    print("Results so far:")
+    print(f'{results_df=}')
 
-        experiment.submit_jobs()
-        del experiment
+    # experiment.submit_jobs()
 
-    # experiment.process_results()
+    experiment.process_results()
+
+    del experiment
 
 
 class InvestmentExperiment:
@@ -159,7 +165,7 @@ class InvestmentExperiment:
         experiment.process_experiment()
 
         # visualize results
-        # experiment.visualize_experiment()
+        experiment.visualize_experiment(1)
 
     def visualize_results(self):
         experiment: Experiment = self.experiment_from_investment_experiment()

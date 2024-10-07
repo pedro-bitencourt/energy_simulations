@@ -6,7 +6,7 @@ import platform
 LOCAL: bool = platform.system() == 'Darwin'
 
 # slurm configurations
-HOURS_REQUEST_RUN: int = 2
+HOURS_REQUEST_RUN: int = 4
 MINUTES_REQUEST_RUN: int = 30
 
 REQUESTED_TIME_RUN = f'{HOURS_REQUEST_RUN}:{MINUTES_REQUEST_RUN}:00'

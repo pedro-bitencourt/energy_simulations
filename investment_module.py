@@ -15,13 +15,13 @@ import numpy as np
 from run_module import Run
 from run_processor_module import RunProcessor
 from optimization_module import (OptimizationPathEntry,
-    derivatives_from_profits,
-    print_optimization_trajectory_function,
-    get_last_successful_iteration)
+                                 derivatives_from_profits,
+                                 print_optimization_trajectory_function,
+                                 get_last_successful_iteration)
 from auxiliary import submit_slurm_job, wait_for_jobs
 from constants import BASE_PATH, REQUESTED_TIME_RUN
 
-MAX_ITER: int = 10
+MAX_ITER: int = 15
 UNSUCCESSFUL_RUN: int = 2
 
 INITIAL_GUESS_WIND: int = 1800
@@ -318,8 +318,6 @@ class InvestmentProblem:
             exo_vars: dict = {key: entry['value']
                               for key, entry in self.exogenous_variables.items()}
 
-
-
             return results_dict
         else:
             return False
@@ -395,7 +393,7 @@ class InvestmentProblem:
             f.write(f'''#!/bin/bash
 #SBATCH --account=b1048
 #SBATCH --partition=b1048
-#SBATCH --time=7:00:00
+#SBATCH --time=9:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=12G

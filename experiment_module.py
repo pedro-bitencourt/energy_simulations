@@ -101,7 +101,8 @@ class Experiment:
         else:
             for run in self.runs_array:
                 run_processor = RunProcessor(run)
-                run_processor.results_run()
+                results = run_processor.results_run()
+                print(results)
 
         # gather the results
         results_df: pd.DataFrame = self.gather_results()
@@ -110,6 +111,8 @@ class Experiment:
         results_df.to_csv(
             (f"{BASE_PATH}/result/{self.name}_results.csv"), index=False)
 
+        results_df.to_csv(
+            (f"{self.paths['output']}/{self.name}_results.csv"), index=False)
         # print the results
         print(f'{results_df=}')
 
@@ -239,7 +242,7 @@ class Experiment:
         return successful
 
     def visualize_experiment(self, grid_dimension: int):
-        visualizer = ExperimentVisualizer(self)
+        visualizer = ExperimentVisualizer(self.paths['output'])
         visualizer.visualize(grid_dimension)
 
 

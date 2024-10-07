@@ -57,14 +57,17 @@ class OptimizationPathEntry:
         if profits is None:
             return False
 
-        curr_prof_wind = np.abs(profits['wind'])
-        curr_prof_solar = np.abs(profits['solar'])
+        curr_prof_wind = profits['wind']
+        curr_prof_solar = profits['solar']
 
         if self.current_investment['solar'] == 1:
             curr_prof_solar = np.maximum(curr_prof_solar, 0)
 
         if self.current_investment['wind'] == 1:
             curr_prof_wind = np.maximum(curr_prof_wind, 0)
+
+        curr_prof_wind = np.abs(curr_prof_wind)
+        curr_prof_solar = np.abs(curr_prof_wind)
 
         return curr_prof_wind < THRESHOLD_WIND and curr_prof_solar < THRESHOLD_SOLAR
 

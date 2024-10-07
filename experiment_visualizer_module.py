@@ -43,8 +43,8 @@ class RunResults:
         self.results_exist: bool = price_distribution_path.exists() and results_path.exists()
 
         # Read the price distribution and results dataframes
-        self.price_distribution: pd.DataFrame = self.read_price_distribution(
-            price_distribution_path)
+        #self.price_distribution: pd.DataFrame = self.read_price_distribution(
+        #    price_distribution_path)
         self.results_dict: dict = self.read_results(results_path)
 
     def read_results(self, results_path: Path) -> dict:
@@ -102,8 +102,8 @@ class ExperimentVisualizer:
         self.results_df: pd.DataFrame = pd.read_csv(results_df_path)
 
     def visualize(self, grid_dimension: int):
-        self.plot_pca_price_distributions()
-        self.plot_intraweek_price_distributions()
+        #self.plot_pca_price_distributions()
+        #self.plot_intraweek_price_distributions()
 
         if grid_dimension == 2:
             self.plot_heatmaps()
