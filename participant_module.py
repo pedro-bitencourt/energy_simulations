@@ -27,7 +27,7 @@ class ParticipantConfig:
 PARTICIPANTS: Dict[str, ParticipantConfig] = {
     'wind': ParticipantConfig(folder='EOLO_eoloDeci', type='wind'),
     'solar': ParticipantConfig(folder='FOTOV_solarDeci', type='solar'),
-    'new_thermal': ParticipantConfig(folder='TER_new_thermal', type='thermal'),
+    'thermal': ParticipantConfig(folder='TER_new_thermal', type='thermal'),
     'demand': ParticipantConfig(folder='DEM_demandaPrueba', type='demand')
 }
 
@@ -152,7 +152,7 @@ class Participant:
         results.update(results_temp)
 
         if self.type_participant == 'thermal':
-            variable_costs = self.get_variable_costs()
+            variable_costs = self.get_variable_costs(daily)
         else:
             variable_costs = 0
 
@@ -190,6 +190,9 @@ class Participant:
         extracted_dataframe = extract_dataframe(
             variable_cost_configuration, self.paths['sim'])
 
+        print(f"{extracted_dataframe.head()=}")
+        logging.info("Variable costs head: %s", extracted_dataframe.head())
+
         # check if the production data was successfully extracted
         if extracted_dataframe is None:
             logging.critical('Production file not found.')
@@ -205,12 +208,10 @@ class Participant:
         return discounted_variable_costs
 
 
-
-
 def compute_statistics(present_value_df,
-                      discounted_production,
-                      key_participant,
-                      capacity):
+                       discounted_production,
+                       key_participant,
+                       capacity):
 
     def revenue_stats_function(present_value_df, stat,
                                key_participant, capacity):

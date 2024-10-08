@@ -1864,8 +1864,8 @@
             <barra>barraPrueba1</barra>
             <potActiva unidad="MW">
               <variableAleat>
-                <procSimulacion>anioBaseSemanaMayo23ConVE_45</procSimulacion>
-                <procOptimizacion>anioBaseSemanaMayo23ConVE_45</procOptimizacion>
+                <procSimulacion>high_demand</procSimulacion>
+                <procOptimizacion>high_demand</procOptimizacion>
                 <nombre>DEM_CON_VE_150</nombre>
               </variableAleat>
             </potActiva>

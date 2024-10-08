@@ -21,14 +21,14 @@ current_hydro_capacity: int = 2215
 current_thermal_capacity_per_module: int = 0
 
 discrete_grid: list[float] = [1]
-#discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
+# discrete_grid: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
 exogenous_variables: dict[str, dict] = {
     'hydro_factor': {'pattern': 'HYDRO_FACTOR'},
     'thermal': {'pattern': 'THERMAL_CAPACITY'}
 }
 endogenous_variables: dict[str, dict] = {
-    'wind': {'pattern': 'WIND_CAPACITY'},
-    'solar': {'pattern': 'SOLAR_CAPACITY'}
+    'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1000},
+    'solar': {'pattern': 'SOLAR_CAPACITY', 'initial_guess': 1000}
 }
 
 grid_hydro_factor: np.ndarray = np.array(discrete_grid)
@@ -42,9 +42,10 @@ exogenous_variables_grid: dict[str, np.ndarray] = {'hydro_factor': grid_hydro_fa
 experiment = InvestmentExperiment(name, exogenous_variables, exogenous_variables_grid,
                                   endogenous_variables, general_parameters)
 
-results_df = experiment.recover_results()
-print("Results so far:")
-print(f'{results_df=}')
+# results_df = experiment.recover_results()
+# print("Results so far:")
+# print(f'{results_df=}')
 
 experiment.submit_jobs()
-experiment.process_results()
+
+# experiment.process_results()

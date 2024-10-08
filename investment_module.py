@@ -255,7 +255,10 @@ class InvestmentProblem:
             run_processor = RunProcessor(run)
             # check if run was successful
             if run_processor:
-                profits_perturb[resource] = run_processor.get_profits()
+                endogenous_variables_list: list[str] = list(
+                    self.endogenous_variables.keys())
+                profits_perturb[resource] = run_processor.get_profits(
+                    endogenous_variables_list)
             # if not, abort
             else:
                 logging.critical(
@@ -263,7 +266,8 @@ class InvestmentProblem:
                 sys.exit(UNSUCCESSFUL_RUN)
 
         # compute derivatives from the profits
-        derivatives = derivatives_from_profits(profits_perturb, DELTA, list(self.endogenous_variables.keys()))
+        derivatives = derivatives_from_profits(
+            profits_perturb, DELTA, list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
     def create_run(self, current_investment: dict):
