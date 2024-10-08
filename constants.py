@@ -151,37 +151,37 @@ DEMAND_DF = {
 #    }
 # }
 #
-# COSTS_BY_PARTICIPANT_TABLE = {
-#    'key': 'costs',
-#    'filename': r'resUnico*.xlt',
-#    'table_pattern': {
-#        'start': 'COSTOS ESPERADOS EN MUSD ',
-#        'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
-#    },
-#    **BASIC_RES_OPTION,
-#    'variables': {
-#        'thermal': ['PTigreA', 'CTR', 'APR', 'motores', 'Bio_desp',
-#                    'Bio_nodesp', 'thermal_new', 'PTigreB'],
-#        'PTigreA': 'PTigreA',
-#        'CTR': 'CTR',
-#        'APR': 'APR',
-#        'motores': 'motores',
-#        'Bio_desp': 'Bio_desp',
-#        'Bio_nodesp': 'Bio_nodesp',
-#        'thermal_new': 'thermal_new',
-#        'PTigreB': 'PTigreB',
-#        'impoEstacArg': 'impoEstacArg',
-#        'impoBraRiv': 'impoBraRiv',
-#        'impoBrMelo': 'impoBrMelo',
-#        'excedentes': 'excedentes',
-#        'sumidero': 'sumidero',
-#        'expLago': 'expLago',
-#        'demandaPrueba_EscFalla0': 'demandaPrueba_EscFalla0',
-#        'demandaPrueba_EscFalla1': 'demandaPrueba_EscFalla1',
-#        'demandaPrueba_EscFalla2': 'demandaPrueba_EscFalla2',
-#        'demandaPrueba_EscFalla3': 'demandaPrueba_EscFalla3'
-#    }
-# }
+COSTS_BY_PARTICIPANT_TABLE = {
+   'key': 'costs',
+   'filename': r'resUnico*.xlt',
+   'table_pattern': {
+       'start': 'COSTOS ESPERADOS EN MUSD ',
+       'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
+   },
+   **BASIC_RES_OPTION,
+   'variables': {
+       'thermal': ['PTigreA', 'CTR', 'APR', 'motores', 'Bio_desp',
+                   'Bio_nodesp', 'thermal_new', 'PTigreB'],
+       'PTigreA': 'PTigreA',
+       'CTR': 'CTR',
+       'APR': 'APR',
+       'motores': 'motores',
+       'Bio_desp': 'Bio_desp',
+       'Bio_nodesp': 'Bio_nodesp',
+       'thermal_new': 'thermal_new',
+       'PTigreB': 'PTigreB',
+       'impoEstacArg': 'impoEstacArg',
+       'impoBraRiv': 'impoBraRiv',
+       'impoBrMelo': 'impoBrMelo',
+       'excedentes': 'excedentes',
+       'sumidero': 'sumidero',
+       'expLago': 'expLago',
+       'demandaPrueba_EscFalla0': 'demandaPrueba_EscFalla0',
+       'demandaPrueba_EscFalla1': 'demandaPrueba_EscFalla1',
+       'demandaPrueba_EscFalla2': 'demandaPrueba_EscFalla2',
+       'demandaPrueba_EscFalla3': 'demandaPrueba_EscFalla3'
+   }
+}
 #
 # CAPACITIES = {
 #    'key': 'capacities',

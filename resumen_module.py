@@ -104,6 +104,18 @@ PRODUCTION_BY_RESOURCE_TABLE = {
         'blackout': 'FALLA'}
 }
 
+COSTS_BY_PARTICIPANT_TABLE = {
+   'key': 'costs',
+   'filename': r'resUnico*.xlt',
+   'table_pattern': {
+       'start': 'COSTOS ESPERADOS EN MUSD ',
+       'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
+   },
+   **BASIC_RES_OPTION,
+   'variables': {
+        'thermal': 'new_thermal'
+   }
+}
 multipliers = {'production': 1_000, 'costs': 1_000_000}
 
 def process_res_file(option, sim_folder):

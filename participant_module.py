@@ -9,6 +9,7 @@ from constants import SCENARIOS, POSTE_FILEPATH, ANNUAL_INTEREST_RATE, COSTS, DA
 # from auxiliary import cache
 
 from processing_module import extract_dataframe, get_present_value
+import resumen_module as rm
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -180,32 +181,15 @@ class Participant:
 
         return results
 
-    def get_variable_costs(self, daily: bool = False) -> float:
+    def get_variable_costs(self) -> float:
         """
         Returns the variable costs of the thermal participant.
         """
         # extract the variable cost data
-        variable_cost_configuration = self._initialize_var_cost_df_configuration(
-            self.key, self.paths['sim'], PARTICIPANTS[self.key].folder)
-        extracted_dataframe = extract_dataframe(
-            variable_cost_configuration, self.paths['sim'])
+        dataframe = rm.process_res_file(rm.COSTS_BY_PARTICIPANT_TABLE, self.paths['sim'])
+        variable_cost = dataframe['thermal'].sum()
+        return variable_cost
 
-        print(f"{extracted_dataframe.head()=}")
-        logging.info("Variable costs head: %s", extracted_dataframe.head())
-
-        # check if the production data was successfully extracted
-        if extracted_dataframe is None:
-            logging.critical('Production file not found.')
-            raise FileNotFoundError
-
-        # convert the poste to datetime
-        dataframe = convert_from_poste_to_datetime(
-            extracted_dataframe, daily)
-
-        # compute the discounted value of the variable costs
-        discounted_variable_costs = compute_discounted_production(dataframe)
-
-        return discounted_variable_costs
 
 
 def compute_statistics(present_value_df,
