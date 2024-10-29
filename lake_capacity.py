@@ -3,10 +3,10 @@ import numpy as np
 from investment_experiment_module import InvestmentExperiment
 from constants import BASE_PATH
 
-name: str = 'endogenous_thermal'
-xml_basefile: str = f'{BASE_PATH}/code/xml/endogenous_thermal.xml'
+name: str = 'lake_capacity'
+xml_basefile: str = f'{BASE_PATH}/code/xml/{name}.xml'
 
-run_name_function_params = {'hydro_factor': {'position': 0, 'multiplier': 10},
+run_name_function_params = {'lake_factor': {'position': 0, 'multiplier': 10},
                             'thermal': {'position': 1, 'multiplier': 1},
                             'wind': {'position': 2, 'multiplier': 1},
                             'solar': {'position': 3, 'multiplier': 1}}
@@ -17,10 +17,9 @@ general_parameters: dict = {'daily': True,
                             'name_function': run_name_function_params}
 
 
-#discrete_grid: list[float] = [1]
 discrete_grid: list[float] = [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1]
 exogenous_variables: dict[str, dict] = {
-    'hydro_factor': {'pattern': 'HYDRO_FACTOR'},
+    'lake_factor': {'pattern': 'LAKE_FACTOR', 'poly': True},
 }
 
 endogenous_variables: dict[str, dict] = {
@@ -33,7 +32,7 @@ grid_hydro_factor: np.ndarray = np.array(discrete_grid)
 
 # concatenate the two arrays
 exogenous_variables_grid: dict[str, np.ndarray] = {
-    'hydro_factor': grid_hydro_factor}
+    'lake_factor': grid_hydro_factor}
 
 # create the experiment
 experiment = InvestmentExperiment(name, exogenous_variables, exogenous_variables_grid,
