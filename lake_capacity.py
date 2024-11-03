@@ -1,4 +1,3 @@
-
 import numpy as np
 from investment_experiment_module import InvestmentExperiment
 from constants import BASE_PATH
@@ -17,7 +16,8 @@ general_parameters: dict = {'daily': True,
                             'name_function': run_name_function_params}
 
 
-discrete_grid: list[float] = [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1]
+# discrete_grid: list[float] = [0.6]
+discrete_grid: list[float] = [0.6, 0.75, 1, 1.25, 1.5, 2, 3]
 exogenous_variables: dict[str, dict] = {
     'lake_factor': {'pattern': 'LAKE_FACTOR', 'poly': True},
 }
@@ -38,9 +38,9 @@ exogenous_variables_grid: dict[str, np.ndarray] = {
 experiment = InvestmentExperiment(name, exogenous_variables, exogenous_variables_grid,
                                   endogenous_variables, general_parameters)
 
-# results_df = experiment.recover_results()
-# print("Results so far:")
-# print(f'{results_df=}')
+results_df = experiment.recover_results()
+print("Results so far:")
+print(f'{results_df=}')
 
-experiment.submit_jobs()
-# experiment.process_results()
+# experiment.submit_jobs()
+experiment.process_results()

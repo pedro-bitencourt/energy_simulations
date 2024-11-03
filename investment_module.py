@@ -24,29 +24,28 @@ from constants import BASE_PATH, REQUESTED_TIME_RUN
 MAX_ITER: int = 15
 UNSUCCESSFUL_RUN: int = 2
 
-DELTA: float = 50
+DELTA: float = 10
 
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-    # initialize base parameters
-    name: str = 'inv_zero_mc_thermal'
-    xml_basefile: str = f'{BASE_PATH}/code/xml/inv_zero_mc_thermal.xml'
+    name: str = 'lake_capacity'
+    xml_basefile: str = f'{BASE_PATH}/code/xml/{name}.xml'
 
-    run_name_function_params: dict = {'hydro_factor': {'position': 0, 'multiplier': 10},
-                                      'thermal': {'position': 1, 'multiplier': 1},
-                                      'wind': {'position': 2, 'multiplier': 1},
-                                      'solar': {'position': 3, 'multiplier': 1}}
+    run_name_function_params = {'lake_factor': {'position': 0, 'multiplier': 10},
+                                'thermal': {'position': 1, 'multiplier': 1},
+                                'wind': {'position': 2, 'multiplier': 1},
+                                'solar': {'position': 3, 'multiplier': 1}}
 
-    general_parameters: dict = {'daily': False,
-                                'name_subfolder': 'PRUEBA',
+    general_parameters: dict = {'daily': True,
+                                'name_subfolder': 'CAD-2024-DIARIA',
                                 'xml_basefile': xml_basefile,
                                 'name_function': run_name_function_params}
 
     exogenous_variables: dict[str, dict] = {
-        'hydro_factor': {'pattern': 'HYDRO_FACTOR', 'value': 1},
+        'lake_factor': {'pattern': 'LAKE_FACTOR', 'poly': True, 'value': 1},
     }
     endogenous_variables: dict[str, dict] = {
         'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1800},
@@ -106,7 +105,7 @@ class InvestmentProblem:
     def get_name(self):
         # hard coding now
         hydro_key: int = int(
-            10*self.exogenous_variables['hydro_factor']['value'])
+            10*self.exogenous_variables['lake_factor']['value'])
         name: str = f"{self.name_experiment}_{hydro_key}"
         return name
 

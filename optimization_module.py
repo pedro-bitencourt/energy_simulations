@@ -48,7 +48,8 @@ class OptimizationPathEntry:
         if self.profits_derivatives is None:
             return None
         return np.array([
-            [self.profits_derivatives[row_var][col_var] for col_var in self.endogenous_variables]
+            [self.profits_derivatives[row_var][col_var]
+                for col_var in self.endogenous_variables]
             for row_var in self.endogenous_variables
         ])
 
@@ -85,8 +86,8 @@ class OptimizationPathEntry:
         new_investment_array = newton_iteration(
             profits_array, profits_derivatives_array, current_investment_array)
 
-        # Round new_investment to nearest 10
-        new_investment_array = np.round(new_investment_array, -1)
+        # Round new_investment to nearest unit
+        new_investment_array = np.round(new_investment_array)
 
         # Get rid of negative investment
         new_investment_array = np.maximum(new_investment_array, 1)

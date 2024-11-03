@@ -124,8 +124,8 @@ class InvestmentExperiment:
             # get the exogenous variables for the current iteration
             exogenous_variables_temp: dict = {
                 variable: {
-                    'pattern': var_dict['pattern'],
-                    'value': exogenous_variables_grid[variable][idx]
+                    'value': exogenous_variables_grid[variable][idx],
+                    **var_dict
                 }
                 for variable, var_dict in exogenous_variables.items()
             }

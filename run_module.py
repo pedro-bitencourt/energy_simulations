@@ -11,6 +11,7 @@ from typing import Optional
 from pathlib import Path
 import auxiliary
 import logging
+from constants import REQUESTED_TIME_RUN
 
 
 class Run:
@@ -212,20 +213,31 @@ class RunSubmitter:
             file.write(content)
 
     def substitute_variables(self, content):
-        DEGREES = [-5,-4,-3,-2,-1,1,2,3,4,5]
+        DEGREES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
+
         def substitute_pattern(content, pattern, value):
             """
             Substitutes a pattern in the content with a given value.
             """
             def replace_func(match):
-                if match.group().endswith('*'):  # Change from checking 'if * in' to 'if endswith *'
-                    multiplier = float(match.group(1))  # Get the captured multiplier
-                    new_value = int(value * multiplier)
-                    return f">{str(new_value)}<"
-                return f'>{str(value)}<'
+                if '*' in match.group():
+                    # Get the captured multiplier
+                    multiplier = float(match.group(2))
+                    # Changed from int() to float()
+                    new_value = float(value * multiplier)
+                    return str(new_value)
+                return str(value)
+
+            # First try to match pattern with multiplier
             content = re.sub(
-                f'{pattern}(?:\*(\d+\.?\d*)|<)', replace_func, content)  # Change pattern to capture multiplier and allow < ending
+                f'({pattern})(?:\*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?))', replace_func, content)
+
+            # Then match pattern without multiplier
+            content = re.sub(
+                f'({pattern})<', replace_func, content)
+
             return content
+
         for variable in self.run.variables.values():
             if variable.get('poly', False):
                 for degree in DEGREES:
@@ -233,23 +245,20 @@ class RunSubmitter:
                     value = variable['value']**degree
                     content = substitute_pattern(content, pattern, value)
             else:
-                content = substitute_pattern(content, variable['pattern'], variable['value'])
+                content = substitute_pattern(
+                    content, variable['pattern'], variable['value'])
         return content
 
-
-    def create_bash_script(self, run_time=None):
+    def create_bash_script(self):
         script_path = self.paths['slurm_script']
         xml_path = os.path.normpath(self.paths['xml'])
         xml_path = xml_path.replace(os.path.sep, '\\')
-
-        if run_time is None:
-            run_time = '2:30:00'
 
         with open(script_path, 'w') as f:
             f.write(f'''#!/bin/bash
 #SBATCH --account=b1048
 #SBATCH --partition=b1048
-#SBATCH --time={run_time}
+#SBATCH --time={REQUESTED_TIME_RUN}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
 #SBATCH --mem=5G 

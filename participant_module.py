@@ -153,7 +153,7 @@ class Participant:
         results.update(results_temp)
 
         if self.type_participant == 'thermal':
-            variable_costs = self.get_variable_costs(daily)
+            variable_costs = self.get_variable_costs()
         else:
             variable_costs = 0
 
@@ -186,10 +186,10 @@ class Participant:
         Returns the variable costs of the thermal participant.
         """
         # extract the variable cost data
-        dataframe = rm.process_res_file(rm.COSTS_BY_PARTICIPANT_TABLE, self.paths['sim'])
+        dataframe = rm.process_res_file(
+            rm.COSTS_BY_PARTICIPANT_TABLE, self.paths['sim'])
         variable_cost = dataframe['thermal'].sum()
         return variable_cost
-
 
 
 def compute_statistics(present_value_df,
