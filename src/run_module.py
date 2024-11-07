@@ -146,6 +146,7 @@ class Run:
 
         # Create the xml file
         xml_path: Path = self._create_xml()
+
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
 

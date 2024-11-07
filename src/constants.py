@@ -26,7 +26,7 @@ DELTA: float = 10
 THRESHOLD_PROFITS: float = 0.01  # Default threshold for convergence
 
 # Relevant paths
-BASE_PATH: Path = Path('/scratch/pdm6134')
+BASE_PATH: Path = Path('/projects/p32342')
 POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
 
 # Plotting configurations
