@@ -224,7 +224,9 @@ class Run:
         xml_path = os.path.normpath(str(xml_path))
         xml_path = xml_path.replace(os.path.sep, '\\')
 
-        requested_time = self.general_parameters.get('requested_time_run', '24:00:00')
+        hours = self.general_parameters['requested_time_run']
+        requested_time_run = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
+
 
         with open(bash_path, 'w') as file:
             file.write(f'''#!/bin/bash
