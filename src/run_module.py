@@ -74,6 +74,7 @@ class Run:
             return windows_path
 
         paths = {}
+        paths['parent_folder'] = folder
         paths['folder'] = folder / self.name
         # Convert the output path to a Windows path, for use in the .xml file
         paths['folder_windows'] = format_windows_path(paths['folder'])

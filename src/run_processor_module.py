@@ -58,7 +58,7 @@ class RunProcessor(Run):
             ValueError: If the run was not successful
         """
         super().__init__(
-            folder=run.paths['folder'],
+            parent_folder=run.paths['parent_folder'],
             general_parameters=run.general_parameters,
             variables=run.variables
         )
