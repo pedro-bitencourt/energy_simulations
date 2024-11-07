@@ -5,8 +5,7 @@ This module contains the ComparativeStatics class, which abstracts both Experime
 It is used to perform comparative statics experiments with the flexibility to handle both standard experiments and
 investment experiments with endogenous capacities.
 
-Public functions:
-- __init__: initializes the ComparativeStatics object.
+Public methods:
 - submit: submits the jobs for the runs or investment problems.
 - process: processes the results of the runs or investment problems.
 - visualize: visualizes the results of the experiment.
@@ -210,7 +209,7 @@ class ComparativeStatics:
 
     def process(self):
         """
-        Process the results of the runs.
+        Create runs from investment problems, if there are endogenous variables, and process the results.
         """
         # If there are endogenous_variables, first process investment problems and create
         # a list of Run objects
@@ -218,7 +217,7 @@ class ComparativeStatics:
             # Process investment problems
             results_df = self._investment_results()
             
-            # Save results to CSV
+            # Save results of the optimization algorithm to CSV
             output_csv_path: Path = self.paths['results'] / 'investment_results.csv'
             results_df.to_csv(output_csv_path, index=False)
 
@@ -245,19 +244,17 @@ class ComparativeStatics:
                     continue
                 run_processor.process()
                 logging.info("Processed run %s", run.name)
-                logging.info("Results for run %s: %s", run.name, results)
 
         # gather the results
-        results_df: pd.DataFrame = self.results()
+        results_df: pd.DataFrame = self._results()
 
         # save the results to a .csv file
         results_df.to_csv(
-            (f"{BASE_PATH}/result/{self.name}_results.csv"), index=False)
+            self.paths['results'] / 'results_table.csv', index=False)
 
-        results_df.to_csv(
-            (f"{self.paths['output']}/{self.name}_results.csv"), index=False)
-        # print the results
-        print(f'{results_df=}')
+        # Log the results
+        logging.info("Results for the comparative statics exercise %s: %s",
+                     self.name, results_df)
 
     def _submit_processor_jobs(self):
         job_ids: list = []
@@ -266,7 +263,7 @@ class ComparativeStatics:
             if run_processor is None:
                 logging.error("Run %s could not be processed.", run.name)
                 continue
-            if run_processor.get_processed_status():
+            if run_processor.processed_status():
                 logging.info("Run %s already processed", run.name)
                 continue
 
@@ -277,7 +274,7 @@ class ComparativeStatics:
                          job_id, run.name)
         return job_ids
 
-    def results(self):
+    def _results(self):
         # initialize a list to store the results over the simulations
         results_dict: list[dict] = []
 
@@ -292,7 +289,7 @@ class ComparativeStatics:
             run_processor = RunProcessor(run)
 
             # check if the run was processed
-            if not run_processor.processed():
+            if not run_processor.processed_status():
                 logging.error("Run %s was not processed", run.name)
                 continue
 

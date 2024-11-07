@@ -30,7 +30,6 @@ class Run:
         a variable, which is a dictionary containing:
             o value: Value of the variable.
             o pattern: Pattern to be substituted in the .xml file.
-            o poly: Boolean indicating if the variable is a polynomial.
     Attributes:
         - name: Name of the run, determined by the folder name.
         - paths: Dictionary containing relevant paths for the run.
@@ -209,14 +208,12 @@ class Run:
             return content
 
         for variable in self.variables.values():
-            if variable.get('poly', False):
-                for degree in DEGREES:
-                    pattern = variable['pattern'] + f"_{degree}"
-                    value = variable['value']**degree
-                    content = substitute_pattern(content, pattern, value)
-            else:
-                content = substitute_pattern(
-                    content, variable['pattern'], variable['value'])
+            for degree in DEGREES:
+                pattern = variable['pattern'] + f"_{degree}"
+                value = variable['value']**degree
+                content = substitute_pattern(content, pattern, value)
+            content = substitute_pattern(
+                content, variable['pattern'], variable['value'])
         return content
 
     def _create_bash(self, xml_path: Path):
