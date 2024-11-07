@@ -1,3 +1,8 @@
+"""
+File name: participant_module.py
+Author: Pedro Bitencourt
+Description: this file implements the Participant class and related methods.
+"""
 import copy
 import numpy as np
 import pandas as pd
@@ -5,19 +10,14 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from constants import SCENARIOS, POSTE_FILEPATH, ANNUAL_INTEREST_RATE, COSTS, DATETIME_FORMAT
-# from auxiliary import cache
+from constants import SCENARIOS, POSTE_FILEPATH, COSTS, DATETIME_FORMAT
 
 from processing_module import extract_dataframe, get_present_value
-import resumen_module as rm
 
 logging.basicConfig(
     level=logging.ERROR,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-
-YEARS_RUN: int = 7
-
 
 @dataclass
 class ParticipantConfig:
@@ -43,7 +43,8 @@ REVENUE_STATS = [
 
 
 class Participant:
-    def __init__(self, key_participant: str, capacity: float, paths: Dict[str, str]):
+    def __init__(self, key_participant: str, capacity: float,
+                 paths: Dict[str, str], general_parameters: Dict[str, Any]):
         self.key = key_participant
         participant_folder = PARTICIPANTS[key_participant].folder
         self.dataframe_configuration = self._initialize_df_configuration(key_participant,
@@ -53,6 +54,8 @@ class Participant:
         self.capacity = capacity
         self.type_participant = PARTICIPANTS[key_participant].type
         self.paths = paths
+        self.annual_interest_rate = general_parameters['annual_interest_rate']
+        self.years_run = general_parameters['years_run']
 
     def __repr__(self):
         return f"Participant(key={self.key}, capacity={self.capacity})"
@@ -105,7 +108,6 @@ class Participant:
         dataframe_configuration['output_filename'] = f'{key_participant}_production'
         return dataframe_configuration
 
-#    @cache(lambda self: f'{self.output_folder}/{self.key}_production_by_datetime.csv')
     def get_production_data(self, daily: bool = False) -> pd.DataFrame:
         # extract the production data
         extracted_dataframe = extract_dataframe(
@@ -153,7 +155,7 @@ class Participant:
         results.update(results_temp)
 
         if self.type_participant == 'thermal':
-            variable_costs = self.get_variable_costs(daily)
+            variable_costs = self.get_variable_costs()
         else:
             variable_costs = 0
 
@@ -170,7 +172,7 @@ class Participant:
         # Compute the profits. Currently, this computes the profits per year
         # per MW.
         results[f'profits_{self.key}'] = (
-            (results[f'avg_revenue_{self.key}_per_mw']/YEARS_RUN)*lifetime - lifetime_costs_per_mw)/installation_cost
+            (results[f'avg_revenue_{self.key}_per_mw']/self.years_run)*lifetime - lifetime_costs_per_mw)/installation_cost
 
         if np.isnan(results[f'profits_{self.key}']):
             print(f'Nan profits for {self.key}')
@@ -186,10 +188,10 @@ class Participant:
         Returns the variable costs of the thermal participant.
         """
         # extract the variable cost data
-        dataframe = rm.process_res_file(rm.COSTS_BY_PARTICIPANT_TABLE, self.paths['sim'])
+        dataframe = proc.process_res_file(
+            proc.COSTS_BY_PARTICIPANT_TABLE, self.paths['sim'])
         variable_cost = dataframe['thermal'].sum()
         return variable_cost
-
 
 
 def compute_statistics(present_value_df,
@@ -231,9 +233,9 @@ def compute_statistics(present_value_df,
 def lifetime_costs_per_mw_fun(oem_cost: float,
                               installation_cost: float,
                               lifetime: int):
-    if ANNUAL_INTEREST_RATE > 0:
-        annuity_factor = (1-(1+ANNUAL_INTEREST_RATE)**-
-                          lifetime)/ANNUAL_INTEREST_RATE
+    if self.annual_interest_rate > 0:
+        annuity_factor = (1-(1+self.annual_interest_rate)**-
+                          lifetime)/self.annual_interest_rate
     else:
         annuity_factor = lifetime
 
@@ -249,7 +251,7 @@ def compute_discounted_production(production_df) -> float:
     for scenario in SCENARIOS:
         log = scenario == 0
         total += get_present_value(
-            production_df, scenario, ANNUAL_INTEREST_RATE, log)
+            production_df, scenario, self.annual_interest_rate, log)
     return total / len(SCENARIOS)
 
 
@@ -290,7 +292,7 @@ def present_value_per_scenario(participant_df, marginal_cost_df):
             marginal_cost_df[scenario]
         result_scenario = get_present_value(new_participant_df,
                                             'price_times_quantity',
-                                            ANNUAL_INTEREST_RATE)
+                                            self.annual_interest_rate)
         results_df[f'{scenario}'] = result_scenario
 
     revenues_df = pd.DataFrame.from_dict(results_df, orient='index').T

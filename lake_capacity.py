@@ -5,15 +5,9 @@ from constants import BASE_PATH
 name: str = 'lake_capacity'
 xml_basefile: str = f'{BASE_PATH}/code/xml/{name}.xml'
 
-run_name_function_params = {'lake_factor': {'position': 0, 'multiplier': 10},
-                            'thermal': {'position': 1, 'multiplier': 1},
-                            'wind': {'position': 2, 'multiplier': 1},
-                            'solar': {'position': 3, 'multiplier': 1}}
-
 general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA',
-                            'xml_basefile': xml_basefile,
-                            'name_function': run_name_function_params}
+                            'xml_basefile': xml_basefile}
 
 
 # discrete_grid: list[float] = [0.6]

@@ -1,16 +1,17 @@
-# File name: optimization_module.py
-# Description: Module containing the classes and functions for the optimization process
+"""
+File name: optimization_module.py
+Author: Pedro Bitencourt
+Description: this file implements the OptimizationPathEntry class and related methods.
+"""
 import logging
 import sys
 from dataclasses import dataclass
 from typing import Optional
 import numpy as np
+from constants import THRESHOLD_PROFITS, ERROR_CODE_UNSUCCESSFUL_ITERATION
 
-ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
 
 logger = logging.getLogger(__name__)
-
-THRESHOLD_DEFAULT: int = 0.01  # Default threshold for convergence
 
 
 @dataclass
@@ -60,7 +61,7 @@ class OptimizationPathEntry:
             profit = self.profits[var]
             if self.current_investment[var] == 1:
                 profit = np.maximum(profit, 0)
-            if np.abs(profit) >= THRESHOLD_DEFAULT:
+            if np.abs(profit) >= THRESHOLD_PROFITS:
                 return False
         return True
 

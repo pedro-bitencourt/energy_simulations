@@ -9,59 +9,10 @@ import glob
 import time
 import subprocess
 import logging
-import numpy as np
-from functools import wraps
-import pickle
-
-import logging
 
 #################################
 ### General utility functions ###
 #################################
-# def cache(filepath_func):
-#    def decorator(func):
-#        @wraps(func)
-#        def wrapper(*args, **kwargs):
-#            # Evaluate the filepath function if it's callable
-#            filepath = filepath_func(*args) if callable(filepath_func) else filepath_func
-#
-#            # check if cache file exists
-#            if os.path.exists(filepath):
-#                # if yes, return the content of the file
-#                with open(filepath, 'rb') as f:
-#                    return pickle.load(f)
-#
-#            # if no, run the function and save the result to the cache file
-#            result = func(*args, **kwargs)
-#            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-#            with open(filepath, 'wb') as f:
-#                pickle.dump(result, f)
-#
-#            return result
-#        return wrapper
-#    return decorator
-# def cache(filepath):
-#    def decorator(func):
-#        @wraps(func)
-#        def wrapper(*args, **kwargs):
-#            # check if cache file exists
-#            if os.path.exists(filepath):
-#                # if yes, return the content of the file
-#                logging.debug("Loading cache from %s", filepath)
-#                with open(filepath, 'rb') as f:
-#                    return pickle.load(f)
-#
-#            # if no, run the function and save the result to the cache file
-#            result = func(*args, **kwargs)
-#            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-#            with open(filepath, 'wb') as f:
-#                pickle.dump(result, f)
-#
-#            return result
-#        return wrapper
-#    return decorator
-
-
 def try_open_file(file_path, mode='r'):
     """
     Tries to open a file and return its content.
