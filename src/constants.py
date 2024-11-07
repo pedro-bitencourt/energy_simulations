@@ -1,6 +1,5 @@
 # Description: This file contains the constants used in the project.
 from pathlib import Path
-import platform
 
 # constants for parsing the results
 DATETIME_FORMAT = '%m/%d/%y %H:%M'
@@ -17,7 +16,7 @@ COSTS = {
 UNSUCCESSFUL_RUN: int = 2
 ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
 
-#### Optimization constants
+# Optimization constants
 # Maximum number of iterations for the optimization algorithm
 MAX_ITER: int = 15
 # Delta is used to calculate the numerical derivatives of the profits
@@ -26,17 +25,11 @@ DELTA: float = 10
 # installation cost
 THRESHOLD_PROFITS: float = 0.01  # Default threshold for convergence
 
-#### Relevant paths
-# Auto checks whether we're on quest or on a local mac machine
-LOCAL: bool = platform.system() == 'Darwin'
-if LOCAL:
-    BASE_PATH: Path = Path('/Users/pedrobitencourt/quest')
-    POSTE_FILEPATH = '/Users/pedrobitencourt/quest/data/renewables/poste_dictionary.csv'
-else:
-    BASE_PATH: Path = Path('/projects/p32342')
-    POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
+# Relevant paths
+BASE_PATH: Path = Path('/scratch/pdm6134')
+POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
 
-#### Plotting configurations
+# Plotting configurations
 HEATMAP_CONFIGS = [
     {'variables': {'x': {'key': 'hydro_factor', 'label': 'Hydro Factor'},
                    'y': {'key': 'thermal_capacity', 'label': 'Thermal Capacity'},
@@ -189,26 +182,26 @@ PRODUCTION_BY_PLANT_TABLE = {
     },
     **BASIC_RES_OPTION,
     'variables': {
-    'bonete': 'HID-bonete',
-    'baygorria': 'HID-baygorria',
-    'palmar': 'HID-palmar',
-    'salto': 'HID-salto',
-    'ptigre_a': 'TER-PTigreA',
-    'ctr': 'TER-CTR',
-    'apr': 'TER-APR',
-    'engines': 'TER-motores',
-    'bio_disp': 'TER-Bio_desp',
-    'bio_nodisp': 'TER-Bio_nodesp',
-    'new_thermal': 'TER-new_thermal',
-    'ptigre_b': 'CC-PTigreB',
-    'wind': 'EOLO-eoloDeci',
-    'solar': 'FOTOV-solarDeci',
-    'failure_0': 'FALLA-demandaPrueba_EscFalla0',
-    'failure_1': 'FALLA-demandaPrueba_EscFalla1',
-    'failure_2': 'FALLA-demandaPrueba_EscFalla2',
-    'failure_3': 'FALLA-demandaPrueba_EscFalla3',
-    'demand': 'DEM-demandaPrueba'
-}
+        'bonete': 'HID-bonete',
+        'baygorria': 'HID-baygorria',
+        'palmar': 'HID-palmar',
+        'salto': 'HID-salto',
+        'ptigre_a': 'TER-PTigreA',
+        'ctr': 'TER-CTR',
+        'apr': 'TER-APR',
+        'engines': 'TER-motores',
+        'bio_disp': 'TER-Bio_desp',
+        'bio_nodisp': 'TER-Bio_nodesp',
+        'new_thermal': 'TER-new_thermal',
+        'ptigre_b': 'CC-PTigreB',
+        'wind': 'EOLO-eoloDeci',
+        'solar': 'FOTOV-solarDeci',
+        'failure_0': 'FALLA-demandaPrueba_EscFalla0',
+        'failure_1': 'FALLA-demandaPrueba_EscFalla1',
+        'failure_2': 'FALLA-demandaPrueba_EscFalla2',
+        'failure_3': 'FALLA-demandaPrueba_EscFalla3',
+        'demand': 'DEM-demandaPrueba'
+    }
 }
 
 PRODUCTION_BY_RESOURCE_TABLE = {
@@ -230,16 +223,16 @@ PRODUCTION_BY_RESOURCE_TABLE = {
 }
 
 COSTS_BY_PARTICIPANT_TABLE = {
-   'key': 'costs',
-   'filename': r'resUnico*.xlt',
-   'table_pattern': {
-       'start': 'COSTOS ESPERADOS EN MUSD ',
-       'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
-   },
-   **BASIC_RES_OPTION,
-   'variables': {
+    'key': 'costs',
+    'filename': r'resUnico*.xlt',
+    'table_pattern': {
+        'start': 'COSTOS ESPERADOS EN MUSD ',
+        'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
+    },
+    **BASIC_RES_OPTION,
+    'variables': {
         'thermal': 'new_thermal'
-   }
+    }
 }
 # RESUMEN MODULE
 # REVENUES_BY_RESOURCE_TABLE = {

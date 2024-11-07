@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 import numpy as np
-from constants import THRESHOLD_PROFITS, ERROR_CODE_UNSUCCESSFUL_ITERATION
+from src.constants import THRESHOLD_PROFITS, ERROR_CODE_UNSUCCESSFUL_ITERATION
 
 
 logger = logging.getLogger(__name__)

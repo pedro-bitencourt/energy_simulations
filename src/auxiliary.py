@@ -13,6 +13,22 @@ import logging
 #################################
 ### General utility functions ###
 #################################
+
+
+def make_name(float_list):
+    """
+    Takes list of floats, returns string with at most 2 decimals
+    Example: [0.12345, 1.0, 2.67890] -> "0.123_1_2.679" 
+    """
+    formatted = []
+    for num in float_list:
+        # Format to 3 decimals and remove trailing zeros
+        s = f"{num:.2f}".rstrip('0').rstrip('.')
+        formatted.append(s)
+
+    return "_".join(formatted)
+
+
 def try_open_file(file_path, mode='r'):
     """
     Tries to open a file and return its content.

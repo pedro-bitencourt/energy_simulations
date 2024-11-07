@@ -13,7 +13,7 @@ from typing import Optional
 import logging
 import pandas as pd
 
-import auxiliary
+from src.auxiliary import make_name, try_get_file, submit_slurm_job
 
 
 class Run:
@@ -34,22 +34,29 @@ class Run:
         - name: Name of the run, determined by the folder name.
         - paths: Dictionary containing relevant paths for the run.
     """
+
     def __init__(self,
-                 folder: Path,
+                 parent_folder: Path,
                  general_parameters: dict,
                  variables: dict[str, dict]):
+        parent_folder: Path = Path(parent_folder)
         self.variables: dict[str, dict] = variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = Path(folder).name
+        self.name: str = self._create_name()
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths(
-            folder, general_parameters)
+            parent_folder, general_parameters)
 
-        # Add paths for results and price distribution files
-        self.paths['results_json'] = self.paths['folder'] / 'results.json'
-        self.paths['price_distribution'] = self.paths['folder'] / 'price_distribution.csv'
+        # Create the directory
+        self.paths['folder'].mkdir(parents=True, exist_ok=True)
+
+    def _create_name(self):
+        exog_var_values: list[float] = [variable['value'] for variable in
+                                        self.variables.values()]
+        name: str = make_name(exog_var_values)
+        return name
 
     def _initialize_paths(self, folder: Path, general_parameters: dict):
         """
@@ -67,13 +74,18 @@ class Run:
             return windows_path
 
         paths = {}
-        paths['folder'] = folder
+        paths['folder'] = folder / self.name
         # Convert the output path to a Windows path, for use in the .xml file
         paths['folder_windows'] = format_windows_path(paths['folder'])
 
         # Subfolder is PRUEBA or CAD-2024
         subfolder = general_parameters.get('name_subfolder', '')
         paths['subfolder'] = folder / subfolder
+
+        # Add paths for results and price distribution files
+        paths['results_json'] = folder / 'results.json'
+        paths['price_distribution'] = folder / 'price_distribution.csv'
+
         return paths
 
     def _get_opt_and_sim_folders(self):
@@ -85,17 +97,15 @@ class Run:
         test_files = {'opt': r'tiempos*', 'sim': r'resumIng*'}
 
         for key in opt_sim_paths:
-            candidate_folder_list = list(self.paths['subfolder'].glob(folder_ending[key]))
+            candidate_folder_list = list(
+                self.paths['subfolder'].glob(folder_ending[key]))
             if candidate_folder_list:
                 for folder in candidate_folder_list:
-                    correct_folder = auxiliary.try_get_file(
+                    correct_folder = try_get_file(
                         folder, test_files[key])
                     if correct_folder:
                         opt_sim_paths[key] = folder
                         continue
-            else:
-                logging.error('No %s folder found for run %s in folder %s',
-                              key, self.name, self.paths['subfolder'])
         return opt_sim_paths
 
     def successful(self):
@@ -110,7 +120,7 @@ class Run:
         sim_folder = self.paths.get('sim', False)
         if sim_folder:
             # Check if the resumen file exists
-            resumen_file = auxiliary.try_get_file(sim_folder, r'resumen*')
+            resumen_file = try_get_file(sim_folder, r'resumen*')
             if resumen_file:
                 return True
             logging.error('No resumen file found for run %s in folder %s',
@@ -140,11 +150,12 @@ class Run:
         bash_path: Path = self._create_bash(xml_path)
 
         # Submit the slurm job
-        job_id = auxiliary.submit_slurm_job(bash_path)
+        job_id = submit_slurm_job(bash_path)
 
         # Check if the job was submitted successfully
         if job_id:
-            logging.info(f"Successfully submitted run {self.name} with jobid {job_id}")
+            logging.info(
+                f"Successfully submitted run {self.name} with jobid {job_id}")
             return job_id
         logging.error(f"Some error occurred while submitting run {self.name}")
         return job_id
@@ -227,12 +238,11 @@ class Run:
         hours = self.general_parameters['requested_time_run']
         requested_time_run = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
 
-
         with open(bash_path, 'w') as file:
             file.write(f'''#!/bin/bash
 #SBATCH --account=b1048
 #SBATCH --partition=b1048
-#SBATCH --time={requested_time}
+#SBATCH --time={requested_time_run}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
 #SBATCH --mem=5G 
@@ -259,7 +269,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G
             with open(self.paths['results_json'], 'r') as file:
                 results = json.load(file)
             return results
-        logging.error(f"Results file {self.paths['results_json']} does not exist for run {self.name}")
+        logging.error(
+            f"Results file {self.paths['results_json']} does not exist for run {self.name}")
         return None
 
     def load_price_distribution(self) -> Optional[pd.DataFrame]:
@@ -267,7 +278,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G
         Loads the price distribution from the CSV file.
         """
         if self.paths['price_distribution'].exists():
-            price_distribution: pd.DataFrame = pd.read_csv(self.paths['price_distribution'])
+            price_distribution: pd.DataFrame = pd.read_csv(
+                self.paths['price_distribution'])
             # Convert 'hour_of_week_bin' to just the start hour
             price_distribution['hour_of_week_bin'] = (
                 price_distribution['hour_of_week_bin'].str.extract(r'(\d+)'))
@@ -281,5 +293,6 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G
             wide_df.columns = wide_df.columns.astype(int)
             wide_df = wide_df.sort_index(axis=1).reset_index(drop=True)
             return price_distribution
-        logging.error(f"Price distribution file {self.paths['price_distribution']} does not exist for run {self.name}")
+        logging.error(
+            f"Price distribution file {self.paths['price_distribution']} does not exist for run {self.name}")
         return None

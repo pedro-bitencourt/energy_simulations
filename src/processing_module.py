@@ -11,13 +11,14 @@ import numpy as np
 import pandas as pd
 
 # Local imports
-from constants import DATETIME_FORMAT, PRODUCTION_BY_RESOURCE_TABLE, PRODUCTION_BY_PLANT_TABLE
-import auxiliary
+from src.constants import DATETIME_FORMAT, PRODUCTION_BY_RESOURCE_TABLE, PRODUCTION_BY_PLANT_TABLE
+import src.auxiliary
 
 logging.basicConfig(
     level=logging.ERROR,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
 
 def text_to_table(text, delete_first_row):
     """
@@ -220,12 +221,16 @@ def process_marginal_cost(marginal_cost_df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: Processed DataFrame with a datetime column.
     """
     def datetime_from_row(row):
-        paso_start_date = pd.to_datetime(row['FechaInicialPaso'], format='%Y/%m/%d')
-        hours_added = pd.to_numeric(row['Int.MuestreoDelPaso'], errors='coerce')
+        paso_start_date = pd.to_datetime(
+            row['FechaInicialPaso'], format='%Y/%m/%d')
+        hours_added = pd.to_numeric(
+            row['Int.MuestreoDelPaso'], errors='coerce')
         return (paso_start_date + timedelta(hours=int(hours_added))).strftime(DATETIME_FORMAT)
 
-    marginal_cost_df['datetime'] = marginal_cost_df.apply(datetime_from_row, axis=1)
+    marginal_cost_df['datetime'] = marginal_cost_df.apply(
+        datetime_from_row, axis=1)
     return marginal_cost_df
+
 
 def open_dataframe(option: Dict[str, Any], input_folder: Path) -> Optional[pd.DataFrame]:
     """
@@ -245,7 +250,8 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path) -> Optional[pd.Da
 
     file_path = auxiliary.try_get_file(input_folder, filename_pattern)
     if not file_path:
-        logging.error(f'File matching pattern {filename_pattern} not found in {input_folder}.')
+        logging.error(
+            f'File matching pattern {filename_pattern} not found in {input_folder}.')
         return None
 
     logging.info(f'Opening DataFrame from {file_path} with options {option}')
@@ -258,7 +264,8 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path) -> Optional[pd.Da
     if columns_options:
         dataframe = process_dataframe(dataframe, columns_options)
         if dataframe is None:
-            logging.error(f'Could not process DataFrame columns for {file_path}.')
+            logging.error(
+                f'Could not process DataFrame columns for {file_path}.')
             return None
 
     return dataframe
@@ -278,6 +285,7 @@ def total_production_by_plant(sim_folder: Path) -> dict:
     production_dict = total_production.to_dict()
 
     return production_dict
+
 
 def total_production_by_resource(sim_folder: Path) -> dict:
     # load the production by resource data
@@ -300,14 +308,15 @@ def production_by_resource(sim_folder: Path) -> Optional[pd.DataFrame]:
                                                                 sim_folder)
     return prod_by_resource
 
+
 def production_by_plant(sim_folder: Path) -> Optional[pd.DataFrame]:
     prod_by_plant: Optional[pd.DataFrame] = process_res_file(PRODUCTION_BY_PLANT_TABLE,
                                                              sim_folder)
     return prod_by_plant
 
 
-
 multipliers = {'production': 1_000, 'costs': 1_000_000}
+
 
 def process_res_file(option, sim_folder):
     '''
@@ -341,7 +350,8 @@ def process_res_file(option, sim_folder):
     raw_data.drop(raw_data.tail(2).index, inplace=True)
 
     # Create a mapping from raw column names to desired column names
-    rename_map = {raw_name: desired_name for desired_name, raw_name in option['variables'].items()}
+    rename_map = {raw_name: desired_name for desired_name,
+                  raw_name in option['variables'].items()}
     # Rename the columns using the mapping
     raw_data.rename(columns=rename_map, inplace=True)
     # Define the columns to keep, ensuring 'year' is included
@@ -350,8 +360,10 @@ def process_res_file(option, sim_folder):
     processed_data = raw_data[columns_to_keep]
 
     # drop duplicated columns
-    processed_data = processed_data.loc[:, ~processed_data.columns.duplicated()]
+    processed_data = processed_data.loc[:,
+                                        ~processed_data.columns.duplicated()]
     return processed_data
+
 
 def read_res_file(option, sim_folder):
     # get the file path of the resumen file
@@ -364,7 +376,6 @@ def read_res_file(option, sim_folder):
     if len(data_table[-1]) < 2:
         data_table = data_table[:-1]
 
-
     # check if the table was read correctly:
     if not data_table:
         logging.error("Error reading the table from the file %s",
@@ -374,10 +385,10 @@ def read_res_file(option, sim_folder):
     # convert the table to a DataFrame
     # create the years column
     number_of_years = len(data_table[0]) - 1
-    dataframe = pd.DataFrame({'year':  [2023 + y for y in range(number_of_years)]})
+    dataframe = pd.DataFrame(
+        {'year':  [2023 + y for y in range(number_of_years)]})
 
     logging.debug(dataframe)
-
 
     # add the data to the DataFrame
     for line in data_table:

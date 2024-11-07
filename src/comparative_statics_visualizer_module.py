@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+from typing import Dict, List, Union, Tuple, Optional
 from pathlib import Path
 from typing import Tuple
 import pandas as pd
@@ -5,8 +8,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-import visualize_module as vis
-from run_module import Run  # Import the updated Run class
+from src.run_module import Run  # Import the updated Run class
 
 
 class ComparativeStaticsVisualizer:
@@ -32,7 +34,8 @@ class ComparativeStaticsVisualizer:
         for _, path in self.save_paths.items():
             path.mkdir(parents=True, exist_ok=True)
         # Load results_df
-        results_df_path: Path = self.experiment_folder / f"{self.name}_results.csv"
+        results_df_path: Path = self.experiment_folder / \
+            f"{self.name}_results.csv"
         self.results_df: pd.DataFrame = pd.read_csv(results_df_path)
 
     def visualize(self, grid_dimension: int):
@@ -105,9 +108,9 @@ class ComparativeStaticsVisualizer:
             file.write(str(pca.explained_variance_ratio_))
 
         # Plot principal components
-        pc_fig, _ = vis.create_principal_components_plot(pca)
-        eigenvalue_fig, _ = vis.create_eigenvalue_decay_plot(pca)
-        components_df = vis.output_principal_components_for_runs(
+        pc_fig, _ = create_principal_components_plot(pca)
+        eigenvalue_fig, _ = create_eigenvalue_decay_plot(pca)
+        components_df = output_principal_components_for_runs(
             pca_result, runs)
 
         # Add variables to the components_df if available
@@ -121,7 +124,8 @@ class ComparativeStaticsVisualizer:
         correlation_df = components_df.corr()
 
         # Drop the cross-correlation of the principal components
-        correlation_df = correlation_df.drop(columns=[col for col in correlation_df.columns if 'PC' in col])
+        correlation_df = correlation_df.drop(
+            columns=[col for col in correlation_df.columns if 'PC' in col])
 
         # Save plots and data
         pc_fig.savefig(self.save_paths['price_distributions'] /
@@ -149,7 +153,7 @@ class ComparativeStaticsVisualizer:
 
         save_path = self.save_paths['price_distributions'] / \
             f"{self.name}_price_distributions.png"
-        vis.plot_stacked_price_distributions(plots_list, save_path)
+        plot_stacked_price_distributions(plots_list, save_path)
 
     def _plot_heatmaps(self):
         for hm_config in HEATMAP_CONFIGS:
@@ -157,7 +161,7 @@ class ComparativeStaticsVisualizer:
             title = f"{self.name} - {heatmap_config['title']}"
             save_path = self.save_paths['heatmaps'] / \
                 heatmap_config['filename']
-            vis.plot_heatmap(
+            plot_heatmap(
                 self.results_df, heatmap_config['variables'], save_path, title)
 
     def _one_d_plots(self):
@@ -165,13 +169,13 @@ class ComparativeStaticsVisualizer:
             x_key = plot_config['x_key']
             y_variables = plot_config['y_variables']
             axis_labels = plot_config['axis_labels']
-            save_path = self.save_paths['one_d_plots'] / plot_config['filename']
+            save_path = self.save_paths['one_d_plots'] / \
+                plot_config['filename']
             title = plot_config.get('title', None)
             print(self.results_df)
-            vis.simple_plot(self.results_df, x_key,
-                            y_variables, axis_labels,
-                            save_path, title)
-
+            simple_plot(self.results_df, x_key,
+                        y_variables, axis_labels,
+                        save_path, title)
 
 
 def perform_pca(price_distributions: pd.DataFrame) -> Tuple[PCA, np.ndarray, StandardScaler]:
@@ -181,14 +185,6 @@ def perform_pca(price_distributions: pd.DataFrame) -> Tuple[PCA, np.ndarray, Sta
     pca = PCA()
     pca_result: np.ndarray = pca.fit_transform(scaled_data)
     return pca, pca_result, scaler
-
-from pathlib import Path
-from typing import Dict, List, Union, Tuple, Optional
-import pandas as pd
-import seaborn as sns
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
@@ -371,4 +367,3 @@ def simple_plot(dataframe: pd.DataFrame, x_key: str,
     if title:
         plt.title(title)
     plt.savefig(save_path)
-

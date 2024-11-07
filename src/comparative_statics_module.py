@@ -26,16 +26,17 @@ from typing import Optional, Dict
 import numpy as np
 import pandas as pd
 
-from investment_module import InvestmentProblem
-from run_module import Run
-from run_processor_module import RunProcessor
-from comparative_statics_visualizer_module import ComparativeStaticsVisualizer
-from optimization_module import OptimizationPathEntry, get_last_successful_iteration
-from auxiliary import wait_for_jobs
+from src.investment_module import InvestmentProblem
+from src.run_module import Run
+from src.run_processor_module import RunProcessor
+from src.comparative_statics_visualizer_module import ComparativeStaticsVisualizer
+from src.optimization_module import OptimizationPathEntry, get_last_successful_iteration
+from src.auxiliary import wait_for_jobs
 
-from constants import BASE_PATH
+from src.constants import BASE_PATH
 
 logger = logging.getLogger(__name__)
+
 
 class ComparativeStatics:
     """
@@ -51,7 +52,7 @@ class ComparativeStatics:
             o annual_interest_rate: annual interest rate for the investment problems.
             o years_run: number of years to run the investment problems.
             o requested_time_run: requested time for each MOP run to the cluster.
- 
+
     Attributes:
         - name: name of the comparative statics exercise.
         - general_parameters: dictionary containing the general parameters.
@@ -71,23 +72,25 @@ class ComparativeStatics:
         """
         Initialize the ComparativeStatics object.
         """
-        # Validate the input
-        self._validate_input()
-
         self.name: str = name
         self.general_parameters: dict = general_parameters
 
         # Variables can be exogenous and endogenous
-        self.exogenous_variables: dict[str, dict] = variables.get('exogenous', {})
-        self.endogenous_variables: dict[str, dict] = variables.get('endogenous', {})
+        self.exogenous_variables: dict[str,
+                                       dict] = variables.get('exogenous', {})
+        self.endogenous_variables: dict[str,
+                                        dict] = variables.get('endogenous', {})
         self.variables_grid: dict[str, np.ndarray] = variables_grid
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths()
-        
+
         # Create the folders if they do not exist
         for path in self.paths.values():
             path.mkdir(parents=True, exist_ok=True)
+
+        # Validate the input
+        self._validate_input()
 
         # Initialize the list of simulations
         self.list_simulations: list[Run] = []
@@ -95,7 +98,8 @@ class ComparativeStatics:
         # If there are endogenous variables, we need to handle investment problems first
         if self.endogenous_variables:
             # Create investment problems
-            self.list_investment_problems: list[InvestmentProblem] = self._initialize_investment_problems()
+            self.list_investment_problems: list[InvestmentProblem] = self._initialize_investment_problems(
+            )
             # The runs will be obtained from the investment problems after optimization
         else:
             # Create runs directly
@@ -114,8 +118,10 @@ class ComparativeStatics:
         # Check if general parameters contain the expected keys
         expected_keys = ['xml_basefile', 'daily', 'name_subfolder']
         if not all(key in self.general_parameters for key in expected_keys):
-            logging.error("General parameters do not contain the expected keys.")
-            raise ValueError("General parameters do not contain the expected keys.")
+            logging.error(
+                "General parameters do not contain the expected keys.")
+            raise ValueError(
+                "General parameters do not contain the expected keys.")
 
     def _create_runs_from_investment_problems(self):
         """
@@ -127,7 +133,8 @@ class ComparativeStatics:
             last_iteration = get_last_successful_iteration(
                 investment_problem.optimization_trajectory)
             if last_iteration is None:
-                logging.error(f"No successful iteration found for investment problem {investment_problem.name}")
+                logging.error(
+                    f"No successful iteration found for investment problem {investment_problem.name}")
                 continue
             # Create a Run object from the last iteration
             run_variables = last_iteration.variables
@@ -160,9 +167,9 @@ class ComparativeStatics:
             # create a run
             list_simulations.append(
                 Run(self.paths['simulations'],
-                   self.general_parameters,
-                   variables)
-            ) 
+                    self.general_parameters,
+                    variables)
+            )
         return list_simulations
 
     def _initialize_investment_problems(self):
@@ -180,12 +187,13 @@ class ComparativeStatics:
             }
 
             # initialize the InvestmentProblem object
-            investment_problem = InvestmentProblem(self.name,
+            investment_problem = InvestmentProblem(self.paths['simulations'],
                                                    exogenous_variables_temp,
                                                    self.endogenous_variables,
                                                    self.general_parameters)
 
-            logger.info('Created investment_problem object for %s.', investment_problem.name)
+            logger.info('Created investment_problem object for %s.',
+                        investment_problem.name)
             problems.append(investment_problem)
         return problems
 
@@ -197,7 +205,8 @@ class ComparativeStatics:
             # Submit investment problems
             for inv_prob in self.list_investment_problems:
                 inv_prob.submit()
-                logging.info(f'Submitted job for investment problem %s', inv_prob.name)
+                logging.info(
+                    f'Submitted job for investment problem %s', inv_prob.name)
         else:
             # Submit runs directly
             for run in self.list_simulations:
@@ -216,15 +225,16 @@ class ComparativeStatics:
         if self.endogenous_variables:
             # Process investment problems
             results_df = self._investment_results()
-            
+
             # Save results of the optimization algorithm to CSV
-            output_csv_path: Path = self.paths['results'] / 'investment_results.csv'
+            output_csv_path: Path = self.paths['results'] / \
+                'investment_results.csv'
             results_df.to_csv(output_csv_path, index=False)
 
             # Create runs from investment problems
             self._create_runs_from_investment_problems()
 
-        # Process runs 
+        # Process runs
         self._process_runs()
 
     def _process_runs(self):
@@ -284,7 +294,7 @@ class ComparativeStatics:
             if not run.successful():
                 logging.error("Run %s was not successful", run.name)
                 continue
-            
+
             # create RunProcessor object
             run_processor = RunProcessor(run)
 
@@ -362,4 +372,3 @@ class ComparativeStatics:
                 "<inicioCorrida>")[1].split(" ")[2])
             final_year = int(content.split("<finCorrida>")[1].split(" ")[2])
         return name, initial_year, final_year
-

@@ -10,14 +10,15 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from constants import SCENARIOS, POSTE_FILEPATH, COSTS, DATETIME_FORMAT
 
-from processing_module import extract_dataframe, get_present_value
+from src.constants import SCENARIOS, POSTE_FILEPATH, COSTS, DATETIME_FORMAT
+from src.processing_module import extract_dataframe, get_present_value
 
 logging.basicConfig(
     level=logging.ERROR,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
 
 @dataclass
 class ParticipantConfig:

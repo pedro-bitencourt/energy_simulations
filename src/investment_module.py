@@ -18,14 +18,14 @@ import logging
 import json
 import numpy as np
 
-from run_module import Run
-from run_processor_module import RunProcessor
-from optimization_module import (OptimizationPathEntry,
-                                 derivatives_from_profits,
-                                 print_optimization_trajectory_function,
-                                 get_last_successful_iteration)
-from auxiliary import submit_slurm_job, wait_for_jobs
-from constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN
+from src.run_module import Run
+from src.run_processor_module import RunProcessor
+from src.optimization_module import (OptimizationPathEntry,
+                                     derivatives_from_profits,
+                                     print_optimization_trajectory_function,
+                                     get_last_successful_iteration)
+from src.auxiliary import submit_slurm_job, wait_for_jobs, make_name
+from src.constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class InvestmentProblem:
     def __init__(self,
-                 folder: Path,
+                 parent_folder: str,
                  exogenous_variables: dict,
                  endogenous_variables: dict,
                  general_parameters: dict):
@@ -48,18 +48,25 @@ class InvestmentProblem:
                 o all the parameters from the Run class.
                 o requested_time_run: Requested time for the run.
         """
+        parent_folder: Path = Path(parent_folder)
         self.exogenous_variables: dict = exogenous_variables
         self.endogenous_variables: dict = endogenous_variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = folder.name
+        self.name: str = self._create_name()
         logging.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
-        self.paths: dict[str, Path] = self._initialize_paths(folder)
+        self.paths: dict[str, Path] = self._initialize_paths(parent_folder)
 
         # initialize the optimization trajectory
         self.optimization_trajectory: list = self._initialize_optimization_trajectory()
+
+    def _create_name(self):
+        exog_var_values: list[float] = [variable['value'] for variable in
+                                        self.exogenous_variables.values()]
+        name: str = f"investment_{make_name(exog_var_values)}"
+        return name
 
     def __repr__(self):
         return f"InvestmentProblem: exogenous variables {self.exogenous_variables}"
@@ -69,7 +76,8 @@ class InvestmentProblem:
         paths['parent_folder'] = folder
         paths['folder'] = folder / self.name
         paths['bash'] = folder / self.name / f'{self.name}.sh'
-        paths['optimization_trajectory'] = folder / f'{self.name}_trajectory.json'
+        paths['optimization_trajectory'] = folder / \
+            f'{self.name}_trajectory.json'
 
         # create the directory
         paths['folder'].mkdir(parents=True, exist_ok=True)
@@ -161,7 +169,7 @@ class InvestmentProblem:
         self._save_optimization_trajectory()
 
     def _update_current_iteration(self,
-                                 current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
+                                  current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
         '''
         Updates the current iteration with the profits and derivatives
         '''
@@ -196,7 +204,7 @@ class InvestmentProblem:
         '''
         def create_and_submit_run(investment):
             run = self._create_run(investment)
-            return run, run.submit_run(self.general_parameters['requested_time_run'])
+            return run, run.submit()
 
         # create dict of investments
         investments_dict = {'current': current_investment}
@@ -254,13 +262,12 @@ class InvestmentProblem:
         variables: dict = self.exogenous_variables.copy()
         variables.update(endogenous_variables_temp)
 
-        # create the Run 
+        # create the Run
 
         # create the Run object
-        run: Run = Run(self.paths['input'],
+        run: Run = Run(self.paths['folder'],
                        self.general_parameters,
-                       variables,
-                       experiment_folder=self.paths['output'])
+                       variables)
 
         return run
 
@@ -289,32 +296,19 @@ class InvestmentProblem:
         """
         logging.info("Preparing to run %s on quest",
                      self.name)
-        logging.debug("Exogenous variables: %s",
-                      self.exogenous_variables)
-        investment_data = {
-            "name": self.name,
-            "exogenous_variables": self.exogenous_variables,
-            "endogenous_variables": self.endogenous_variables,
-            "general_parameters": self.general_parameters
-        }
-
-        logging.debug("Investment data: %s", investment_data)
 
         script_path: Path = self._create_bash()
         job_id = submit_slurm_job(script_path)
-
-        # avoid memory leak
-        del investment_data
 
         return job_id
 
     def _create_bash(self):
         # construct a temporary path for the data to pass it to the bash script
-        data_path = f"{self.paths['input']}/{self.name}_data.json"
+        data_path = f"{self.paths['folder']}/{self.name}_data.json"
 
         # create the data dictionary
         investment_data = {
-            "name": self.name,
+            "parent_folder": str(self.paths['parent_folder']),
             "exogenous_variables": self.exogenous_variables,
             "endogenous_variables": self.endogenous_variables,
             "general_parameters": self.general_parameters
@@ -363,7 +357,7 @@ print('Solving the investment_problem problem {self.name}')
 import sys
 import json
 sys.path.append('/projects/p32342/code')
-from investment_module import InvestmentProblem
+from src.investment_module import InvestmentProblem
 
 with open('{data_path}', 'r') as f:
     investment_data = json.load(f)

@@ -19,11 +19,11 @@ from typing import Optional, Dict, Any
 import numpy as np
 import pandas as pd
 
-import auxiliary
-import processing_module as proc
-import participant_module as part
-from run_module import Run
-from constants import DATETIME_FORMAT, MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
+import src.auxiliary
+import src.processing_module as proc
+import src.participant_module as part
+from src.run_module import Run
+from src.constants import DATETIME_FORMAT, MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
 
 # Configure logging
 logging.basicConfig(
@@ -32,6 +32,7 @@ logging.basicConfig(
 )
 
 WEEK_HOURS_BIN = list(range(0, 169))  # Adjusted to include 168
+
 
 class RunProcessor(Run):
     """
@@ -61,22 +62,24 @@ class RunProcessor(Run):
             general_parameters=run.general_parameters,
             variables=run.variables
         )
-        
+
         if not self.successful():
             logging.error(f'Run {self.name} was not successful.')
             raise ValueError(f'Run {self.name} was not successful.')
-            
+
         self._update_paths()
 
     def _update_paths(self) -> None:
         """
         Updates the paths dictionary with additional paths needed for processing.
         """
-        self.paths['marginal_cost'] = self.paths['folder'] / 'marginal_cost.csv'
-        self.paths['bash_script'] = self.paths['folder'] / f'{self.name}_proc.sh'
-        self.paths['price_distribution'] = self.paths['folder'] / 'price_distribution.csv'
+        self.paths['marginal_cost'] = self.paths['folder'] / \
+            'marginal_cost.csv'
+        self.paths['bash_script'] = self.paths['folder'] / \
+            f'{self.name}_proc.sh'
+        self.paths['price_distribution'] = self.paths['folder'] / \
+            'price_distribution.csv'
         self.paths['results_json'] = self.paths['folder'] / 'results.json'
-
 
     def process(self, process_locally: bool = True) -> None:
         """
@@ -93,7 +96,8 @@ class RunProcessor(Run):
             logging.info(f'Processing run {self.name} locally.')
             try:
                 # Get variable values
-                variable_values = {var: var_dict['value'] for var, var_dict in self.variables.items()}
+                variable_values = {var: var_dict['value']
+                                   for var, var_dict in self.variables.items()}
 
                 # Create a header for the results
                 header = {'run_name': self.name, **variable_values}
@@ -116,13 +120,16 @@ class RunProcessor(Run):
                 with open(self.paths['results_json'], 'w') as file:
                     json.dump(results, file, indent=4)
 
-                logging.info(f'Results for run {self.name} saved successfully.')
-                return None 
+                logging.info(
+                    f'Results for run {self.name} saved successfully.')
+                return None
             except Exception as e:
-                logging.error(f'Error processing results for run {self.name}: {e}')
+                logging.error(
+                    f'Error processing results for run {self.name}: {e}')
                 return None
         else:
-            logging.info(f'Submitting processing job for run {self.name} to the cluster.')
+            logging.info(
+                f'Submitting processing job for run {self.name} to the cluster.')
             job_id = self.submit_processor_job()
             return None  # Since processing is done on the cluster, no results are returned immediately
 
@@ -159,16 +166,19 @@ class RunProcessor(Run):
         """
         try:
             # Extract marginal cost DataFrame
-            marginal_cost_df = proc.open_dataframe(MARGINAL_COST_DF, self.paths['sim'])
+            marginal_cost_df = proc.open_dataframe(
+                MARGINAL_COST_DF, self.paths['sim'])
             if marginal_cost_df is None:
-                logging.error('Marginal cost DataFrame could not be extracted.')
+                logging.error(
+                    'Marginal cost DataFrame could not be extracted.')
                 return None
 
             # Process marginal cost DataFrame
             marginal_cost_df = proc.process_marginal_cost(marginal_cost_df)
             if marginal_cost_df.isna().sum().sum() > 0:
                 logging.error('Marginal cost DataFrame contains NaN values.')
-                nan_rows = marginal_cost_df[marginal_cost_df.isna().any(axis=1)]
+                nan_rows = marginal_cost_df[marginal_cost_df.isna().any(
+                    axis=1)]
                 logging.error(f'Rows with NaN values:\n{nan_rows}')
                 return None
 
@@ -178,7 +188,8 @@ class RunProcessor(Run):
 
             # Save marginal cost DataFrame
             marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
-            logging.info(f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
+            logging.info(
+                f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
             return marginal_cost_df
         except Exception as e:
             logging.error(f'Error extracting marginal costs: {e}')
@@ -200,18 +211,22 @@ class RunProcessor(Run):
             price_df['price_avg'] = price_df[SCENARIOS].mean(axis=1)
 
             # Add hour of the week
-            price_df['hour_of_week'] = price_df['datetime'].dt.dayofweek * 24 + price_df['datetime'].dt.hour
+            price_df['hour_of_week'] = price_df['datetime'].dt.dayofweek * \
+                24 + price_df['datetime'].dt.hour
 
             # Bin hours into weekly bins
             price_df['hour_of_week_bin'] = pd.cut(price_df['hour_of_week'],
                                                   bins=WEEK_HOURS_BIN, right=False)
 
             # Compute average price per bin
-            price_distribution = price_df.groupby('hour_of_week_bin', as_index=False)['price_avg'].mean()
+            price_distribution = price_df.groupby('hour_of_week_bin', as_index=False)[
+                'price_avg'].mean()
 
             # Save price distribution
-            price_distribution.to_csv(self.paths['price_distribution'], index=False)
-            logging.info(f'Price distribution saved to {self.paths["price_distribution"]}')
+            price_distribution.to_csv(
+                self.paths['price_distribution'], index=False)
+            logging.info(
+                f'Price distribution saved to {self.paths["price_distribution"]}')
             return price_distribution
         except Exception as e:
             logging.error(f'Error computing price distribution: {e}')
@@ -227,7 +242,8 @@ class RunProcessor(Run):
         production_results = {}
 
         # Get total production by resource
-        production_by_resource = res.total_production_by_resource(self.paths['sim'])
+        production_by_resource = res.total_production_by_resource(
+            self.paths['sim'])
         production_results.update({
             f'total_production_{resource}': production_by_resource.get(resource, 0.0)
             for resource in production_by_resource
@@ -261,7 +277,8 @@ class RunProcessor(Run):
 
             # Compute weighted average price
             price_times_demand = price_df[SCENARIOS] * demand_df[SCENARIOS]
-            price_weighted_avg = price_times_demand.values.sum() / demand_df[SCENARIOS].values.sum()
+            price_weighted_avg = price_times_demand.values.sum() / \
+                demand_df[SCENARIOS].values.sum()
 
             return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
         except Exception as e:
@@ -278,9 +295,11 @@ class RunProcessor(Run):
         bash_script = self._create_bash_script()
         job_id = auxiliary.submit_slurm_job(bash_script)
         if job_id:
-            logging.info(f'Processing job for run {self.name} submitted with job ID {job_id}')
+            logging.info(
+                f'Processing job for run {self.name} submitted with job ID {job_id}')
         else:
-            logging.error(f'Failed to submit processing job for run {self.name}')
+            logging.error(
+                f'Failed to submit processing job for run {self.name}')
         return job_id
 
     def get_profits(self, endogenous_variables_names: list) -> Optional[Dict[str, float]]:
@@ -294,7 +313,8 @@ class RunProcessor(Run):
             dict or None: A dictionary of profits, or None if computation fails.
         """
         try:
-            capacities = {var: self.variables[var]['value'] for var in endogenous_variables_names}
+            capacities = {var: self.variables[var]['value']
+                          for var in endogenous_variables_names}
             profits = {}
 
             for var in endogenous_variables_names:
@@ -303,14 +323,17 @@ class RunProcessor(Run):
                                                       capacity,
                                                       self.paths,
                                                       self.general_parameters)
-                logging.info(f'Processing participant {var} with capacity {capacity}.')
+                logging.info(
+                    f'Processing participant {var} with capacity {capacity}.')
 
-                results = participant_object.process_participant(self.general_parameters.get('daily', True))
+                results = participant_object.process_participant(
+                    self.general_parameters.get('daily', True))
                 if results:
                     profits[var] = results.get(f'profits_{var}', 0.0)
                     logging.info(f'Participant {var} processed successfully.')
                 else:
-                    logging.error(f'Could not process participant {var} for run {self.name}')
+                    logging.error(
+                        f'Could not process participant {var} for run {self.name}')
                     return None
 
             return profits
