@@ -133,11 +133,15 @@ class ComparativeStatics:
             last_iteration = get_last_successful_iteration(
                 investment_problem.optimization_trajectory)
             if last_iteration is None:
-                logging.error(
+                logging.critical(
                     f"No successful iteration found for investment problem {investment_problem.name}")
                 continue
             # Create a Run object from the last iteration
-            run_variables = last_iteration.variables
+            run_endogenous_variables = last_iteration.endogenous_variables
+            run_variables = {
+                **investment_problem.exogenous_variables,
+                **run_endogenous_variables
+            }
             equilibrium_run = Run(
                 parent_folder=self.paths['main'],
                 general_parameters=self.general_parameters,

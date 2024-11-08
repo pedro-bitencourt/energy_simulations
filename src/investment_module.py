@@ -17,6 +17,7 @@ from pathlib import Path
 import logging
 import json
 import numpy as np
+import shutil
 
 from src.run_module import Run
 from src.run_processor_module import RunProcessor
@@ -163,11 +164,24 @@ class InvestmentProblem:
             # append the new iteration to the optimization trajectory
             self.optimization_trajectory.append(current_iteration)
 
+            # clear the runs folders
+            self._clear_runs_folders()
+
+
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
 
         # save results
         self._save_optimization_trajectory()
+
+    def _clear_runs_folders(self):
+        """
+        Deletes all the directories in self.paths['folder']
+        """
+        for directory in self.paths['folder'].iterdir():
+            if directory.is_dir():
+                shutil.rmtree(directory)
+
 
     def _update_current_iteration(self,
                                   current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
@@ -236,7 +250,7 @@ class InvestmentProblem:
             # if not, abort
             else:
                 logging.critical(
-                    "Run %s was not successful. Aborting.", run.run_name)
+                    "Run %s was not successful. Aborting.", run.name)
                 sys.exit(UNSUCCESSFUL_RUN)
 
         # compute derivatives from the profits
@@ -262,8 +276,6 @@ class InvestmentProblem:
         # create the variables dictionary
         variables: dict = self.exogenous_variables.copy()
         variables.update(endogenous_variables_temp)
-
-        # create the Run
 
         # create the Run object
         run: Run = Run(self.paths['folder'],

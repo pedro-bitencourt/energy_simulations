@@ -54,17 +54,21 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
     def tear_down(self):
+        """
+        Deletes the folder and its contents.
+        """
         if self.paths['folder'].exists():
             shutil.rmtree(self.paths['folder'])
+            logging.info("Deleted folder %s", self.paths['folder'])
 
     def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
                                         self.variables.values()]
-        parent_name: str = parent_folder.parts[-2]
+        #parent_name: str = parent_folder.parts[-2]
         name: str = make_name(exog_var_values)
         return name
 
-    def _initialize_paths(self, folder: Path, general_parameters: dict):
+    def _initialize_paths(self, parent_folder: Path, general_parameters: dict):
         """
         Initialize a dictionary with relevant paths for the run.
         """
@@ -80,8 +84,9 @@ class Run:
             return windows_path
 
         paths = {}
-        paths['parent_folder'] = folder
-        paths['folder'] = folder / self.name
+        paths['parent_folder'] = parent_folder
+        folder = parent_folder / self.name
+        paths['folder'] = folder
         # Convert the output path to a Windows path, for use in the .xml file
         paths['folder_windows'] = format_windows_path(paths['folder'])
 
@@ -115,7 +120,7 @@ class Run:
                         continue
         return opt_sim_paths
 
-    def successful(self):
+    def successful(self, log: bool = False):
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
@@ -130,13 +135,15 @@ class Run:
             resumen_file = try_get_file(sim_folder, r'resumen*')
             if resumen_file:
                 return True
-            logging.error('No resumen file found for run %s in folder %s',
-                          self.name,
-                          self.paths['subfolder'])
+            if log:
+                logging.error('No resumen file found for run %s in folder %s',
+                              self.name,
+                              self.paths['subfolder'])
         else:
-            logging.error('No sim folder found for run %s in folder %s',
-                          self.name,
-                          self.paths['subfolder'])
+            if log:
+                logging.error('No sim folder found for run %s in folder %s',
+                              self.name,
+                              self.paths['subfolder'])
         return False
 
     def submit(self):

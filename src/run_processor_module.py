@@ -63,7 +63,7 @@ class RunProcessor(Run):
             variables=run.variables
         )
 
-        if not self.successful():
+        if not self.successful(log=True):
             logging.error(f'Run {self.name} was not successful.')
             raise ValueError(f'Run {self.name} was not successful.')
 
