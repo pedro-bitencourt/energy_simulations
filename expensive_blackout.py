@@ -4,7 +4,7 @@ Comparative statics exercise for changing the volume of the lakes in the system.
 import numpy as np
 from src.comparative_statics_module import ComparativeStatics
 
-name = 'salto_volume'
+name = 'expensive_blackout'
 general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA',
                             'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',

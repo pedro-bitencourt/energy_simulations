@@ -139,7 +139,7 @@ class ComparativeStatics:
             # Create a Run object from the last iteration
             run_variables = last_iteration.variables
             equilibrium_run = Run(
-                folder=self.paths['simulations'],
+                parent_folder=self.paths['main'],
                 general_parameters=self.general_parameters,
                 variables=run_variables
             )
@@ -151,7 +151,6 @@ class ComparativeStatics:
     def _initialize_paths(self):
         paths = {}
         paths['main'] = Path(f"{BASE_PATH}/comparative_statics/{self.name}")
-        paths['simulations'] = paths['main'] / "simulations"
         paths['results'] = Path(f"{BASE_PATH}/results/{self.name}")
         return paths
 
@@ -166,7 +165,7 @@ class ComparativeStatics:
             }
             # create a run
             list_simulations.append(
-                Run(self.paths['simulations'],
+                Run(self.paths['main'],
                     self.general_parameters,
                     variables)
             )
@@ -187,7 +186,7 @@ class ComparativeStatics:
             }
 
             # initialize the InvestmentProblem object
-            investment_problem = InvestmentProblem(self.paths['simulations'],
+            investment_problem = InvestmentProblem(self.paths['main'],
                                                    exogenous_variables_temp,
                                                    self.endogenous_variables,
                                                    self.general_parameters)

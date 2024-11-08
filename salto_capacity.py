@@ -1,20 +1,22 @@
-"""
-Comparative statics exercise for changing the volume of the lakes in the system.
-"""
 import numpy as np
 from src.comparative_statics_module import ComparativeStatics
 
-name = 'salto_volume'
+# Input parameters for the comparative statics exercise
+name = 'salto_capacity'
 general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA',
                             'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
-                            'requested_time_run': 1.5}
+                            'requested_time_run': 3.5}
+exogenous_variable_name: str = 'hydro_factor'
+exogenous_variable_pattern: str = 'HYDRO_FACTOR'
+exogenous_variable_grid: list[float] = [
+    0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
 
-exog_grid: list[float] = [0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
+# No need to change from here on
 exogenous_variables: dict[str, dict] = {
-    'lake_factor': {'pattern': 'LAKE_FACTOR'},
+    exogenous_variable_name: {'pattern': exogenous_variable_pattern},
 }
 endogenous_variables: dict[str, dict] = {
     'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1000},
@@ -22,7 +24,7 @@ endogenous_variables: dict[str, dict] = {
     'thermal': {'pattern': 'THERMAL_CAPACITY', 'initial_guess': 300}
 }
 exogenous_variables_grid: dict[str, np.ndarray] = {
-    'lake_factor': np.array(exog_grid)}
+    exogenous_variable_name: np.array(exogenous_variable_grid)}
 variables: dict[str, dict] = {'exogenous': exogenous_variables,
                               'endogenous': endogenous_variables}
 
@@ -32,6 +34,7 @@ comparative_statics = ComparativeStatics(name,
                                          exogenous_variables_grid,
                                          general_parameters)
 
+# All action happens here
 comparative_statics.submit()
 # comparative_statics.process()
 # comparative_statics.visualize(grid_dimension=1)

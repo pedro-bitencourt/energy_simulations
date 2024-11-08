@@ -8,6 +8,7 @@ Description: this file implements the Run class and related methods.
 import os
 import re
 import json
+import shutil
 from pathlib import Path
 from typing import Optional
 import logging
@@ -43,7 +44,7 @@ class Run:
         self.variables: dict[str, dict] = variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = self._create_name()
+        self.name: str = self._create_name(parent_folder)
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths(
@@ -52,9 +53,14 @@ class Run:
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
-    def _create_name(self):
+    def tear_down(self):
+        if self.paths['folder'].exists():
+            shutil.rmtree(self.paths['folder'])
+
+    def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
                                         self.variables.values()]
+        parent_name: str = parent_folder.parts[-2]
         name: str = make_name(exog_var_values)
         return name
 
@@ -252,7 +258,7 @@ class Run:
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err
 #SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
 
 module purge

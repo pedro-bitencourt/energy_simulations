@@ -847,7 +847,7 @@
 		<ev tipo="const">
 		  <discretizacion tipo="equiespaciada">
 			<minimo>0.0</minimo>
-			<maximo>8200.0</maximo>
+			<maximo>LAKE_FACTOR_1*8200.0</maximo>
 			<cantidadPuntos>10</cantidadPuntos>
 		  </discretizacion>
 		</ev>
@@ -932,12 +932,12 @@
 	  <cotaInundacionAguasArriba>56.0</cotaInundacionAguasArriba>
 	  <fCoVo>
 		<ev tipo="const">
-		  <funcion tipo="poli">51.998, 0.010101, 3.7375E-5, -3.4306E-7, 1.0827E-9, -1.168E-12</funcion>
+		  <funcion tipo="poli">51.998, LAKE_FACTOR_-1*0.010101, LAKE_FACTOR_-2*3.7375E-5, LAKE_FACTOR_-3*-3.4306E-7, LAKE_FACTOR_-4*1.0827E-9, LAKE_FACTOR_-5*-1.168E-12</funcion>
 		</ev>
 	  </fCoVo>
 	  <fVoCo>
 		<ev tipo="const">
-		  <funcion tipo="poli">-1557273.0, 0.0, 5433.876, -202.992, 2.842973, -0.0141512</funcion>
+		  <funcion tipo="poli">LAKE_FACTOR_1*-1557273.0, LAKE_FACTOR_1*0.0, LAKE_FACTOR_1*5433.876, LAKE_FACTOR_1*-202.992, LAKE_FACTOR_1*2.842973, LAKE_FACTOR_1*-0.0141512</funcion>
 		</ev>
 	  </fVoCo>
 	  <fQEroMin>
@@ -1007,22 +1007,22 @@
 	  <salidaDetallada>false</salidaDetallada>
               <hayReservaEstrategica>false</hayReservaEstrategica>
               <volumenReservaEstrategica>
-                <ev tipo="const">900.0</ev>
+                <ev tipo="const">LAKE_FACTOR_1*900.0</ev>
               </volumenReservaEstrategica>
               <valorMinReserva>
-                <ev tipo="const">65000.0</ev>
+                <ev tipo="const">LAKE_FACTOR_1*65000.0</ev>
               </valorMinReserva>
               <valorAplicaEnOptim>true</valorAplicaEnOptim>
               <hayControldeCotasMinimas>false</hayControldeCotasMinimas>
               <volumenControlMinimo>
-                <ev tipo="const">110.0</ev>
+                <ev tipo="const">LAKE_FACTOR_1*110.0</ev>
               </volumenControlMinimo>
               <penalidadControlMinimo>
                 <ev tipo="const">0.363</ev>
               </penalidadControlMinimo>
               <hayControldeCotasMaximas>false</hayControldeCotasMaximas>
               <volumenControlMaximo>
-                <ev tipo="const">7008.0</ev>
+                <ev tipo="const">LAKE_FACTOR_1*7008.0</ev>
               </volumenControlMaximo>
               <penalidadControlMaximo>
                 <ev tipo="const">0.801</ev>
@@ -1030,7 +1030,7 @@
               <vertimientoConstante>false</vertimientoConstante>
               <hayVolumenObjetivoVertimiento>false</hayVolumenObjetivoVertimiento>
               <volumenObjetivoVertimiento>
-                <ev tipo="const">10000.0</ev>
+                <ev tipo="const">LAKE_FACTOR_1*10000.0</ev>
               </volumenObjetivoVertimiento>
             </datosParticipante>
           </gHidraulico>
@@ -1089,12 +1089,12 @@
               <cotaInundacionAguasArriba>43.0</cotaInundacionAguasArriba>
               <fCoVo>
                 <ev tipo="const">
-                  <funcion tipo="poli">36.02, 0.00425, -7.65E-7, 1.13E-9, -1.05E-12, 2.84E-16</funcion>
+                  <funcion tipo="poli">36.02, LAKE_FACTOR_-1*0.00425, LAKE_FACTOR_-2*-7.65E-7, LAKE_FACTOR_-3*1.13E-9, LAKE_FACTOR_-4*-1.05E-12, LAKE_FACTOR_-5*2.84E-16</funcion>
                 </ev>
               </fCoVo>
               <fVoCo>
                 <ev tipo="const">
-                  <funcion tipo="poli">133808.97, 0.0, -991.2315, 53.3847, -1.07473, 0.007694</funcion>
+                  <funcion tipo="poli">LAKE_FACTOR_1*133808.97, LAKE_FACTOR_1*0.0, LAKE_FACTOR_1*-991.2315, LAKE_FACTOR_1*53.3847, LAKE_FACTOR_1*-1.07473, LAKE_FACTOR_1*0.007694</funcion>
                 </ev>
               </fVoCo>
               <fQEroMin>
@@ -1193,11 +1193,11 @@
             <variablesEstado>
               <variableEstado>
                 <nombre>volumen</nombre>
-                <estadoInicial unidad="hm3">317.5</estadoInicial>
+                <estadoInicial unidad="hm3">LAKE_FACTOR_1*317.5</estadoInicial>
                 <ev tipo="const">
                   <discretizacion tipo="equiespaciada">
                     <minimo>0.0</minimo>
-                    <maximo>1300.0</maximo>
+                    <maximo>LAKE_FACTOR_1*1300.0</maximo>
                     <cantidadPuntos>5</cantidadPuntos>
                   </discretizacion>
                 </ev>
@@ -1234,7 +1234,7 @@
                 <ev tipo="const">0.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">HYDRO_FACTOR*135.0</ev>
+                <ev tipo="const">135.0</ev>
               </potMax>
               <rendMin>
                 <ev tipo="const">0.9</ev>
@@ -1251,7 +1251,7 @@
                 <ev tipo="const">2100.0</ev>
               </volFijo>
               <qTur1Max>
-                <ev tipo="const">HYDRO_FACTOR*600.0</ev>
+                <ev tipo="const">600.0</ev>
               </qTur1Max>
               <saltoMinimo>10.0</saltoMinimo>
               <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>
@@ -1892,7 +1892,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;370.0),(5.0;600.0),(7.5;2400.0),(85.5;4000.0)</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;370.0),(5.0;600.0),(7.5;2400.0),(85.5;20000.0)</escalonesPorciento>
             <demanda>demandaPrueba</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>

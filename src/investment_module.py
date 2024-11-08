@@ -53,7 +53,7 @@ class InvestmentProblem:
         self.endogenous_variables: dict = endogenous_variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = self._create_name()
+        self.name: str = self._create_name(parent_folder)
         logging.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
@@ -62,10 +62,11 @@ class InvestmentProblem:
         # initialize the optimization trajectory
         self.optimization_trajectory: list = self._initialize_optimization_trajectory()
 
-    def _create_name(self):
+    def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
                                         self.exogenous_variables.values()]
-        name: str = f"investment_{make_name(exog_var_values)}"
+        parent_name: str = parent_folder.name
+        name: str = f"{parent_name}_investment_{make_name(exog_var_values)}"
         return name
 
     def __repr__(self):
