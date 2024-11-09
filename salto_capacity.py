@@ -6,13 +6,15 @@ name = 'salto_capacity'
 general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA',
                             'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
+                            'email': 'pedro.bitencourt@u.northwestern.edu',
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
-                            'requested_time_run': 3.5}
+                            'requested_time_run': 4.5}
 exogenous_variable_name: str = 'hydro_factor'
 exogenous_variable_pattern: str = 'HYDRO_FACTOR'
 exogenous_variable_grid: list[float] = [
-    0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
+    0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3]
+# exogenous_variable_grid: list[float] = [1.25]
 
 # No need to change from here on
 exogenous_variables: dict[str, dict] = {

@@ -116,7 +116,7 @@ class ComparativeStatics:
             logging.error("The grids have different lengths.")
             raise ValueError("The grids have different lengths.")
         # Check if general parameters contain the expected keys
-        expected_keys = ['xml_basefile', 'daily', 'name_subfolder']
+        expected_keys = ['xml_basefile', 'daily', 'name_subfolder', 'email']
         if not all(key in self.general_parameters for key in expected_keys):
             logging.error(
                 "General parameters do not contain the expected keys.")

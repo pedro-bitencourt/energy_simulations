@@ -293,7 +293,7 @@ class RunProcessor(Run):
             int or None: The job ID if submission is successful, None otherwise.
         """
         bash_script = self._create_bash_script()
-        job_id = auxiliary.submit_slurm_job(bash_script)
+        job_id = src.auxiliary.submit_slurm_job(bash_script)
         if job_id:
             logging.info(
                 f'Processing job for run {self.name} submitted with job ID {job_id}')
