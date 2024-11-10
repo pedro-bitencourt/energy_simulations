@@ -34,7 +34,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__) 
 
-
 class InvestmentProblem:
     def __init__(self,
                  parent_folder: str,
@@ -218,41 +217,45 @@ class InvestmentProblem:
         '''
         Computes the profits and derivatives for a given level of investment_problem 
         '''
-        def create_and_submit_run(investment):
-            run = self._create_run(investment)
-            return run, run.submit()
-
-        # create dict of investments
-        investments_dict = {'current': current_investment}
+        # Create a dict of runs
+        runs_dict: dict[str, Run] = {'current': self._create_run(current_investment)}
         for var in self.endogenous_variables.keys():
             investment = current_investment.copy()
             investment[var] += DELTA
-            investments_dict[var] = investment
+            runs_dict[var] = self._create_run(investment)
 
-        # create and submit runs
-        runs_and_jobs = {
-            resource: create_and_submit_run(investment)
-            for resource, investment in investments_dict.items()
-        }
+        # Submit the runs, give up after 3 attempts
+        max_attempts: int = 3
+        attempts: int = 0
+        while attempts < max_attempts:
+            job_ids_list: list[str] = []
+            for run in runs_dict.values():
+                # Check if the run was successful
+                successful: bool = run.successful()
+                # If not, submit it and append the job_id to the list
+                if not successful:
+                    job_id = run.submit()
+                    if job_id:
+                        job_ids_list.append(job_id)
+            # Wait for the jobs to finish
+            wait_for_jobs(job_ids_list)
+            attempts += 1 
 
-        # wait for all jobs to complete
-        wait_for_jobs([job for _, job in runs_and_jobs.values()])
+        # Check if all runs were successful
+        if not all(run.successful() for run in runs_dict.values()):
+            logger.critical(
+                "Not all runs were successful. Aborting.")
+            sys.exit(UNSUCCESSFUL_RUN)
+            
 
         # process results
         profits_perturb = {}
-        for resource, (run, _) in runs_and_jobs.items():
+        for resource, run in runs_dict.items():
             run_processor = RunProcessor(run)
-            # check if run was successful
-            if run_processor:
-                endogenous_variables_list: list[str] = list(
+            endogenous_variables_list: list[str] = list(
                     self.endogenous_variables.keys())
-                profits_perturb[resource] = run_processor.get_profits(
+            profits_perturb[resource] = run_processor.get_profits(
                     endogenous_variables_list)
-            # if not, abort
-            else:
-                logger.critical(
-                    "Run %s was not successful. Aborting.", run.name)
-                sys.exit(UNSUCCESSFUL_RUN)
 
         # compute derivatives from the profits
         derivatives = derivatives_from_profits(
@@ -364,6 +367,8 @@ module purge
 module load python-miniconda3/4.12.0
 
 
+
+
 python - <<END
 
 print('Solving the investment_problem problem {self.name}')
@@ -384,3 +389,4 @@ END
 ''')
 
         return self.paths['bash']
+

@@ -47,7 +47,7 @@ class RunProcessor(Run):
         paths (dict): Extended dictionary of relevant paths for processing
     """
 
-    def __init__(self, run: Run):
+    def __init__(self, run: Run, resubmit: bool = False):
         """
         Initializes RunProcessor with an existing Run instance.
 
@@ -68,6 +68,25 @@ class RunProcessor(Run):
             raise ValueError(f'Run {self.name} was not successful.')
 
         self._update_paths()
+
+    def resubmit_unsuccessful(self):
+        """
+        Resubmits the run if it was unsuccessful.
+        """
+        if not self.successful(log=True):
+            job_id = self.resubmit()
+            return job_id
+        return None
+
+    def resubmit(self):
+        """
+        Tears down previous folder and resubmits the run to the cluster.
+        """
+        logger.info(f'Resubmitting run {self.name}.')
+        self.tear_down()
+        logger.info(f'Resubmitting run {self.name}.')
+        job_id = self.submit()
+        return job_id
 
     def _update_paths(self) -> None:
         """

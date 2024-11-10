@@ -16,6 +16,7 @@ import pandas as pd
 
 from src.auxiliary import make_name, try_get_file, submit_slurm_job
 
+logger = logging.getLogger(__name__) 
 
 class Run:
     """
@@ -59,7 +60,7 @@ class Run:
         """
         if self.paths['folder'].exists():
             shutil.rmtree(self.paths['folder'])
-            logging.info("Deleted folder %s", self.paths['folder'])
+            logger.info("Deleted folder %s", self.paths['folder'])
 
     def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
@@ -136,12 +137,12 @@ class Run:
             if resumen_file:
                 return True
             if log:
-                logging.error('No resumen file found for run %s in folder %s',
+                logger.error('No resumen file found for run %s in folder %s',
                               self.name,
                               self.paths['subfolder'])
         else:
             if log:
-                logging.error('No sim folder found for run %s in folder %s',
+                logger.error('No sim folder found for run %s in folder %s',
                               self.name,
                               self.paths['subfolder'])
         return False
@@ -152,11 +153,14 @@ class Run:
         """
         # Break if already successful
         if self.successful():
-            print(f"Run {self.name} already successful, skipping.")
-            return True
+            logger.info(f"Run {self.name} already successful, skipping.")
+            return None
 
-        print(f"""Preparing to submit run {self.name},
+        logger.info(f"""Preparing to submit run {self.name},
                     with successful status {self.successful()}""")
+
+        # Tear down the folder
+        self.tear_down()
 
         # Create the xml file
         xml_path: Path = self._create_xml()
@@ -169,10 +173,10 @@ class Run:
 
         # Check if the job was submitted successfully
         if job_id:
-            logging.info(
+            logger.info(
                 f"Successfully submitted run {self.name} with jobid {job_id}")
             return job_id
-        logging.error(f"Some error occurred while submitting run {self.name}")
+        logger.error(f"Some error occurred while submitting run {self.name}")
         return job_id
 
     def _create_xml(self):
@@ -284,7 +288,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G
             with open(self.paths['results_json'], 'r') as file:
                 results = json.load(file)
             return results
-        logging.error(
+        logger.error(
             f"Results file {self.paths['results_json']} does not exist for run {self.name}")
         return None
 
@@ -308,6 +312,6 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G
             wide_df.columns = wide_df.columns.astype(int)
             wide_df = wide_df.sort_index(axis=1).reset_index(drop=True)
             return price_distribution
-        logging.error(
+        logger.error(
             f"Price distribution file {self.paths['price_distribution']} does not exist for run {self.name}")
         return None
