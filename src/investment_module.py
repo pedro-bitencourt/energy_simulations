@@ -28,8 +28,11 @@ from src.optimization_module import (OptimizationPathEntry,
 from src.auxiliary import submit_slurm_job, wait_for_jobs, make_name
 from src.constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN
 
-
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__) 
 
 
 class InvestmentProblem:
@@ -55,7 +58,7 @@ class InvestmentProblem:
         self.general_parameters: dict = general_parameters
 
         self.name: str = self._create_name(parent_folder)
-        logging.info("Initializing investment problem %s", self.name)
+        logger.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
         self.paths: dict[str, Path] = self._initialize_paths(parent_folder)
@@ -78,7 +81,7 @@ class InvestmentProblem:
         paths['parent_folder'] = folder
         paths['folder'] = folder / self.name
         paths['bash'] = folder / self.name / f'{self.name}.sh'
-        paths['optimization_trajectory'] = folder / \
+        paths['optimization_trajectory'] = folder / self.name /\
             f'{self.name}_trajectory.json'
 
         # create the directory
@@ -95,14 +98,14 @@ class InvestmentProblem:
                 optimization_trajectory = [OptimizationPathEntry.from_dict(entry)
                                            for entry in data]
 
-            logging.info("Successfully loaded optimization trajectory from %s.",
+            logger.info("Successfully loaded optimization trajectory from %s.",
                          self.paths['optimization_trajectory'])
-            logging.debug("Optimization trajectory: %s",
+            logger.debug("Optimization trajectory: %s",
                           optimization_trajectory)
         else:
             # if not, initialize it with the first iteration
             optimization_trajectory: list[OptimizationPathEntry] = []
-            logging.info("Optimization trajectory not found at %s. Initializing a new one.",
+            logger.info("Optimization trajectory not found at %s. Initializing a new one.",
                          self.paths['optimization_trajectory'])
 
             # initialize the first iteration
@@ -122,7 +125,7 @@ class InvestmentProblem:
         with open(self.paths['optimization_trajectory'], 'w') as file:
             json.dump([entry.to_dict() for entry in self.optimization_trajectory],
                       file, indent=4, sort_keys=True)
-        logging.info('Saved optimization trajectory to %s',
+        logger.info('Saved optimization trajectory to %s',
                      self.paths["optimization_trajectory"])
 
     def solve_investment(self):
@@ -195,7 +198,7 @@ class InvestmentProblem:
             logger.info('Preparing to compute profits for iteration with %s',
                         current_investment)
             # compute the profits and derivatives
-            profits, profits_derivatives = self._profits_and_derivatives(
+            profits, profits_derivatives = self.profits_and_derivatives(
                 current_investment)
 
         # if the profits are already computed, use them
@@ -213,7 +216,7 @@ class InvestmentProblem:
             profits_derivatives=profits_derivatives
         )
 
-    def _profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
+    def profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
         '''
         Computes the profits and derivatives for a given level of investment_problem 
         '''
@@ -249,7 +252,7 @@ class InvestmentProblem:
                     endogenous_variables_list)
             # if not, abort
             else:
-                logging.critical(
+                logger.critical(
                     "Run %s was not successful. Aborting.", run.name)
                 sys.exit(UNSUCCESSFUL_RUN)
 
@@ -307,7 +310,7 @@ class InvestmentProblem:
         """
         Submits the investment problem to Quest. 
         """
-        logging.info("Preparing to run %s on quest",
+        logger.info("Preparing to run %s on quest",
                      self.name)
 
         script_path: Path = self._create_bash()

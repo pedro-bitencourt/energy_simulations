@@ -12,13 +12,10 @@ import pandas as pd
 
 # Local imports
 from src.constants import DATETIME_FORMAT, PRODUCTION_BY_RESOURCE_TABLE, PRODUCTION_BY_PLANT_TABLE
-import src.auxiliary
+from src import auxiliary
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
+logger = logging.getLogger(__name__)
 
 def text_to_table(text, delete_first_row):
     """
@@ -59,7 +56,7 @@ def process_dataframe(dataframe, columns_options):
             dataframe[numeric_cols] = dataframe[numeric_cols].apply(pd.to_numeric,
                                                                     errors='coerce')
         except Exception as e:
-            logging.error(f'Error {e} while converting columns to numeric.')
+            logger.error(f'Error {e} while converting columns to numeric.')
             traceback.print_exc(limit=10)
 
     dataframe = dataframe.dropna()
@@ -121,7 +118,7 @@ def read_xlt(file_path, options):
 
     # handle case where file could not be opened
     if not content:
-        logging.error(f"Could not open {file_path}")
+        logger.error(f"Could not open {file_path}")
         return None
 
     # decode the content
@@ -133,8 +130,8 @@ def read_xlt(file_path, options):
 
     # handle case where table could not be found
     if table_text is None:
-        logging.error(f"Table not found in {file_path}")
-        logging.error(f"Pattern: {table_pattern}")
+        logger.error(f"Table not found in {file_path}")
+        logger.error(f"Pattern: {table_pattern}")
         return False
 
     # convert the table text to a list of lists
@@ -152,13 +149,13 @@ def extract_dataframe(option: dict, input_folder: str):
 
     # handle case where input file is not found
     if not file_path:
-        logging.error(
+        logger.error(
             f'{option["filename"]} could not be found in folder {input_folder}.')
         return None
 
     filename = option['filename']
     if not file_path:
-        logging.error(f'{option} does not contain a filename key.')
+        logger.error(f'{option} does not contain a filename key.')
         return None
 
     # extract the dataframe
@@ -183,6 +180,10 @@ def get_present_value(dataframe: pd.DataFrame,
     Computes the present value of a variable in a pandas DataFrame.
     The DataFrame must have a 'datetime' column.
     """
+    # Assert that datetime is a column
+    if 'datetime' not in dataframe.columns:
+        raise ValueError("DataFrame does not have a 'datetime' column.")
+
     # Set reference date and calculate daily interest rate
     reference_date = pd.to_datetime('2023-01-01').normalize()
     daily_rate = (1 + annual_interest_rate)**(1/365) - 1
@@ -194,7 +195,7 @@ def get_present_value(dataframe: pd.DataFrame,
 
     # log this if log is True
     if log:
-        logging.debug(
+        logger.debug(
             "Getting present value of variable %s for %d years", variable, years)
 
     # Convert datetime and calculate days difference
@@ -245,26 +246,26 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path) -> Optional[pd.Da
     """
     filename_pattern = option.get('filename')
     if not filename_pattern:
-        logging.error('Filename pattern not provided in options.')
+        logger.error('Filename pattern not provided in options.')
         return None
 
     file_path = auxiliary.try_get_file(input_folder, filename_pattern)
     if not file_path:
-        logging.error(
+        logger.error(
             f'File matching pattern {filename_pattern} not found in {input_folder}.')
         return None
 
-    logging.info(f'Opening DataFrame from {file_path} with options {option}')
+    logger.info(f'Opening DataFrame from {file_path} with options {option}')
     dataframe = read_xlt(file_path=file_path, options=option)
     if dataframe is None:
-        logging.error(f'Could not read DataFrame from {file_path}.')
+        logger.error(f'Could not read DataFrame from {file_path}.')
         return None
 
     columns_options = option.get('columns_options')
     if columns_options:
         dataframe = process_dataframe(dataframe, columns_options)
         if dataframe is None:
-            logging.error(
+            logger.error(
                 f'Could not process DataFrame columns for {file_path}.')
             return None
 
@@ -318,7 +319,7 @@ def production_by_plant(sim_folder: Path) -> Optional[pd.DataFrame]:
 multipliers = {'production': 1_000, 'costs': 1_000_000}
 
 
-def process_res_file(option, sim_folder):
+def process_res_file(option, sim_folder) -> Optional[pd.DataFrame]:
     '''
     Processes the output from read_res_file. It converts the values to numeric and renames the columns.
     '''
@@ -378,7 +379,7 @@ def read_res_file(option, sim_folder):
 
     # check if the table was read correctly:
     if not data_table:
-        logging.error("Error reading the table from the file %s",
+        logger.error("Error reading the table from the file %s",
                       file_path)
         return None
 
@@ -388,18 +389,18 @@ def read_res_file(option, sim_folder):
     dataframe = pd.DataFrame(
         {'year':  [2023 + y for y in range(number_of_years)]})
 
-    logging.debug(dataframe)
+    logger.debug(dataframe)
 
     # add the data to the DataFrame
     for line in data_table:
         # check if the line has the correct number of columns
         if len(line) != number_of_years + 1:
-            logging.error("Faulty line found while reading %s",
+            logger.error("Faulty line found while reading %s",
                           file_path)
-            logging.error("Faulty line:%s", line)
+            logger.error("Faulty line:%s", line)
             continue
         dataframe[line[0]] = line[1:]
 
-    logging.error("process_res_file output: %s", dataframe)
+    logger.error("process_res_file output: %s", dataframe)
 
     return dataframe

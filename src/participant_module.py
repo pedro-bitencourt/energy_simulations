@@ -1,361 +1,297 @@
 """
 File name: participant_module.py
 Author: Pedro Bitencourt
-Description: this file implements the Participant class and related methods.
+Description: This file implements the Participant class and related methods.
 """
+
 import copy
+import logging
+from datetime import timedelta
+from typing import Any, Dict, Optional
+
 import numpy as np
 import pandas as pd
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
 
-from src.constants import SCENARIOS, POSTE_FILEPATH, COSTS, DATETIME_FORMAT
-from src.processing_module import extract_dataframe, get_present_value
-
-logging.basicConfig(
-    level=logging.ERROR,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+from src import processing_module as proc
+from src.constants import (
+    COSTS,
+    COSTS_BY_PARTICIPANT_TABLE,
+    DATETIME_FORMAT,
+    POSTE_FILEPATH,
+    SCENARIOS,
 )
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-@dataclass
-class ParticipantConfig:
-    folder: str
-    type: str
-
-
-PARTICIPANTS: Dict[str, ParticipantConfig] = {
-    'wind': ParticipantConfig(folder='EOLO_eoloDeci', type='wind'),
-    'solar': ParticipantConfig(folder='FOTOV_solarDeci', type='solar'),
-    'thermal': ParticipantConfig(folder='TER_new_thermal', type='thermal'),
-    'demand': ParticipantConfig(folder='DEM_demandaPrueba', type='demand')
+# Participant configuration mapping
+PARTICIPANTS: Dict[str, Dict[str, str]] = {
+    "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
+    "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
+    "thermal": {"folder": "TER_new_thermal", "type": "thermal"},
+    "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
 }
 
 
-REVENUE_STATS = [
-    {
-        'function': lambda df: df.mean(axis=1).values[0],
-        'key_prefix': 'avg',
-        'label_prefix': 'Average'
-    }
-]
-
-
 class Participant:
-    def __init__(self, key_participant: str, capacity: float,
-                 paths: Dict[str, str], general_parameters: Dict[str, Any]):
+    """
+    Represents a participant in the energy market, such as a wind farm,
+    solar plant, or thermal plant.
+    """
+
+    def __init__(
+        self,
+        key_participant: str,
+        capacity: float,
+        paths: Dict[str, str],
+        general_parameters: Dict[str, Any],
+    ):
         self.key = key_participant
-        participant_folder = PARTICIPANTS[key_participant].folder
-        self.dataframe_configuration = self._initialize_df_configuration(key_participant,
-                                                                         paths['sim'],
-                                                                         participant_folder)
-        self.output_folder = paths['output']
         self.capacity = capacity
-        self.type_participant = PARTICIPANTS[key_participant].type
         self.paths = paths
-        self.annual_interest_rate = general_parameters['annual_interest_rate']
-        self.years_run = general_parameters['years_run']
+        self.general_parameters = general_parameters  # Collecting parameters into a dictionary
+        self.type_participant = PARTICIPANTS[key_participant]["type"]
+
+        participant_folder = PARTICIPANTS[key_participant]["folder"]
+        self.dataframe_configuration = self._initialize_df_configuration(
+            key_participant, paths["sim"], participant_folder
+        )
 
     def __repr__(self):
         return f"Participant(key={self.key}, capacity={self.capacity})"
 
-    def _initialize_var_cost_df_configuration(self, key_participant: str,
-                                              sim_folder: str,
-                                              folder_participant: str) -> Dict[str, Any]:
-        dataframe_template = {
-            'table_pattern': {
-                'start': 'CANT_POSTE',
-                'end': None
-            },
-            'columns_options': {
-                'drop_columns': ['PROMEDIO_ESC'],
-                'rename_columns': {
-                    **{f'ESC{i}': f'{i}' for i in range(0, 114)},
-                    '': 'paso_start'
-                },
-                'numeric_columns': [f'{i}' for i in range(0, 114)]
-            },
-            'delete_first_row': True,
-        }
-        dataframe_configuration = copy.deepcopy(dataframe_template)
-        dataframe_configuration['name'] = f'{key_participant}_variable_cost'
-        dataframe_configuration['filename'] = f'{sim_folder}/{folder_participant}/costos*.xlt'
-        dataframe_configuration['output_filename'] = f'{key_participant}_variable_costs'
-        return dataframe_configuration
+    def profit(self, marginal_cost_df: pd.DataFrame) -> float:
+        """
+        Computes the profits per MW per year for the participant,
+        as a fraction of the total installation cost.
+        """
+        average_revenue_per_year_per_mw = self._revenue(marginal_cost_df)
+        total_cost_per_year_per_mw = self._cost()
+        profits_per_year_per_mw = average_revenue_per_year_per_mw - total_cost_per_year_per_mw
 
-    def _initialize_df_configuration(self, key_participant: str,
-                                     sim_folder: str,
-                                     folder_participant: str) -> Dict[str, Any]:
-        dataframe_template = {
-            'table_pattern': {
-                'start': 'CANT_POSTE',
-                'end': None
-            },
-            'columns_options': {
-                'drop_columns': ['PROMEDIO_ESC'],
-                'rename_columns': {
-                    **{f'ESC{i}': f'{i}' for i in range(0, 114)},
-                    '': 'paso_start'
-                },
-                'numeric_columns': [f'{i}' for i in range(0, 114)]
-            },
-            'delete_first_row': True,
-        }
-        dataframe_configuration = copy.deepcopy(dataframe_template)
-        dataframe_configuration['name'] = f'{key_participant}_production'
-        dataframe_configuration['filename'] = f'{sim_folder}/{folder_participant}/potencias*.xlt'
-        dataframe_configuration['output_filename'] = f'{key_participant}_production'
-        return dataframe_configuration
+        installation_cost = COSTS[self.type_participant]["installation"]
+        profits = profits_per_year_per_mw / installation_cost
+        return profits
 
-    def get_production_data(self, daily: bool = False) -> pd.DataFrame:
-        # extract the production data
-        extracted_dataframe = extract_dataframe(
-            self.dataframe_configuration, self.paths['sim'])
+    def _revenue(self, marginal_cost_df: pd.DataFrame) -> float:
+        """
+        Computes the average revenue per year per MW for the participant.
+        """
+        participant_df = self._get_production_data()
 
-        # check if the production data was successfully extracted
+        present_value_df = self._present_value_per_scenario(participant_df, marginal_cost_df)
+
+        # Compute average revenue over scenarios
+        average_revenue = present_value_df.mean(axis=1).values[0]
+
+        # Access parameters from general_parameters dictionary
+        years_run = self.general_parameters["years_run"]
+        capacity = self.capacity
+
+        # Compute the average revenue per year per MW
+        average_revenue_per_year_per_mw = average_revenue / (years_run * capacity)
+        return average_revenue_per_year_per_mw
+
+    def _cost(self) -> float:
+        """
+        Computes the average total cost per year per MW for the participant.
+        """
+        oem_cost = COSTS[self.type_participant]["oem"]
+        installation_cost = COSTS[self.type_participant]["installation"]
+        lifetime = COSTS[self.type_participant]["lifetime"]
+
+        variable_costs = self._get_variable_costs() if self.type_participant == "thermal" else 0
+
+        lifetime_fixed_cost = self._lifetime_fixed_costs(oem_cost, installation_cost, lifetime)
+        fixed_cost_per_year = lifetime_fixed_cost / lifetime
+
+        # Access parameters from general_parameters dictionary
+        years_run = self.general_parameters["years_run"]
+        capacity = self.capacity
+
+        variable_cost_per_year = variable_costs / years_run
+
+        total_cost_per_year_per_mw = (fixed_cost_per_year + variable_cost_per_year) / capacity
+        return total_cost_per_year_per_mw
+
+    def _get_production_data(self) -> pd.DataFrame:
+        """
+        Extracts and processes the production data for the participant.
+        """
+        extracted_dataframe = proc.extract_dataframe(self.dataframe_configuration, self.paths["sim"])
+
         if extracted_dataframe is None:
-            logging.critical('Production file not found.')
+            logger.critical("Production file not found.")
             raise FileNotFoundError
 
-        # convert the poste to datetime
-        dataframe = convert_from_poste_to_datetime(
-            extracted_dataframe, daily)
-
-        logging.info(
-            f"Successfully extracted and saved {self.key} production data.")
+        daily = self.general_parameters.get("daily", False)  # Access 'daily' from general_parameters
+        dataframe = self._convert_from_poste_to_datetime(extracted_dataframe, daily)
+        logger.info(f"Successfully extracted and processed {self.key} production data.")
         return dataframe
 
-    def process_participant(self, daily: bool = False) -> Optional[Dict[str, float]]:
-        # extract the production data
-        participant_df = self.get_production_data(daily)
+    def _initialize_df_configuration(
+        self, key_participant: str, sim_folder: str, folder_participant: str
+    ) -> Dict[str, Any]:
+        """
+        Initializes the dataframe configuration for data extraction.
+        """
+        dataframe_template = {
+            "table_pattern": {"start": "CANT_POSTE", "end": None},
+            "columns_options": {
+                "drop_columns": ["PROMEDIO_ESC"],
+                "rename_columns": {**{f"ESC{i}": f"{i}" for i in range(0, 114)}, "": "paso_start"},
+                "numeric_columns": [f"{i}" for i in range(0, 114)],
+            },
+            "delete_first_row": True,
+        }
+        dataframe_configuration = copy.deepcopy(dataframe_template)
+        dataframe_configuration["name"] = f"{key_participant}_production"
+        dataframe_configuration["filename"] = f"{sim_folder}/{folder_participant}/potencias*.xlt"
+        dataframe_configuration["output_filename"] = f"{key_participant}_production"
+        return dataframe_configuration
 
-        # load the marginal cost data
-        marginal_cost_df = pd.read_csv(self.paths['marginal_cost'])
-
-        # initialize the results dictionary
-        results = {}
-
-        # compute the discounted production
-        disc_prod_key = f'production_{self.key}'
-        discounted_production = compute_discounted_production(participant_df)
-        results[disc_prod_key] = discounted_production
-
-        # compute the present value of revenues per scenario
-        present_value_df = present_value_per_scenario(
-            participant_df, marginal_cost_df)
-        if present_value_df is None:
-            logging.error('Error while computing present value for %s',
-                          self.key)
-            return None
-
-        # compute statistics of the revenues
-        results_temp = compute_statistics(
-            present_value_df, discounted_production, self.key, self.capacity)
-        results.update(results_temp)
-
-        if self.type_participant == 'thermal':
-            variable_costs = self.get_variable_costs()
-        else:
-            variable_costs = 0
-
-        # unpack LCOE variables
-        oem_cost = COSTS[self.type_participant]['oem']
-        installation_cost = COSTS[self.type_participant]['installation']
-        lifetime = COSTS[self.type_participant]['lifetime']
-
-        # compute the lifetime costs per MW
-        lifetime_costs_per_mw = lifetime_costs_per_mw_fun(
-            oem_cost, installation_cost, lifetime)
-        results[f'lifetime_costs_{self.key}_per_mw'] = lifetime_costs_per_mw
-
-        # Compute the profits. Currently, this computes the profits per year
-        # per MW.
-        results[f'profits_{self.key}'] = (
-            (results[f'avg_revenue_{self.key}_per_mw']/self.years_run)*lifetime - lifetime_costs_per_mw)/installation_cost
-
-        if np.isnan(results[f'profits_{self.key}']):
-            print(f'Nan profits for {self.key}')
-            print(results)
-
-        # free memory
-        del marginal_cost_df, participant_df
-
-        return results
-
-    def get_variable_costs(self) -> float:
+    def _get_variable_costs(self) -> float:
         """
         Returns the variable costs of the thermal participant.
         """
-        # extract the variable cost data
-        dataframe = proc.process_res_file(
-            proc.COSTS_BY_PARTICIPANT_TABLE, self.paths['sim'])
-        variable_cost = dataframe['thermal'].sum()
+        dataframe = proc.process_res_file(COSTS_BY_PARTICIPANT_TABLE, self.paths["sim"])
+
+        if dataframe is None:
+            logger.critical("Variable cost file could not be read.")
+            raise FileNotFoundError
+
+        variable_cost = dataframe["thermal"].sum()
         return variable_cost
 
-
-def compute_statistics(present_value_df,
-                       discounted_production,
-                       key_participant,
-                       capacity):
-
-    def revenue_stats_function(present_value_df, stat,
-                               key_participant, capacity):
+    def _lifetime_fixed_costs(self, oem_cost: float, installation_cost: float, lifetime: int) -> float:
         """
-        Adds a revenue statistic to the results dictionary.
+        Computes the total lifetime fixed costs.
         """
-        results = {}
-        results_key = stat['key_prefix'] + \
-            "_revenue_" + key_participant
-        results[results_key] = stat['function'](present_value_df)
-        if capacity is None:
-            return results
-        results_key_per_mw = results_key + "_per_mw"
-        results[results_key_per_mw] = results[results_key] / capacity
-        return results
+        annual_interest_rate = self.general_parameters["annual_interest_rate"]
 
-    results = {}
-    # iterate over different statistics of the revenues
-    for stat in REVENUE_STATS:
-        results_revenue_stats = revenue_stats_function(present_value_df,
-                                                       stat,
-                                                       key_participant,
-                                                       capacity)
-        results.update(results_revenue_stats)
+        if annual_interest_rate > 0:
+            annuity_factor = (1 - (1 + annual_interest_rate) ** -lifetime) / annual_interest_rate
+        else:
+            annuity_factor = lifetime
 
-    # compute discounted average price per MWh
-    price_key = 'price_' + key_participant
-    results[price_key] = (results[f'avg_revenue_{key_participant}']
-                          / discounted_production)
-    return results
+        lifetime_costs = installation_cost + oem_cost * annuity_factor
+        return lifetime_costs
 
+    def _present_value_per_scenario(
+        self, participant_df: pd.DataFrame, marginal_cost_df: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Computes the present value of revenues over each scenario.
+        """
+        results_df = {}
+        participant_df = participant_df.copy()
+        marginal_cost_df = marginal_cost_df.copy()
 
-def lifetime_costs_per_mw_fun(oem_cost: float,
-                              installation_cost: float,
-                              lifetime: int):
-    if self.annual_interest_rate > 0:
-        annuity_factor = (1-(1+self.annual_interest_rate)**-
-                          lifetime)/self.annual_interest_rate
-    else:
-        annuity_factor = lifetime
+        participant_df.set_index("datetime", inplace=True)
+        
+        logger.debug(f"Marginal cost df: {marginal_cost_df.head()}")
+        marginal_cost_df.set_index("datetime", inplace=True)
 
-    lifetime_costs_per_mw = (installation_cost + oem_cost * annuity_factor)
-    return lifetime_costs_per_mw
+        participant_df.index = pd.to_datetime(participant_df.index)
+        marginal_cost_df.index = pd.to_datetime(marginal_cost_df.index)
 
+        common_index = participant_df.index.intersection(marginal_cost_df.index)
 
-def compute_discounted_production(production_df) -> float:
-    """
-    Computes the discounted production for a given participant.
-    """
-    total = 0.0
-    for scenario in SCENARIOS:
-        log = scenario == 0
-        total += get_present_value(
-            production_df, scenario, self.annual_interest_rate, log)
-    return total / len(SCENARIOS)
+        if common_index.empty:
+            logger.error("No overlapping dates between participant and marginal cost data.")
+            raise ValueError("No overlapping dates for computation.")
 
+        participant_df = participant_df.reindex(common_index)
+        marginal_cost_df = marginal_cost_df.reindex(common_index)
 
-def present_value_per_scenario(participant_df, marginal_cost_df):
-    """
-    Computes the present value of revenues over each scenario.
-    """
-    results_df = {}
-    new_participant_df = participant_df.copy()
+        annual_interest_rate = self.general_parameters["annual_interest_rate"]
 
-    # Set the datetime column as the index
-    marginal_cost_df = marginal_cost_df.set_index('datetime')
-    new_participant_df = new_participant_df.set_index('datetime', drop=False)
+        for scenario in SCENARIOS:
+            scenario_str = str(scenario)
+            participant_df["price_times_quantity"] = (
+                participant_df[scenario_str] * marginal_cost_df[scenario_str]
+            )
+            # Reset index to get datetime as a column
+            temp_df = participant_df.reset_index()
+            result_scenario = proc.get_present_value(
+                temp_df, "price_times_quantity", annual_interest_rate
+            )
+            results_df[scenario_str] = result_scenario
 
-    # ensure the 'datetime' column is parsed correctly to datetime objects
-    new_participant_df.index = pd.to_datetime(new_participant_df.index)
-    marginal_cost_df.index = pd.to_datetime(marginal_cost_df.index)
+        revenues_df = pd.DataFrame.from_dict(results_df, orient="index").T
+        return revenues_df
 
-    # Reindex both series to a common time range and frequency
-    common_index = pd.date_range(start=max(new_participant_df.index.min(),
-                                           marginal_cost_df.index.min()),
-                                 end=min(new_participant_df.index.max(),
-                                         marginal_cost_df.index.max()),
-                                 freq='H')  # Assuming hourly frequency
+    def _convert_from_poste_to_datetime(self, participant_df: pd.DataFrame, daily: bool) -> pd.DataFrame:
+        """
+        Converts 'poste' time format to datetime.
+        """
+        if daily:
+            if participant_df.columns[-1] == "paso_start" and "paso_start" in participant_df.columns[:-1]:
+                participant_df = participant_df.iloc[:, :-1]
 
-    # compare the common index with the index of the participant and marginal cost dataframes
-    num_missing_dates = max(len(common_index) - len(new_participant_df),
-                            len(common_index) - len(marginal_cost_df))
-    if num_missing_dates > 0:
-        logging.warning(
-            f'Warning: {num_missing_dates} dates are missing in the participant or marginal cost dataframes.')
+            participant_df["paso_start"] = pd.to_datetime(
+                participant_df["paso_start"], format="%Y/%m/%d/%H:%M:%S"
+            )
+            participant_df["datetime"] = participant_df.apply(
+                lambda row: row["paso_start"] + timedelta(hours=float(row["poste"])), axis=1
+            )
+            return participant_df
+        else:
+            return self._convert_from_poste_to_datetime_weekly(participant_df)
 
-    # Reindex the dataframes
-    new_participant_df = new_participant_df.reindex(common_index)
-    marginal_cost_df = marginal_cost_df.reindex(common_index)
-    for scenario in SCENARIOS:
-        new_participant_df['price_times_quantity'] = new_participant_df[scenario] * \
-            marginal_cost_df[scenario]
-        result_scenario = get_present_value(new_participant_df,
-                                            'price_times_quantity',
-                                            self.annual_interest_rate)
-        results_df[f'{scenario}'] = result_scenario
+    def _convert_from_poste_to_datetime_weekly(self, participant_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Converts 'poste' time format to datetime for weekly data.
+        """
+        poste_dict_df = pd.read_csv(POSTE_FILEPATH)
+        scenario_columns = [col for col in poste_dict_df.columns if col.isdigit()]
+        poste_dict_long = pd.melt(
+            poste_dict_df,
+            id_vars=["paso", "paso_start", "datetime"],
+            value_vars=scenario_columns,
+            var_name="scenario",
+            value_name="poste",
+        )
 
-    revenues_df = pd.DataFrame.from_dict(results_df, orient='index').T
-    return revenues_df
+        poste_dict_long = poste_dict_long.astype({"paso": int, "poste": int})
+        participant_df = participant_df.astype({"paso": int, "poste": int})
+        poste_dict_long["datetime"] = pd.to_datetime(
+            poste_dict_long["datetime"], format=DATETIME_FORMAT
+        )
 
+        participant_long = pd.melt(
+            participant_df, id_vars=["paso", "poste"], var_name="scenario", value_name="value"
+        )
 
-def convert_from_poste_to_datetime(participant_df: pd.DataFrame, daily: bool) -> pd.DataFrame:
-    if daily:
-        # print(participant_df.head())
-        # print(participant_df.dtypes)
-        # Remove the duplicate 'paso_start' column at the end
-        if participant_df.columns[-1] == 'paso_start' and 'paso_start' in participant_df.columns[:-1]:
-            participant_df = participant_df.iloc[:, :-1]
-        # Convert 'paso_start' to datetime
-        participant_df['paso_start'] = pd.to_datetime(
-            participant_df['paso_start'], format='%Y/%m/%d/%H:%M:%S')
-        participant_df['datetime'] = participant_df.apply(
-            lambda row: row['paso_start'] + timedelta(hours=float(row['poste'])), axis=1)
-        return participant_df
-    return convert_from_poste_to_datetime_weekly(participant_df)
+        result = pd.merge(
+            participant_long,
+            poste_dict_long,
+            on=["paso", "poste", "scenario"],
+            how="left",
+        )
 
+        result = result.dropna(subset=["datetime", "value"])
+        result = result.sort_values(["datetime", "scenario"])
+        result = result.drop_duplicates(subset=["datetime", "scenario"], keep="first")
 
-def convert_from_poste_to_datetime_weekly(participant_df: pd.DataFrame) -> pd.DataFrame:
-    poste_dict_df = pd.read_csv(POSTE_FILEPATH)
-    scenario_columns = [col for col in poste_dict_df.columns if col.isdigit()]
-    poste_dict_long = pd.melt(
-        poste_dict_df,
-        id_vars=['paso', 'paso_start', 'datetime'],
-        value_vars=scenario_columns,
-        var_name='scenario',
-        value_name='poste'
-    )
+        final_result = result.pivot(index="datetime", columns="scenario", values="value")
+        final_result = final_result.sort_index()
+        final_result["datetime"] = final_result.index
 
-    poste_dict_long = poste_dict_long.astype({'paso': int, 'poste': int})
-    participant_df = participant_df.astype({'paso': int, 'poste': int})
-    poste_dict_long['datetime'] = pd.to_datetime(
-        poste_dict_long['datetime'], format=DATETIME_FORMAT)
+        return final_result
 
-    participant_long = pd.melt(
-        participant_df,
-        id_vars=['paso', 'poste'],
-        var_name='scenario',
-        value_name='value'
-    )
-    result = pd.merge(
-        participant_long,
-        poste_dict_long,
-        on=['paso', 'poste', 'scenario'],
-        how='left'
-    )
+    def _compute_discounted_production(self, production_df: pd.DataFrame) -> float:
+        """
+        Computes the discounted production for the participant.
+        """
+        total = 0.0
+        annual_interest_rate = self.general_parameters["annual_interest_rate"]
 
-    result = result.dropna(subset=['datetime', 'value'])
-    result = result.sort_values(['datetime', 'scenario'])
-    result = result.drop_duplicates(
-        subset=['datetime', 'scenario'], keep='first')
-
-    # free memory
-    del participant_long, poste_dict_long
-
-    final_result = result.pivot(
-        index='datetime', columns='scenario', values='value')
-    final_result = final_result.sort_index()
-    final_result['datetime'] = final_result.index
-
-    return final_result
+        for scenario in SCENARIOS:
+            log = scenario == 0
+            total += proc.get_present_value(production_df, str(scenario), annual_interest_rate, log)
+        return total / len(SCENARIOS)

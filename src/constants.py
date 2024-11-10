@@ -1,6 +1,7 @@
 # Description: This file contains the constants used in the project.
 from pathlib import Path
 
+
 # constants for parsing the results
 DATETIME_FORMAT = '%m/%d/%y %H:%M'
 SCENARIOS = [f'{i}' for i in range(0, 114)]

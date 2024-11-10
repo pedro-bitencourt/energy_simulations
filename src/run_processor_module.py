@@ -21,15 +21,15 @@ import pandas as pd
 
 import src.auxiliary
 import src.processing_module as proc
-import src.participant_module as part
+from src.participant_module import Participant
 from src.run_module import Run
 from src.constants import DATETIME_FORMAT, MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
 
-# Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+logger = logging.getLogger(__name__) 
 
 WEEK_HOURS_BIN = list(range(0, 169))  # Adjusted to include 168
 
@@ -64,7 +64,7 @@ class RunProcessor(Run):
         )
 
         if not self.successful(log=True):
-            logging.error(f'Run {self.name} was not successful.')
+            logger.error(f'Run {self.name} was not successful.')
             raise ValueError(f'Run {self.name} was not successful.')
 
         self._update_paths()
@@ -93,7 +93,7 @@ class RunProcessor(Run):
             dict or None: The results dictionary if processed locally and successful, None otherwise.
         """
         if process_locally:
-            logging.info(f'Processing run {self.name} locally.')
+            logger.info(f'Processing run {self.name} locally.')
             try:
                 # Get variable values
                 variable_values = {var: var_dict['value']
@@ -120,15 +120,15 @@ class RunProcessor(Run):
                 with open(self.paths['results_json'], 'w') as file:
                     json.dump(results, file, indent=4)
 
-                logging.info(
+                logger.info(
                     f'Results for run {self.name} saved successfully.')
                 return None
             except Exception as e:
-                logging.error(
+                logger.error(
                     f'Error processing results for run {self.name}: {e}')
                 return None
         else:
-            logging.info(
+            logger.info(
                 f'Submitting processing job for run {self.name} to the cluster.')
             job_id = self.submit_processor_job()
             return None  # Since processing is done on the cluster, no results are returned immediately
@@ -157,7 +157,7 @@ class RunProcessor(Run):
                       else value)
                 for key, value in data.items()}
 
-    def _extract_marginal_costs_df(self) -> Optional[pd.DataFrame]:
+    def _extract_marginal_costs_df(self) -> pd.DataFrame:
         """
         Extracts the marginal cost DataFrame from the simulation folder.
 
@@ -169,18 +169,19 @@ class RunProcessor(Run):
             marginal_cost_df = proc.open_dataframe(
                 MARGINAL_COST_DF, self.paths['sim'])
             if marginal_cost_df is None:
-                logging.error(
+                logger.error(
                     'Marginal cost DataFrame could not be extracted.')
-                return None
+                raise ValueError(
+                    'Marginal cost DataFrame could not be extracted.')
 
             # Process marginal cost DataFrame
             marginal_cost_df = proc.process_marginal_cost(marginal_cost_df)
             if marginal_cost_df.isna().sum().sum() > 0:
-                logging.error('Marginal cost DataFrame contains NaN values.')
+                logger.error('Marginal cost DataFrame contains NaN values.')
                 nan_rows = marginal_cost_df[marginal_cost_df.isna().any(
                     axis=1)]
-                logging.error(f'Rows with NaN values:\n{nan_rows}')
-                return None
+                logger.error(f'Rows with NaN values:\n{nan_rows}')
+                raise ValueError('Marginal cost DataFrame contains NaN values.')
 
             # Ensure 'datetime' column is in correct format
             marginal_cost_df['datetime'] = pd.to_datetime(
@@ -188,12 +189,12 @@ class RunProcessor(Run):
 
             # Save marginal cost DataFrame
             marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
-            logging.info(
+            logger.info(
                 f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
             return marginal_cost_df
         except Exception as e:
-            logging.error(f'Error extracting marginal costs: {e}')
-            return None
+            logger.error(f'Error extracting marginal costs: {e}')
+            raise ValueError('Unexpected error extracting marginal costs.')
 
     def _price_distribution(self) -> Optional[pd.DataFrame]:
         """
@@ -225,11 +226,11 @@ class RunProcessor(Run):
             # Save price distribution
             price_distribution.to_csv(
                 self.paths['price_distribution'], index=False)
-            logging.info(
+            logger.info(
                 f'Price distribution saved to {self.paths["price_distribution"]}')
             return price_distribution
         except Exception as e:
-            logging.error(f'Error computing price distribution: {e}')
+            logger.error(f'Error computing price distribution: {e}')
             return None
 
     def _get_production_results(self) -> Dict[str, float]:
@@ -268,7 +269,7 @@ class RunProcessor(Run):
         price_df = self._extract_marginal_costs_df()
         demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
         if price_df is None or demand_df is None:
-            logging.error('Price or demand DataFrame could not be extracted.')
+            logger.error('Price or demand DataFrame could not be extracted.')
             return None
 
         try:
@@ -282,7 +283,7 @@ class RunProcessor(Run):
 
             return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
         except Exception as e:
-            logging.error('Error computing price results: %s', e)
+            logger.error('Error computing price results: %s', e)
             return None
 
     def submit_processor_job(self) -> Optional[int]:
@@ -293,12 +294,12 @@ class RunProcessor(Run):
             int or None: The job ID if submission is successful, None otherwise.
         """
         bash_script = self._create_bash_script()
-        job_id = auxiliary.submit_slurm_job(bash_script)
+        job_id = src.auxiliary.submit_slurm_job(bash_script)
         if job_id:
-            logging.info(
+            logger.info(
                 f'Processing job for run {self.name} submitted with job ID {job_id}')
         else:
-            logging.error(
+            logger.error(
                 f'Failed to submit processing job for run {self.name}')
         return job_id
 
@@ -313,33 +314,33 @@ class RunProcessor(Run):
             dict or None: A dictionary of profits, or None if computation fails.
         """
         try:
+            # Extract marginal cost
+            marginal_cost_df: pd.DataFrame = self._extract_marginal_costs_df()
+
             capacities = {var: self.variables[var]['value']
                           for var in endogenous_variables_names}
             profits = {}
 
             for var in endogenous_variables_names:
-                capacity = capacities[var]
-                participant_object = part.Participant(var,
+                capacity: float = capacities[var]
+                participant: Participant = Participant(var,
                                                       capacity,
                                                       self.paths,
                                                       self.general_parameters)
-                logging.info(
-                    f'Processing participant {var} with capacity {capacity}.')
 
-                results = participant_object.process_participant(
-                    self.general_parameters.get('daily', True))
-                if results:
-                    profits[var] = results.get(f'profits_{var}', 0.0)
-                    logging.info(f'Participant {var} processed successfully.')
-                else:
-                    logging.error(
-                        f'Could not process participant {var} for run {self.name}')
-                    return None
+                logger.debug(f"Computing profits for {var} participant.")
+                # Compute profit for the participant
+                profit: float = participant.profit(marginal_cost_df)
+
+                logger.debug('Profit for participant %s: %s', var, profit)
+
+                # Add profit to the dictionary
+                profits[var] = profit
 
             return profits
         except Exception as e:
-            logging.error(f'Error computing profits: {e}')
-            return None
+            logger.critical(f'Error computing profits: {e}')
+            raise ValueError(f'Unexpected error computing profits for RunProcessor {self.name}')
 
     def processed_status(self):
         if self.paths['results_json'].exists():
@@ -419,5 +420,5 @@ END
         with open(script_path, 'w') as f:
             f.write(script_content)
 
-        logging.info(f'Bash script created at {script_path}')
+        logger.info(f'Bash script created at {script_path}')
         return script_path
