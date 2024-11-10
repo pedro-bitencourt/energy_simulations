@@ -64,7 +64,7 @@ class Run:
     def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
                                         self.variables.values()]
-        #parent_name: str = parent_folder.parts[-2]
+        # parent_name: str = parent_folder.parts[-2]
         name: str = make_name(exog_var_values)
         return name
 
@@ -264,7 +264,7 @@ class Run:
 #SBATCH --job-name={self.name}
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err
-#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-user={self.general_parameters['email']}
 #SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
 

@@ -8,11 +8,13 @@ name = 'salto_volume'
 general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA',
                             'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
+                            'email': 'pedro.bitencourt@u.northwestern.edu',
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
-                            'requested_time_run': 3.5}
+                            'requested_time_run': 4.5}
 
-exog_grid: list[float] = [0.4, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
+exog_grid: list[float] = [0.75]
+# exog_grid: list[float] = [0.4, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
 exogenous_variables: dict[str, dict] = {
     'lake_factor': {'pattern': 'LAKE_FACTOR'},
 }

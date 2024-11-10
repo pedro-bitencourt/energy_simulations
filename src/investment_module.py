@@ -168,8 +168,7 @@ class InvestmentProblem:
             self.optimization_trajectory.append(current_iteration)
 
             # clear the runs folders
-            self._clear_runs_folders()
-
+            # self._clear_runs_folders()
 
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
@@ -184,7 +183,6 @@ class InvestmentProblem:
         for directory in self.paths['folder'].iterdir():
             if directory.is_dir():
                 shutil.rmtree(directory)
-
 
     def _update_current_iteration(self,
                                   current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
@@ -358,7 +356,7 @@ class InvestmentProblem:
 #SBATCH --job-name={self.name}
 #SBATCH --output={self.paths['parent_folder']}/{self.name}.out
 #SBATCH --error={self.paths['parent_folder']}/{self.name}.err
-#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
+#SBATCH --mail-user={self.general_parameters['email']}
 #SBATCH --mail-type=ALL
 #SBATCH --exclude=qhimem[0207-0208]
 
