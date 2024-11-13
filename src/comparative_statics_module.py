@@ -8,7 +8,6 @@ investment experiments with endogenous capacities.
 Public methods:
 - submit: submits the jobs for the runs or investment problems.
 - process: processes the results of the runs or investment problems.
-- visualize: visualizes the results of the experiment.
 - results: gathers the results of the runs or investment problems.
 
 Required modules:
@@ -23,18 +22,35 @@ Required modules:
 import logging
 from pathlib import Path
 from typing import Optional, Dict
+from rich.logging import RichHandler
 import numpy as np
 import pandas as pd
 
 from src.investment_module import InvestmentProblem
 from src.run_module import Run
 from src.run_processor_module import RunProcessor
-from src.comparative_statics_visualizer_module import ComparativeStaticsVisualizer
 from src.optimization_module import OptimizationPathEntry, get_last_successful_iteration
 from src.auxiliary import wait_for_jobs
 
 from src.constants import BASE_PATH
 
+# Configure the root logger with rich handler
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[
+        RichHandler(
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
+            show_time=True,
+            show_path=True,
+            markup=True
+        )
+    ]
+)
+
+# Get logger for current module
 logger = logging.getLogger(__name__)
 
 
@@ -101,6 +117,7 @@ class ComparativeStatics:
             self.list_investment_problems: list[InvestmentProblem] = self._initialize_investment_problems(
             )
             # The runs will be obtained from the investment problems after optimization
+            self.list_simulations = self._create_runs_from_investment_problems()
         else:
             # Create runs directly
             self.list_simulations = self._initialize_runs()
@@ -127,7 +144,7 @@ class ComparativeStatics:
         """
         Recover the last iteration of each investment problem and create a Run object from it.
         """
-        self.list_simulations = []
+        list_simulations = []
         for investment_problem in self.list_investment_problems:
             # Load the last iteration as the Run
             last_iteration = get_last_successful_iteration(
@@ -137,17 +154,10 @@ class ComparativeStatics:
                     f"No successful iteration found for investment problem {investment_problem.name}")
                 continue
             # Create a Run object from the last iteration
-            run_endogenous_variables = last_iteration.endogenous_variables
-            run_variables = {
-                **investment_problem.exogenous_variables,
-                **run_endogenous_variables
-            }
-            equilibrium_run = Run(
-                parent_folder=self.paths['main'],
-                general_parameters=self.general_parameters,
-                variables=run_variables
-            )
-            self.list_simulations.append(equilibrium_run)
+            equilibrium_run = investment_problem.create_run(
+                last_iteration.current_investment)
+            list_simulations.append(equilibrium_run)
+        return list_simulations
 
     def _grid_length(self):
         return len(next(iter(self.variables_grid.values())))
@@ -235,7 +245,7 @@ class ComparativeStatics:
             results_df.to_csv(output_csv_path, index=False)
 
             # Create runs from investment problems
-            self._create_runs_from_investment_problems()
+            self.list_simulations = self._create_runs_from_investment_problems()
 
         # Process runs
         self._process_runs()
@@ -243,20 +253,14 @@ class ComparativeStatics:
     def _process_runs(self):
         # if experiment has more than 10 runs, submit jobs to cluster
         if len(self.list_simulations) > 10:
-            # for each run, submit a processor job
-            job_ids = self._submit_processor_jobs()
-
-            # wait for the jobs to finish
-            wait_for_jobs(job_ids)
+            process_locally: bool = False
         else:
-            # process the runs sequentially
-            for run in self.list_simulations:
-                run_processor = RunProcessor(run)
-                if run_processor is None:
-                    logging.error("Run %s could not be processed.", run.name)
-                    continue
-                run_processor.process()
-                logging.info("Processed run %s", run.name)
+            process_locally: bool = True
+
+        for run in self.list_simulations:
+            run_processor = RunProcessor(run)
+            run_processor.process(process_locally)
+            logging.info("Processed run %s", run.name)
 
         # gather the results
         results_df: pd.DataFrame = self._results()
@@ -356,12 +360,9 @@ class ComparativeStatics:
 
         return results_df
 
-    def visualize(self, grid_dimension: int):
-        visualizer = ComparativeStaticsVisualizer(self.paths['output'])
-        visualizer.visualize(grid_dimension)
-
     ############################
     # NOT IN USE
+
     def _get_parameters(self):
         """
         Extract name of the run, the initial year and the final year

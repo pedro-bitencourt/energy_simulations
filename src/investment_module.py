@@ -32,7 +32,8 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
+
 
 class InvestmentProblem:
     def __init__(self,
@@ -98,14 +99,14 @@ class InvestmentProblem:
                                            for entry in data]
 
             logger.info("Successfully loaded optimization trajectory from %s.",
-                         self.paths['optimization_trajectory'])
+                        self.paths['optimization_trajectory'])
             logger.debug("Optimization trajectory: %s",
-                          optimization_trajectory)
+                         optimization_trajectory)
         else:
             # if not, initialize it with the first iteration
             optimization_trajectory: list[OptimizationPathEntry] = []
             logger.info("Optimization trajectory not found at %s. Initializing a new one.",
-                         self.paths['optimization_trajectory'])
+                        self.paths['optimization_trajectory'])
 
             # initialize the first iteration
             iteration_0 = OptimizationPathEntry(
@@ -125,7 +126,7 @@ class InvestmentProblem:
             json.dump([entry.to_dict() for entry in self.optimization_trajectory],
                       file, indent=4, sort_keys=True)
         logger.info('Saved optimization trajectory to %s',
-                     self.paths["optimization_trajectory"])
+                    self.paths["optimization_trajectory"])
 
     def solve_investment(self):
         # initialize the current investment as the last element of the optimization trajectory
@@ -218,11 +219,12 @@ class InvestmentProblem:
         Computes the profits and derivatives for a given level of investment_problem 
         '''
         # Create a dict of runs
-        runs_dict: dict[str, Run] = {'current': self._create_run(current_investment)}
+        runs_dict: dict[str, Run] = {
+            'current': self.create_run(current_investment)}
         for var in self.endogenous_variables.keys():
             investment = current_investment.copy()
             investment[var] += DELTA
-            runs_dict[var] = self._create_run(investment)
+            runs_dict[var] = self.create_run(investment)
 
         # Submit the runs, give up after 3 attempts
         max_attempts: int = 3
@@ -237,32 +239,35 @@ class InvestmentProblem:
                     job_id = run.submit()
                     if job_id:
                         job_ids_list.append(job_id)
+            logger.info("Attempt %s, submitted jobs %s", attempts,
+                        job_ids_list)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
-            attempts += 1 
+            attempts += 1
 
         # Check if all runs were successful
         if not all(run.successful() for run in runs_dict.values()):
+            unsuccessful_runs_names = [
+                run.name for run in runs_dict.values() if not run.successful()]
             logger.critical(
-                "Not all runs were successful. Aborting.")
+                "Runs %s not successful, aborting investment solver", unsuccessful_runs_names)
             sys.exit(UNSUCCESSFUL_RUN)
-            
 
         # process results
         profits_perturb = {}
         for resource, run in runs_dict.items():
             run_processor = RunProcessor(run)
             endogenous_variables_list: list[str] = list(
-                    self.endogenous_variables.keys())
+                self.endogenous_variables.keys())
             profits_perturb[resource] = run_processor.get_profits(
-                    endogenous_variables_list)
+                endogenous_variables_list)
 
         # compute derivatives from the profits
         derivatives = derivatives_from_profits(
             profits_perturb, DELTA, list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
-    def _create_run(self, current_investment: dict):
+    def create_run(self, current_investment: dict):
         """
         Creates a Run object from a level of current investment_problem in the 
         endogenous capacities
@@ -301,7 +306,7 @@ class InvestmentProblem:
         # check if the last iteration converged
         if last_iteration.check_convergence():
             # create the run object
-            run: Run = self._create_run(last_iteration.current_investment)
+            run: Run = self.create_run(last_iteration.current_investment)
             return run
         return None
 
@@ -312,7 +317,7 @@ class InvestmentProblem:
         Submits the investment problem to Quest. 
         """
         logger.info("Preparing to run %s on quest",
-                     self.name)
+                    self.name)
 
         script_path: Path = self._create_bash()
         job_id = submit_slurm_job(script_path)
@@ -389,4 +394,3 @@ END
 ''')
 
         return self.paths['bash']
-

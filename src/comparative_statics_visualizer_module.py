@@ -8,7 +8,14 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from src.run_module import Run  # Import the updated Run class
+from src.run_module import Run
+from src.comparative_statics_module import ComparativeStatics
+from src.constants import HEATMAP_CONFIGS, ONE_D_PLOTS_CONFIGS
+
+
+def visualize(comparative_statics: ComparativeStatics, grid_dimension: int):
+    visualizer = ComparativeStaticsVisualizer(comparative_statics)
+    visualizer.visualize(grid_dimension)
 
 
 class ComparativeStaticsVisualizer:
@@ -20,22 +27,23 @@ class ComparativeStaticsVisualizer:
             - {run_name}_price_distribution.csv
     '''
 
-    def __init__(self, experiment_folder: Path):
-        self.experiment_folder: Path = experiment_folder
-        self.name: str = experiment_folder.name
+    def __init__(self, comparative_statics: ComparativeStatics):
+        self.name: str = comparative_statics.name
 
-        self.dict_of_runs: dict[str, Run] = self._initialize_runs()
+        output_folder: Path = comparative_statics.paths['results']
+
+        self.dict_of_runs: list[Run] = comparative_statics.list_simulations
         self.save_paths: dict[str, Path] = {
-            'heatmaps': self.experiment_folder / "heatmaps",
-            'price_distributions': self.experiment_folder / "price_distributions",
-            'one_d_plots': self.experiment_folder / "one_d_plots"
+            'heatmaps': output_folder / "heatmaps",
+            'price_distributions': output_folder / "price_distributions",
+            'one_d_plots': output_folder / "one_d_plots"
         }
         # Create the directories if they don't exist
         for _, path in self.save_paths.items():
             path.mkdir(parents=True, exist_ok=True)
         # Load results_df
-        results_df_path: Path = self.experiment_folder / \
-            f"{self.name}_results.csv"
+        results_df_path: Path = output_folder / \
+            f"results_table.csv"
         self.results_df: pd.DataFrame = pd.read_csv(results_df_path)
 
     def visualize(self, grid_dimension: int):
@@ -47,42 +55,14 @@ class ComparativeStaticsVisualizer:
         elif grid_dimension == 1:
             self._one_d_plots()
 
-    def _initialize_runs(self):
-        '''
-        Reads the results of the experiment into Run objects.
-        '''
-        # From the experiment folder, find subfolders that correspond to runs
-        dict_of_runs: dict[str, Run] = {}
-        for run_folder in self.experiment_folder.iterdir():
-            if run_folder.is_dir():
-                run_name = run_folder.name
-                # Skip the main results folder
-                if run_name == self.name:
-                    continue
-                # Create a Run object
-                run = Run(
-                    folder=run_folder,
-                    general_parameters={},  # Assuming general_parameters are not needed here
-                    variables={}  # Assuming variables are not needed here
-                )
-                # Check if results exist
-                if run.load_results() is not None and run.load_price_distribution() is not None:
-                    dict_of_runs[run_name] = run
-
-        # Sort the dict by the run name
-        dict_of_runs: dict[str, Run] = dict(
-            sorted(dict_of_runs.items()))
-
-        return dict_of_runs
-
     def _plot_pca_price_distributions(self):
         price_distributions_list = []
         run_names = []
-        for run_name, run in self.dict_of_runs.items():
+        for run in self.dict_of_runs:
             wide_df = run.load_price_distribution()
             if wide_df is not None:
                 price_distributions_list.append(wide_df)
-                run_names.append(run_name)
+                run_names.append(run.name)
         if not price_distributions_list:
             print("No price distributions available for PCA.")
             return
@@ -114,10 +94,9 @@ class ComparativeStaticsVisualizer:
             pca_result, runs)
 
         # Add variables to the components_df if available
-        if self.dict_of_runs[runs[0]].variables:
-            for var_name in self.dict_of_runs[runs[0]].variables.keys():
-                components_df[var_name] = [self.dict_of_runs[run]
-                                           .variables.get(var_name, {}).get('value', None)
+        if self.dict_of_runs[0].variables:
+            for var_name in self.dict_of_runs[0].variables.keys():
+                components_df[var_name] = [run.variables.get(var_name, {}).get('value', None)
                                            for run in runs]
 
         # Get the correlation matrix
@@ -139,7 +118,7 @@ class ComparativeStaticsVisualizer:
 
     def _plot_intraweek_price_distributions(self):
         plots_list = []
-        for run_name, run in self.dict_of_runs.items():
+        for run in self.dict_of_runs:
             price_distribution = run.load_price_distribution()
             if price_distribution is None:
                 continue

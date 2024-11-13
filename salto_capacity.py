@@ -1,5 +1,32 @@
-import numpy as np
 from src.comparative_statics_module import ComparativeStatics
+from src.comparative_statics_visualizer_module import visualize
+import numpy as np
+from rich.logging import RichHandler
+import logging
+import sys
+
+# Configure the handler with pretty printing enabled
+rich_handler = RichHandler(
+    rich_tracebacks=True,
+    show_time=True,
+    show_path=True,
+    markup=True
+)
+
+
+# Configure basic logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[rich_handler]
+)
+
+# Ensure root logger uses the rich handler
+logging.getLogger().handlers = [rich_handler]
+
+# Your module's logger
+logger = logging.getLogger(__name__)
 
 # Input parameters for the comparative statics exercise
 name = 'salto_capacity'
@@ -37,6 +64,6 @@ comparative_statics = ComparativeStatics(name,
                                          general_parameters)
 
 # All action happens here
-comparative_statics.submit()
+# comparative_statics.submit()
 # comparative_statics.process()
-# comparative_statics.visualize(grid_dimension=1)
+visualize(comparative_statics, grid_dimension=1)

@@ -1,6 +1,34 @@
 # Description: This file contains the constants used in the project.
 from pathlib import Path
 
+from rich.logging import RichHandler
+import logging
+import sys
+
+# Configure the handler with pretty printing enabled
+rich_handler = RichHandler(
+    rich_tracebacks=True,
+    show_time=True,
+    show_path=True,
+    markup=True
+)
+
+
+# Configure basic logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[rich_handler]
+)
+
+# Ensure root logger uses the rich handler
+logging.getLogger().handlers = [rich_handler]
+
+
+def get_logger(name):
+    return logging.getLogger(name)
+
 
 # constants for parsing the results
 DATETIME_FORMAT = '%m/%d/%y %H:%M'

@@ -3,6 +3,10 @@ Comparative statics exercise for changing the volume of the lakes in the system.
 """
 import numpy as np
 from src.comparative_statics_module import ComparativeStatics
+from src.constants import get_logger
+
+logger = get_logger(__name__)
+
 
 name = 'salto_volume'
 general_parameters: dict = {'daily': True,
@@ -13,8 +17,8 @@ general_parameters: dict = {'daily': True,
                             'years_run': 6.61,
                             'requested_time_run': 4.5}
 
-exog_grid: list[float] = [0.75]
-# exog_grid: list[float] = [0.4, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
+# exog_grid: list[float] = [0.75]
+exog_grid: list[float] = [0.4, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
 exogenous_variables: dict[str, dict] = {
     'lake_factor': {'pattern': 'LAKE_FACTOR'},
 }

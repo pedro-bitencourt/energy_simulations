@@ -17,6 +17,7 @@ from src import auxiliary
 
 logger = logging.getLogger(__name__)
 
+
 def text_to_table(text, delete_first_row):
     """
     Converts text to a table.
@@ -351,10 +352,29 @@ def process_res_file(option, sim_folder) -> Optional[pd.DataFrame]:
     raw_data.drop(raw_data.tail(2).index, inplace=True)
 
     # Create a mapping from raw column names to desired column names
-    rename_map = {raw_name: desired_name for desired_name,
-                  raw_name in option['variables'].items()}
-    # Rename the columns using the mapping
+    # Check which variables are present in the raw data
+    rename_map = {}
+    missing_vars = []
+    for desired_name, raw_name in option['variables'].items():
+        if raw_name in raw_data.columns:
+            rename_map[raw_name] = desired_name
+        else:
+            missing_vars.append(raw_name)
+
+    # Log missing variables if any
+    if missing_vars:
+        print(
+            f"Warning: The following variables were not found in the data: {missing_vars}")
+
+    # Rename the columns using the mapping (only for columns that exist)
     raw_data.rename(columns=rename_map, inplace=True)
+
+#    # Create a mapping from raw column names to desired column names
+#    rename_map = {raw_name: desired_name for desired_name,
+#                  raw_name in option['variables'].items()}
+#    # Rename the columns using the mapping
+#    raw_data.rename(columns=rename_map, inplace=True)
+
     # Define the columns to keep, ensuring 'year' is included
     columns_to_keep = ['year'] + list(rename_map.values())
     # Select only the desired columns
@@ -380,7 +400,7 @@ def read_res_file(option, sim_folder):
     # check if the table was read correctly:
     if not data_table:
         logger.error("Error reading the table from the file %s",
-                      file_path)
+                     file_path)
         return None
 
     # convert the table to a DataFrame
@@ -396,7 +416,7 @@ def read_res_file(option, sim_folder):
         # check if the line has the correct number of columns
         if len(line) != number_of_years + 1:
             logger.error("Faulty line found while reading %s",
-                          file_path)
+                         file_path)
             logger.error("Faulty line:%s", line)
             continue
         dataframe[line[0]] = line[1:]

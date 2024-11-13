@@ -29,7 +29,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
 
 WEEK_HOURS_BIN = list(range(0, 169))  # Adjusted to include 168
 
@@ -69,25 +69,6 @@ class RunProcessor(Run):
 
         self._update_paths()
 
-    def resubmit_unsuccessful(self):
-        """
-        Resubmits the run if it was unsuccessful.
-        """
-        if not self.successful(log=True):
-            job_id = self.resubmit()
-            return job_id
-        return None
-
-    def resubmit(self):
-        """
-        Tears down previous folder and resubmits the run to the cluster.
-        """
-        logger.info(f'Resubmitting run {self.name}.')
-        self.tear_down()
-        logger.info(f'Resubmitting run {self.name}.')
-        job_id = self.submit()
-        return job_id
-
     def _update_paths(self) -> None:
         """
         Updates the paths dictionary with additional paths needed for processing.
@@ -121,11 +102,12 @@ class RunProcessor(Run):
                 # Create a header for the results
                 header = {'run_name': self.name, **variable_values}
 
+                logger.debug("Getting price results for run %s", self.name)
                 # Get price results
                 price_results = self._get_price_results()
-                if price_results is None:
-                    return None
 
+                logger.debug(
+                    "Getting production results for run %s", self.name)
                 # Get production results
                 production_results = self._get_production_results()
 
@@ -200,7 +182,8 @@ class RunProcessor(Run):
                 nan_rows = marginal_cost_df[marginal_cost_df.isna().any(
                     axis=1)]
                 logger.error(f'Rows with NaN values:\n{nan_rows}')
-                raise ValueError('Marginal cost DataFrame contains NaN values.')
+                raise ValueError(
+                    'Marginal cost DataFrame contains NaN values.')
 
             # Ensure 'datetime' column is in correct format
             marginal_cost_df['datetime'] = pd.to_datetime(
@@ -262,7 +245,7 @@ class RunProcessor(Run):
         production_results = {}
 
         # Get total production by resource
-        production_by_resource = res.total_production_by_resource(
+        production_by_resource = proc.total_production_by_resource(
             self.paths['sim'])
         production_results.update({
             f'total_production_{resource}': production_by_resource.get(resource, 0.0)
@@ -270,7 +253,7 @@ class RunProcessor(Run):
         })
 
         # Get total production by plant
-        production_by_plant = res.total_production_by_plant(self.paths['sim'])
+        production_by_plant = proc.total_production_by_plant(self.paths['sim'])
 
         # Get the total production for the new thermal plant
         new_thermal_production = production_by_plant.get('new_thermal', 0.0)
@@ -343,9 +326,9 @@ class RunProcessor(Run):
             for var in endogenous_variables_names:
                 capacity: float = capacities[var]
                 participant: Participant = Participant(var,
-                                                      capacity,
-                                                      self.paths,
-                                                      self.general_parameters)
+                                                       capacity,
+                                                       self.paths,
+                                                       self.general_parameters)
 
                 logger.debug(f"Computing profits for {var} participant.")
                 # Compute profit for the participant
@@ -359,7 +342,8 @@ class RunProcessor(Run):
             return profits
         except Exception as e:
             logger.critical(f'Error computing profits: {e}')
-            raise ValueError(f'Unexpected error computing profits for RunProcessor {self.name}')
+            raise ValueError(
+                f'Unexpected error computing profits for RunProcessor {self.name}')
 
     def processed_status(self):
         if self.paths['results_json'].exists():

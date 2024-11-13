@@ -16,7 +16,8 @@ import pandas as pd
 
 from src.auxiliary import make_name, try_get_file, submit_slurm_job
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
+
 
 class Run:
     """
@@ -138,13 +139,13 @@ class Run:
                 return True
             if log:
                 logger.error('No resumen file found for run %s in folder %s',
-                              self.name,
-                              self.paths['subfolder'])
+                             self.name,
+                             self.paths['subfolder'])
         else:
             if log:
                 logger.error('No sim folder found for run %s in folder %s',
-                              self.name,
-                              self.paths['subfolder'])
+                             self.name,
+                             self.paths['subfolder'])
         return False
 
     def submit(self):
@@ -161,6 +162,9 @@ class Run:
 
         # Tear down the folder
         self.tear_down()
+
+        # Create the directory
+        self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
         # Create the xml file
         xml_path: Path = self._create_xml()
@@ -240,7 +244,12 @@ class Run:
         for variable in self.variables.values():
             for degree in DEGREES:
                 pattern = variable['pattern'] + f"_{degree}"
-                value = variable['value']**degree
+                if variable['value'] > 0:
+                    value = variable['value']**degree
+                else:
+                    logger.info("Inputting 0 for %s at degree %s due to value  %s",
+                                variable['pattern'], degree, variable['value'])
+                    value = 0
                 content = substitute_pattern(content, pattern, value)
             content = substitute_pattern(
                 content, variable['pattern'], variable['value'])
