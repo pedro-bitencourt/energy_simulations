@@ -21,10 +21,11 @@ logging.basicConfig(
     datefmt="[%X]",
     handlers=[rich_handler]
 )
-
 # Ensure root logger uses the rich handler
 logging.getLogger().handlers = [rich_handler]
 
+# Option 2: If you want to suppress all matplotlib debugj
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 # Your module's logger
 logger = logging.getLogger(__name__)
 
