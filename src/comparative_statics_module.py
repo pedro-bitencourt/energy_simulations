@@ -30,7 +30,6 @@ from src.investment_module import InvestmentProblem
 from src.run_module import Run
 from src.run_processor_module import RunProcessor
 from src.optimization_module import OptimizationPathEntry, get_last_successful_iteration
-from src.auxiliary import wait_for_jobs
 
 from src.constants import BASE_PATH
 

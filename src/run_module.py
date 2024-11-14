@@ -281,6 +281,7 @@ class Run:
 #SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
 
+export WINEPREFIX=/home/pdm6134/rcs_wine_test
 module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3

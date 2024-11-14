@@ -70,18 +70,17 @@ HEATMAP_CONFIGS = [
 ONE_D_PLOTS_CONFIGS = [
     # Optimal capacities of wind and solar
     {
-        'x_key': 'hydro_factor',
         'y_variables': [
             {'key': 'wind', 'label': 'Optimal Wind Capacity'},
-            {'key': 'solar', 'label': 'Optimal Solar Capacity'}
+            {'key': 'solar', 'label': 'Optimal Solar Capacity'},
+            {'key': 'thermal', 'label': 'Optimal Thermal Capacity'}
         ],
-        'axis_labels': {'x': 'Hydro Factor', 'y': 'Capacity (MW)'},
+        'axis_labels': {'y': 'Capacity (MW)'},
         'title': 'Optimal Wind and Solar Capacities',
-        'filename': 'wind_solar_capacities.png'
+        'filename': 'optimal_capacities.png'
     },
     # Total production by resources
     {
-        'x_key': 'hydro_factor',
         'y_variables': [
             {'key': 'total_production_hydros', 'label': 'Hydro'},
             {'key': 'total_production_thermals', 'label': 'Thermal'},
@@ -95,28 +94,26 @@ ONE_D_PLOTS_CONFIGS = [
             {'key': 'total_production_blackout', 'label': 'Blackout'},
 
         ],
-        'axis_labels': {'x': 'Hydro Factor', 'y': 'Total Production (GWh)'},
+        'axis_labels': {'y': 'Total Production (GWh)'},
         'title': 'Total Production by Resources',
         'filename': 'total_production.png'
     },
     # New thermal production
     {
-        'x_key': 'hydro_factor',
         'y_variables': [
             {'key': 'total_production_hydros', 'label': 'Hydro'},
             {'key': 'new_thermal_production', 'label': 'New Thermal'}
         ],
-        'axis_labels': {'x': 'Hydro Factor', 'y': 'Total Production (GWh)'},
+        'axis_labels': {'y': 'Total Production (GWh)'},
         'title': 'Production of Hydros and New Thermal',
         'filename': 'total_production_new_thermal.png'
     },
     # Average price
     {
-        'x_key': 'hydro_factor',
         'y_variables': [
             {'key': 'price_avg', 'label': 'Average Price'}
         ],
-        'axis_labels': {'x': 'Hydro Factor', 'y': 'Price ($/MWh)'},
+        'axis_labels': {'y': 'Price ($/MWh)'},
         'title': 'Average Price',
         'filename': 'average_price.png'
     }
@@ -327,7 +324,7 @@ COSTS_BY_PARTICIPANT_TABLE = {
 #       'Bio_nodesp': 'Bio_nodesp',
 #       'thermal_new': 'thermal_new',
 #       'PTigreB': 'PTigreB',
-#       'impoEstacArg': 'impoEstacArg',
+#      'impoEstacArg': 'impoEstacArg',
 #       'impoBraRiv': 'impoBraRiv',
 #       'impoBrMelo': 'impoBrMelo',
 #       'excedentes': 'excedentes',

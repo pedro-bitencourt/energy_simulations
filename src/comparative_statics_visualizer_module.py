@@ -24,10 +24,11 @@ def visualize(comparative_statics: ComparativeStatics, grid_dimension: int):
 class ComparativeStaticsVisualizer:
     '''
     '''
-
     def __init__(self, comparative_statics: ComparativeStatics):
         self.name: str = comparative_statics.name
         self.list_of_runs: list[Run] = comparative_statics.list_simulations
+
+        self.exogenous_variables: dict = comparative_statics.exogenous_variables
 
         # Initialize the paths
         self.paths: dict[str, Path] = self._initialize_paths(
@@ -78,65 +79,97 @@ class ComparativeStaticsVisualizer:
         elif grid_dimension == 1:
             self._one_d_plots()
 
+    @staticmethod
+    def get_pca(price_data: np.ndarray):
+        """
+        This function will perform PCA on the price data and return the principal components.
+        No PCA object should be used outside of this function.
+        """
+        from sklearn.decomposition import PCA
+        from sklearn.preprocessing import StandardScaler
+        
+        # Do PCA
+        scaler = StandardScaler()
+        scaled_data = scaler.fit_transform(price_data)
+        
+        pca = PCA()
+        pca_result = pca.fit_transform(scaled_data)
+        # Get the principal components
+        pca_components: np.ndarray = pca.components_
+        pca_explained_variance_ratio: np.ndarray = pca.explained_variance_ratio_
+        return pca_components, pca_explained_variance_ratio, pca_result
+
+    def _get_correlation_matrix(self, components_df: pd.DataFrame):
+        """
+        """
+        correlation_df = components_df.corr()
+        # Drop the cross-correlation of the principal components
+        correlation_df = correlation_df.drop(
+            columns=[col for col in correlation_df.columns if 'PC' in col]
+        )
+        return correlation_df
+
+    def _get_components_df(self, pca_result: np.ndarray, runs: List[str], n_components: int):
+        # First create DataFrame with just the PCA results
+        components_df = pd.DataFrame(
+            pca_result[:, :n_components],
+            columns=[f'PC{i+1}' for i in range(n_components)],
+            index=runs  # Use the actual runs list as index
+        )
+        
+        # Then add variables as columns using a dictionary comprehension
+        variable_data = {
+            var_name: [run.variables.get(var_name, {}).get('value', None) 
+                      for run in self.list_of_runs]
+            for var_name in self.list_of_runs[0].variables.keys()
+        }
+        
+        # Update the DataFrame with the variable data
+        components_df = components_df.assign(**variable_data)
+        return components_df
+    
+    
     def _plot_pca_price_distributions(self):
         """
         Perform PCA on the price distributions, plot the principal components of each run,
         output the principal components to a CSV file
         """
+        # Combine all price distributions
         price_distributions = pd.concat(
-            [result_run['price_distribution']
-                for result_run in self.results_runs.values()],
+            [result_run['price_distribution'] 
+             for result_run in self.results_runs.values()],
             keys=self.results_runs.keys(),
             names=['run']
         )
+        # Get runs and data for PCA
+        runs = price_distributions.index.get_level_values('run').unique().tolist()
+        price_data: np.ndarray = price_distributions.values  
+        pca_components, pca_explained_variance_ratio, pca_result = self.get_pca(price_data)
 
-        # Reset the index to separate the 'run' column
-        price_distributions = price_distributions.reset_index(level='run')
-
-        # Separate the 'run' column and use the rest for PCA
-        runs = price_distributions['run'].tolist()
-        price_data = price_distributions.drop('run', axis=1)
-
-        print(price_data)
-        # Perform PCA
-        pca, pca_result, scaler = perform_pca(price_data)
-
-        # Plot principal components
-        print("pca:")
-        print(pca)
-        pc_fig, _ = create_principal_components_plot(pca)
-        eigenvalue_fig, _ = create_eigenvalue_decay_plot(pca)
-
-        # Create a DataFrame with the principal component data
-        n_components: int = 4
-        components_df = pd.DataFrame(
-            pca_result[:, :n_components],
-            columns=[f'PC{i+1}' for i in range(n_components)],
-            index='run'
-        )
-        for var_name in self.list_of_runs[0].variables.keys():
-            components_df[var_name] = [run.variables.get(var_name, {}).get('value', None)
-                                       for run in runs]
-
-        # Get the correlation matrix
-        correlation_df = components_df.corr()
-
-        # Drop the cross-correlation of the principal components
-        correlation_df = correlation_df.drop(
-            columns=[col for col in correlation_df.columns if 'PC' in col])
-
-        # Save plots and data
+        # Save the explained variance ratio to a text file 
         with open(self.paths['price_distributions'] / f"{self.name}_explained_variance_ratio.txt", 'w') as file:
             file.write("Explained variance ratio:\n")
-            file.write(str(pca.explained_variance_ratio_))
+            file.write(str(pca_explained_variance_ratio))
+    
+        # Plot principal components
+        pc_fig = create_principal_components_plot(pca_components)
+        eigenvalue_fig = create_eigenvalue_decay_plot(pca_explained_variance_ratio)
+
+        # Save the figures
         pc_fig.savefig(self.paths['price_distributions'] /
                        f"{self.name}_principal_components.png", dpi=300)
         eigenvalue_fig.savefig(self.paths['price_distributions'] /
                                f"{self.name}_eigenvalue_decay.png", dpi=300)
-        components_df.to_csv(self.paths['price_distributions'] /
-                             f"{self.name}_principal_components.csv")
-        correlation_df.to_csv(self.paths['price_distributions'] /
-                              f"{self.name}_correlation_matrix_principal_components.csv")
+
+        ## Create a DataFrame with the principal component data
+        #components_df = self._get_components_df(pca_result, runs, n_components=4)
+        #correlation_df = self._get_correlation_matrix(components_df)
+    
+        ## Save the principal components and correlation matrix to CSV
+        #components_df.to_csv(self.paths['price_distributions'] /
+        #                     f"{self.name}_principal_components.csv")
+        #correlation_df.to_csv(self.paths['price_distributions'] /
+        #                      f"{self.name}_correlation_matrix_principal_components.csv")
 
     def _plot_intraweek_price_distributions(self):
         """
@@ -167,44 +200,41 @@ class ComparativeStaticsVisualizer:
             plot_heatmap(
                 self.results_df, heatmap_config['variables'], save_path, title)
 
+
     def _one_d_plots(self):
+        """
+        Plots results over a one-dimensional exogenous variable.
+        """
+        # Get the key for the exogenous variable
+        x_key = [key for key in self.exogenous_variables.keys()][0]
+        x_label = self.exogenous_variables[x_key]['label']
+        # Iterate over plots; ONE_D_PLOTS_CONFIGS is in constants.py
         for plot_config in ONE_D_PLOTS_CONFIGS:
-            x_key = plot_config['x_key']
+            # Unpack the plot configuration
             y_variables = plot_config['y_variables']
             axis_labels = plot_config['axis_labels']
+            axis_labels['x'] = x_label
             save_path = self.paths['one_d_plots'] / \
                 plot_config['filename']
             title = plot_config.get('title', None)
-            print(self.results_df)
+            # Create and save the plot
             simple_plot(self.results_df, x_key,
                         y_variables, axis_labels,
                         save_path, title)
 
 ################################################################################
-# PCA functions
+# Plotting functions
 ################################################################################
-
-
-def perform_pca(price_distributions: pd.DataFrame) -> Tuple[PCA, np.ndarray, StandardScaler]:
-    # Ensure that the columns are strings
-    price_distributions.columns = price_distributions.columns.astype(str)
-    scaler = StandardScaler()
-    scaled_data: np.ndarray = scaler.fit_transform(price_distributions)
-    pca = PCA()
-    pca_result: np.ndarray = pca.fit_transform(scaled_data)
-    return pca, pca_result, scaler
-
-
-def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
+def create_eigenvalue_decay_plot(pca_explained_variance_ratio: np.ndarray):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(np.cumsum(pca.explained_variance_ratio_))
+    ax.plot(np.cumsum(pca_explained_variance_ratio))
     ax.set_xlabel('Number of Components')
     ax.set_ylabel('Cumulative Explained Variance')
     ax.set_title('Eigenvalue Decay')
-    return fig, ax
+    return fig
 
 
-def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[plt.Figure, List[plt.Axes]]:
+def create_principal_components_plot(pca_components: np.ndarray, n_components: int = 3):
     fig, axs = plt.subplots(n_components, 1, figsize=(12, 4*n_components))
     for i in range(n_components):
         logger.debug("Creating pc_df...")
@@ -212,7 +242,7 @@ def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[p
         print("{pca.components_[i]=}")
         pc_df = pd.DataFrame({
             'hour_of_week_bin': range(167),
-            'price_avg': pca.components_[i]
+            'price_avg': pca_components[i]
         })
 
         logger.debug("pc_df created")
@@ -220,11 +250,8 @@ def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[p
         plot_intraweek_price_distribution(
             axs[i], pc_df, title=f'Principal Component {i+1}')
     fig.tight_layout()
-    return fig, axs
+    return fig
 
-################################################################################
-# Plotting functions
-################################################################################
 
 
 def plot_intraweek_price_distribution(ax, dataframe: pd.DataFrame, title=None):
