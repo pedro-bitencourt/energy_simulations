@@ -106,6 +106,9 @@ class RunProcessor(Run):
                 # Get price results
                 price_results = self._get_price_results()
 
+                logger.debug("Saving price distribution for run %s", self.name)
+                # Save price distribution
+                price_distribution = self._save_price_distribution()
                 logger.debug(
                     "Getting production results for run %s", self.name)
                 # Get production results
@@ -198,7 +201,7 @@ class RunProcessor(Run):
             logger.error(f'Error extracting marginal costs: {e}')
             raise ValueError('Unexpected error extracting marginal costs.')
 
-    def _price_distribution(self) -> Optional[pd.DataFrame]:
+    def _save_price_distribution(self) -> Optional[pd.DataFrame]:
         """
         Computes and returns the price distribution DataFrame.
 
@@ -410,7 +413,7 @@ run_processor = RunProcessor(
 results = run_processor.process_run(process_locally=True)
 
 # Extract price distribution
-price_distribution = run_processor._price_distribution()
+price_distribution = run_processor._save_price_distribution()
 if price_distribution is not None:
     price_distribution.to_csv(run_processor.paths['price_distribution'], index=False)
 

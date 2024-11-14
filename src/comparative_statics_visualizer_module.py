@@ -5,12 +5,15 @@ from pathlib import Path
 from typing import Tuple
 import pandas as pd
 import numpy as np
+import logging
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from src.run_module import Run
 from src.comparative_statics_module import ComparativeStatics
 from src.constants import HEATMAP_CONFIGS, ONE_D_PLOTS_CONFIGS
+
+logger = logging.getLogger(__name__)
 
 
 def visualize(comparative_statics: ComparativeStatics, grid_dimension: int):
@@ -20,34 +23,54 @@ def visualize(comparative_statics: ComparativeStatics, grid_dimension: int):
 
 class ComparativeStaticsVisualizer:
     '''
-    Reads the results of a comparative statics exercise from a specified folder. The results must be
-    in a folder with the following structure:
-        - {experiment_folder}/
-            - {run_name}_results.json
-            - {run_name}_price_distribution.csv
     '''
 
     def __init__(self, comparative_statics: ComparativeStatics):
         self.name: str = comparative_statics.name
+        self.list_of_runs: list[Run] = comparative_statics.list_simulations
 
-        output_folder: Path = comparative_statics.paths['results']
+        # Initialize the paths
+        self.paths: dict[str, Path] = self._initialize_paths(
+            comparative_statics.paths)
 
-        self.dict_of_runs: list[Run] = comparative_statics.list_simulations
-        self.save_paths: dict[str, Path] = {
-            'heatmaps': output_folder / "heatmaps",
-            'price_distributions': output_folder / "price_distributions",
-            'one_d_plots': output_folder / "one_d_plots"
-        }
         # Create the directories if they don't exist
-        for _, path in self.save_paths.items():
+        for _, path in self.paths.items():
             path.mkdir(parents=True, exist_ok=True)
-        # Load results_df
-        results_df_path: Path = output_folder / \
-            f"results_table.csv"
-        self.results_df: pd.DataFrame = pd.read_csv(results_df_path)
+
+        # Load the results dataframe
+        self.results_df: pd.DataFrame = pd.read_csv(
+            self.paths['results'] / f"results_table.csv")
+
+        self.results_runs: dict[str, dict] = self._initialize_results_runs()
+
+    def _initialize_paths(self, paths: dict[str, Path]) -> dict[str, Path]:
+        paths.update({
+            'heatmaps': paths['results'] / "heatmaps",
+            'price_distributions': paths['results'] / "price_distributions",
+            'one_d_plots': paths['results'] / "one_d_plots"
+        })
+        return paths
+
+    def _initialize_results_runs(self):
+        """
+        """
+        results_runs: dict = {}
+        for run in self.list_of_runs:
+            # Initialize the results_run dictionary
+            results_run: dict = {'price_distribution': run.load_price_distribution(),
+                                 'variables': run.variables,
+                                 }
+            results_runs[run.name] = results_run
+        return results_runs
 
     def visualize(self, grid_dimension: int):
+        logger.info("Starting the visualize() function...")
+
+        logger.info("Plotting PCA of the price distribution...")
+        # Perform a PCA on the price distributions
         self._plot_pca_price_distributions()
+
+        # Plot the intraweek price distributions
         self._plot_intraweek_price_distributions()
 
         if grid_dimension == 2:
@@ -56,48 +79,44 @@ class ComparativeStaticsVisualizer:
             self._one_d_plots()
 
     def _plot_pca_price_distributions(self):
-        price_distributions_list = []
-        run_names = []
-        for run in self.dict_of_runs:
-            wide_df = run.load_price_distribution()
-            if wide_df is not None:
-                price_distributions_list.append(wide_df)
-                run_names.append(run.name)
-        if not price_distributions_list:
-            print("No price distributions available for PCA.")
-            return
-
+        """
+        Perform PCA on the price distributions, plot the principal components of each run,
+        output the principal components to a CSV file
+        """
         price_distributions = pd.concat(
-            price_distributions_list,
-            keys=run_names,
+            [result_run['price_distribution']
+                for result_run in self.results_runs.values()],
+            keys=self.results_runs.keys(),
             names=['run']
         )
-        # Flatten the multi-index
+
+        # Reset the index to separate the 'run' column
         price_distributions = price_distributions.reset_index(level='run')
+
         # Separate the 'run' column and use the rest for PCA
         runs = price_distributions['run'].tolist()
-
         price_data = price_distributions.drop('run', axis=1)
 
+        print(price_data)
         # Perform PCA
         pca, pca_result, scaler = perform_pca(price_data)
 
-        # Save explained variance ratio
-        with open(self.save_paths['price_distributions'] / f"{self.name}_explained_variance_ratio.txt", 'w') as file:
-            file.write("Explained variance ratio:\n")
-            file.write(str(pca.explained_variance_ratio_))
-
         # Plot principal components
+        print("pca:")
+        print(pca)
         pc_fig, _ = create_principal_components_plot(pca)
         eigenvalue_fig, _ = create_eigenvalue_decay_plot(pca)
-        components_df = output_principal_components_for_runs(
-            pca_result, runs)
 
-        # Add variables to the components_df if available
-        if self.dict_of_runs[0].variables:
-            for var_name in self.dict_of_runs[0].variables.keys():
-                components_df[var_name] = [run.variables.get(var_name, {}).get('value', None)
-                                           for run in runs]
+        # Create a DataFrame with the principal component data
+        n_components: int = 4
+        components_df = pd.DataFrame(
+            pca_result[:, :n_components],
+            columns=[f'PC{i+1}' for i in range(n_components)],
+            index='run'
+        )
+        for var_name in self.list_of_runs[0].variables.keys():
+            components_df[var_name] = [run.variables.get(var_name, {}).get('value', None)
+                                       for run in runs]
 
         # Get the correlation matrix
         correlation_df = components_df.corr()
@@ -107,30 +126,35 @@ class ComparativeStaticsVisualizer:
             columns=[col for col in correlation_df.columns if 'PC' in col])
 
         # Save plots and data
-        pc_fig.savefig(self.save_paths['price_distributions'] /
+        with open(self.paths['price_distributions'] / f"{self.name}_explained_variance_ratio.txt", 'w') as file:
+            file.write("Explained variance ratio:\n")
+            file.write(str(pca.explained_variance_ratio_))
+        pc_fig.savefig(self.paths['price_distributions'] /
                        f"{self.name}_principal_components.png", dpi=300)
-        eigenvalue_fig.savefig(self.save_paths['price_distributions'] /
+        eigenvalue_fig.savefig(self.paths['price_distributions'] /
                                f"{self.name}_eigenvalue_decay.png", dpi=300)
-        components_df.to_csv(self.save_paths['price_distributions'] /
+        components_df.to_csv(self.paths['price_distributions'] /
                              f"{self.name}_principal_components.csv")
-        correlation_df.to_csv(self.save_paths['price_distributions'] /
+        correlation_df.to_csv(self.paths['price_distributions'] /
                               f"{self.name}_correlation_matrix_principal_components.csv")
 
     def _plot_intraweek_price_distributions(self):
+        """
+        Plots the average intraweek price distribution for each run. 
+
+        The average is taken over both the scenarios and over the timeline.
+        """
         plots_list = []
-        for run in self.dict_of_runs:
-            price_distribution = run.load_price_distribution()
-            if price_distribution is None:
-                continue
-            variables = run.variables
+        for run_name, result_run in self.results_runs.items():
             # Create a title based on available variables
             title_parts = []
-            for var_name, var_info in variables.items():
+            for var_name, var_info in result_run['variables'].items():
                 title_parts.append(f"{var_name}: {var_info.get('value', '')}")
             title = ", ".join(title_parts)
-            plots_list.append({'data': price_distribution, 'title': title})
+            plots_list.append(
+                {'data': result_run['price_distribution'], 'title': title})
 
-        save_path = self.save_paths['price_distributions'] / \
+        save_path = self.paths['price_distributions'] / \
             f"{self.name}_price_distributions.png"
         plot_stacked_price_distributions(plots_list, save_path)
 
@@ -138,7 +162,7 @@ class ComparativeStaticsVisualizer:
         for hm_config in HEATMAP_CONFIGS:
             heatmap_config = hm_config
             title = f"{self.name} - {heatmap_config['title']}"
-            save_path = self.save_paths['heatmaps'] / \
+            save_path = self.paths['heatmaps'] / \
                 heatmap_config['filename']
             plot_heatmap(
                 self.results_df, heatmap_config['variables'], save_path, title)
@@ -148,7 +172,7 @@ class ComparativeStaticsVisualizer:
             x_key = plot_config['x_key']
             y_variables = plot_config['y_variables']
             axis_labels = plot_config['axis_labels']
-            save_path = self.save_paths['one_d_plots'] / \
+            save_path = self.paths['one_d_plots'] / \
                 plot_config['filename']
             title = plot_config.get('title', None)
             print(self.results_df)
@@ -156,10 +180,15 @@ class ComparativeStaticsVisualizer:
                         y_variables, axis_labels,
                         save_path, title)
 
+################################################################################
+# PCA functions
+################################################################################
+
 
 def perform_pca(price_distributions: pd.DataFrame) -> Tuple[PCA, np.ndarray, StandardScaler]:
-    scaler = StandardScaler()
+    # Ensure that the columns are strings
     price_distributions.columns = price_distributions.columns.astype(str)
+    scaler = StandardScaler()
     scaled_data: np.ndarray = scaler.fit_transform(price_distributions)
     pca = PCA()
     pca_result: np.ndarray = pca.fit_transform(scaled_data)
@@ -175,35 +204,27 @@ def create_eigenvalue_decay_plot(pca: PCA) -> Tuple[plt.Figure, plt.Axes]:
     return fig, ax
 
 
-def output_principal_components_for_runs(pca_result: np.ndarray, original_index: pd.Index, n_components: int = 4) -> pd.DataFrame:
-    components_df = pd.DataFrame(
-        pca_result[:, :n_components],
-        columns=[f'PC{i+1}' for i in range(n_components)],
-        index=original_index
-    )
-
-    components_df.to_csv('principal_components_per_run.csv')
-    print("Principal components for each run saved to 'principal_components_per_run.csv'")
-    return components_df
-
-
 def create_principal_components_plot(pca: PCA, n_components: int = 3) -> Tuple[plt.Figure, List[plt.Axes]]:
     fig, axs = plt.subplots(n_components, 1, figsize=(12, 4*n_components))
     for i in range(n_components):
+        logger.debug("Creating pc_df...")
         # Create a DataFrame with the principal component data
+        print("{pca.components_[i]=}")
         pc_df = pd.DataFrame({
             'hour_of_week_bin': range(167),
             'price_avg': pca.components_[i]
         })
+
+        logger.debug("pc_df created")
         # Use plot_intraweek_price_distribution for each component
         plot_intraweek_price_distribution(
             axs[i], pc_df, title=f'Principal Component {i+1}')
     fig.tight_layout()
     return fig, axs
-# Assuming price_distributions is your DataFrame
-# main(price_distributions)
-####################
+
+################################################################################
 # Plotting functions
+################################################################################
 
 
 def plot_intraweek_price_distribution(ax, dataframe: pd.DataFrame, title=None):

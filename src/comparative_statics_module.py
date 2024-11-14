@@ -258,9 +258,12 @@ class ComparativeStatics:
             process_locally: bool = True
 
         for run in self.list_simulations:
-            run_processor = RunProcessor(run)
-            run_processor.process(process_locally)
-            logging.info("Processed run %s", run.name)
+            try:
+                run_processor = RunProcessor(run)
+                run_processor.process(process_locally)
+                logging.info("Processed run %s", run.name)
+            except ValueError:
+                logging.critical("Run %s not successful", run.name)
 
         # gather the results
         results_df: pd.DataFrame = self._results()
