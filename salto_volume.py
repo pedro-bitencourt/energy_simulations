@@ -3,6 +3,7 @@ Comparative statics exercise for changing the volume of the lakes in the system.
 """
 import numpy as np
 from src.comparative_statics_module import ComparativeStatics
+from src.comparative_statics_visualizer_module import visualize
 from src.constants import get_logger
 
 logger = get_logger(__name__)
@@ -15,12 +16,13 @@ general_parameters: dict = {'daily': True,
                             'email': 'pedro.bitencourt@u.northwestern.edu',
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
-                            'requested_time_run': 4.5}
+                            'requested_time_run': 5.5}
 
 # exog_grid: list[float] = [0.75]
 exog_grid: list[float] = [0.4, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
 exogenous_variables: dict[str, dict] = {
-    'lake_factor': {'pattern': 'LAKE_FACTOR'},
+    'lake_factor': {'pattern': 'LAKE_FACTOR',
+                    'label': 'Lake Factor'},
 }
 endogenous_variables: dict[str, dict] = {
     'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1000},
@@ -38,6 +40,6 @@ comparative_statics = ComparativeStatics(name,
                                          exogenous_variables_grid,
                                          general_parameters)
 
-comparative_statics.submit()
+# comparative_statics.submit()
 # comparative_statics.process()
-# comparative_statics.visualize(grid_dimension=1)
+visualize(comparative_statics, grid_dimension=1)

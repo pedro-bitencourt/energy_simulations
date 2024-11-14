@@ -37,16 +37,19 @@ general_parameters: dict = {'daily': True,
                             'email': 'pedro.bitencourt@u.northwestern.edu',
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
-                            'requested_time_run': 4.5}
+                            'requested_time_run': 4.5,
+                            'requested_time_solver': 16}
 exogenous_variable_name: str = 'hydro_factor'
 exogenous_variable_pattern: str = 'HYDRO_FACTOR'
+exogenous_variable_label: str = 'Hydro Factor'
 exogenous_variable_grid: list[float] = [
     0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3]
 # exogenous_variable_grid: list[float] = [1.25]
 
 # No need to change from here on
 exogenous_variables: dict[str, dict] = {
-    exogenous_variable_name: {'pattern': exogenous_variable_pattern},
+    exogenous_variable_name: {'pattern': exogenous_variable_pattern,
+                              'label': exogenous_variable_label},
 }
 endogenous_variables: dict[str, dict] = {
     'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1000},

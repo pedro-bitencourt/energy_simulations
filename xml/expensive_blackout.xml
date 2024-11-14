@@ -738,12 +738,12 @@
               <cotaInundacionAguasArriba>1000.0</cotaInundacionAguasArriba>
               <fCoVo>
                 <ev tipo="const">
-                  <funcion tipo="poli">70.10384, 0.002658, -3.412E-7, 3.3485E-11, -1.705E-15, 3.38E-20</funcion>
+                  <funcion tipo="poli">70.10384, LAKE_FACTOR_-1*0.002658, LAKE_FACTOR_-2*-3.412E-7, LAKE_FACTOR_-3*3.3485E-11, LAKE_FACTOR_-4*-1.705E-15, LAKE_FACTOR_-5*3.38E-20</funcion>
                 </ev>
               </fCoVo>
               <fVoCo>
                 <ev tipo="const">
-                  <funcion tipo="poli">1.802867E7, -1162910.0, 30003.7, -386.961, 2.49291, -0.0064081</funcion>
+                  <funcion tipo="poli">LAKE_FACTOR_1*1.802867E7, LAKE_FACTOR_1*-1162910.0, LAKE_FACTOR_1*30003.7, LAKE_FACTOR_1*-386.961, LAKE_FACTOR_1*2.49291, LAKE_FACTOR_1*-0.0064081</funcion>
                 </ev>
               </fVoCo>
               <fQEroMin>
@@ -1263,8 +1263,8 @@
                       <funcion tipo="poli">0.0</funcion>
                     </fueraRango>
                     <rangos>(0.0;3800.0),(3800.0;30000.0)</rangos>
-                    <funcion tipo="poli">30.0, 0.0024, -2.0E-7</funcion>
-                    <funcion tipo="poli">33.96, 6.67E-4</funcion>
+                    <funcion tipo="poli">30.0, LAKE_FACTOR_-1*0.0024, LAKE_FACTOR_-2*-2.0E-7</funcion>
+                    <funcion tipo="poli">33.96,LAKE_FACTOR-1*6.67E-4</funcion>
                   </funcion>
                 </ev>
               </fCoVo>
@@ -1275,8 +1275,8 @@
                       <funcion tipo="poli">0.0</funcion>
                     </fueraRango>
                     <rangos>(0.0;36.5),(36.5;50.0)</rangos>
-                    <funcion tipo="poli">17571.5, -1550.6, 32.164</funcion>
-                    <funcion tipo="poli">-50924.0, 1500.0</funcion>
+                    <funcion tipo="poli">LAKE_FACTOR_1*17571.5, LAKE_FACTOR_1*-1550.6, LAKE_FACTOR_1*32.164</funcion>
+                    <funcion tipo="poli">LAKE_FACTOR_1*-50924.0, LAKE_FACTOR_1*1500.0</funcion>
                   </funcion>
                 </ev>
               </fVoCo>
@@ -1364,7 +1364,7 @@
               </penalidadControlMinimo>
               <hayControldeCotasMaximas>false</hayControldeCotasMaximas>
               <volumenControlMaximo>
-                <ev tipo="const">7008.0</ev>
+                <ev tipo="const">LAKE_FACTOR_1*7008.0</ev>
               </volumenControlMaximo>
               <penalidadControlMaximo>
                 <ev tipo="const">0.801</ev>
@@ -1378,11 +1378,11 @@
             <variablesEstado>
               <variableEstado>
                 <nombre>volumen</nombre>
-                <estadoInicial unidad="hm3">2439.7</estadoInicial>
+                <estadoInicial unidad="hm3">LAKE_FACTOR_1*2439.7</estadoInicial>
                 <ev tipo="const">
                   <discretizacion tipo="equiespaciada">
                     <minimo>0.0</minimo>
-                    <maximo>3000.0</maximo>
+                    <maximo>LAKE_FACTOR_1*3000.0</maximo>
                     <cantidadPuntos>5</cantidadPuntos>
                   </discretizacion>
                 </ev>

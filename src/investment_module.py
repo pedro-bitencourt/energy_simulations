@@ -350,6 +350,9 @@ class InvestmentProblem:
 
         investment_data = convert_int64(investment_data)
 
+        hours = self.general_parameters['requested_time_solver']
+        requested_time = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
+
         # write investment data to a separate JSON file
         with open(data_path, 'w') as f:
             json.dump(investment_data, f)
@@ -359,10 +362,10 @@ class InvestmentProblem:
             f.write(f'''#!/bin/bash
 #SBATCH --account=b1048
 #SBATCH --partition=b1048
-#SBATCH --time=9:00:00
+#SBATCH --time={requested_time}
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=12G
+#SBATCH --mem=2G
 #SBATCH --job-name={self.name}
 #SBATCH --output={self.paths['parent_folder']}/{self.name}.out
 #SBATCH --error={self.paths['parent_folder']}/{self.name}.err
