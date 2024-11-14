@@ -155,6 +155,11 @@ class ComparativeStatics:
             # Create a Run object from the last iteration
             equilibrium_run = investment_problem.create_run(
                 last_iteration.current_investment)
+
+            # Clear the folder for the other runs
+            logger.info("Deleting run folders for investment problem %s with equilibrium run %s",
+                        investment_problem.name, equilibrium_run.name)
+            investment_problem._clear_runs_folders(equilibrium_run.name)
             list_simulations.append(equilibrium_run)
         return list_simulations
 

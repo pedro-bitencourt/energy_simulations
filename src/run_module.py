@@ -47,6 +47,7 @@ class Run:
         self.general_parameters: dict = general_parameters
 
         self.name: str = self._create_name(parent_folder)
+        self.parent_name: str = parent_folder.parts[-1]
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths(
@@ -66,7 +67,6 @@ class Run:
     def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
                                         self.variables.values()]
-        # parent_name: str = parent_folder.parts[-2]
         name: str = make_name(exog_var_values)
         return name
 
@@ -262,6 +262,7 @@ class Run:
         bash_path = self.paths['folder'] / f"{self.name}.sh"
         xml_path = os.path.normpath(str(xml_path))
         xml_path = xml_path.replace(os.path.sep, '\\')
+        job_name = f"{self.parent_name}_{self.name}"
 
         hours = self.general_parameters['requested_time_run']
         requested_time_run = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
@@ -274,7 +275,7 @@ class Run:
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
 #SBATCH --mem=5G 
-#SBATCH --job-name={self.name}
+#SBATCH --job-name={job_name}
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err
 #SBATCH --mail-user={self.general_parameters['email']}

@@ -176,12 +176,12 @@ class InvestmentProblem:
         # save results
         self._save_optimization_trajectory()
 
-    def _clear_runs_folders(self):
+    def _clear_runs_folders(self, equilibrium_run_name: str):
         """
         Deletes all the directories in self.paths['folder']
         """
         for directory in self.paths['folder'].iterdir():
-            if directory.is_dir():
+            if directory.is_dir() and directory.name != equilibrium_run_name:
                 shutil.rmtree(directory)
 
     def _update_current_iteration(self,
@@ -307,6 +307,8 @@ class InvestmentProblem:
         if last_iteration.check_convergence():
             # create the run object
             run: Run = self.create_run(last_iteration.current_investment)
+            # delete the runs folders for all other runs
+            self._clear_runs_folders()
             return run
         return None
 
