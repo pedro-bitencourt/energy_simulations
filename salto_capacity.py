@@ -5,6 +5,8 @@ from rich.logging import RichHandler
 import logging
 import sys
 
+from outer_constants import REQUESTED_TIME_SOLVER, REQUESTED_TIME_RUN
+
 # Configure the handler with pretty printing enabled
 rich_handler = RichHandler(
     rich_tracebacks=True,
@@ -37,8 +39,8 @@ general_parameters: dict = {'daily': True,
                             'email': 'pedro.bitencourt@u.northwestern.edu',
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
-                            'requested_time_run': 4.5,
-                            'requested_time_solver': 16}
+                            'requested_time_run': REQUESTED_TIME_RUN,
+                            'requested_time_solver': REQUESTED_TIME_SOLVER}
 exogenous_variable_name: str = 'hydro_factor'
 exogenous_variable_pattern: str = 'HYDRO_FACTOR'
 exogenous_variable_label: str = 'Hydro Factor'
@@ -69,5 +71,5 @@ comparative_statics = ComparativeStatics(name,
 
 # All action happens here
 # comparative_statics.submit()
-# comparative_statics.process()
-visualize(comparative_statics, grid_dimension=1)
+comparative_statics.process()
+# visualize(comparative_statics, grid_dimension=1)

@@ -370,7 +370,7 @@ class InvestmentProblem:
 #SBATCH --output={self.paths['parent_folder']}/{self.name}.out
 #SBATCH --error={self.paths['parent_folder']}/{self.name}.err
 #SBATCH --mail-user={self.general_parameters['email']}
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
 
 module purge

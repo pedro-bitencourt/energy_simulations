@@ -1264,7 +1264,7 @@
                     </fueraRango>
                     <rangos>(0.0;3800.0),(3800.0;30000.0)</rangos>
                     <funcion tipo="poli">30.0, LAKE_FACTOR_-1*0.0024, LAKE_FACTOR_-2*-2.0E-7</funcion>
-                    <funcion tipo="poli">33.96,LAKE_FACTOR-1*6.67E-4</funcion>
+                    <funcion tipo="poli">33.96, LAKE_FACTOR_-1*6.67E-4</funcion>
                   </funcion>
                 </ev>
               </fCoVo>

@@ -126,6 +126,8 @@ class Run:
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
+
+        If it was not successful, deletes the folder.
         """
         # Get opt and sim folders
         self.paths.update(self._get_opt_and_sim_folders())
@@ -137,15 +139,26 @@ class Run:
             resumen_file = try_get_file(sim_folder, r'resumen*')
             if resumen_file:
                 return True
-            if log:
-                logger.error('No resumen file found for run %s in folder %s',
-                             self.name,
-                             self.paths['subfolder'])
+
+            # If no resumen file found, delete the sim folder
+            import shutil
+            try:
+                shutil.rmtree(sim_folder)
+                if log:
+                    logger.error('No resumen file found for run %s in folder %s. Deleting sim folder.',
+                                 self.name,
+                                 self.paths['subfolder'])
+            except Exception as e:
+                if log:
+                    logger.error('Error deleting sim folder for run %s: %s',
+                                 self.name,
+                                 str(e))
         else:
             if log:
                 logger.error('No sim folder found for run %s in folder %s',
                              self.name,
                              self.paths['subfolder'])
+
         return False
 
     def submit(self):
