@@ -660,7 +660,7 @@
           </compCoefEnergetico>
         </compsPorDefecto>
         <listaUtilizados>salto</listaUtilizados>
-        <listaAtributos></listaAtributos>
+        <listaAtributos>potencias,cotaAguasArriba</listaAtributos>
         <listaGHidraulico>
           <gHidraulico>
             <compsGenerales>

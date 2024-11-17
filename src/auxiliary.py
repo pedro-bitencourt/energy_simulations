@@ -13,7 +13,9 @@ import logging
 #################################
 ### General utility functions ###
 #################################
-def convert_numpy_types(data: Dict[str, Any]) -> Dict[str, Any]:
+
+
+def convert_numpy_types(data: dict) -> dict:
     """
     Converts numpy data types in a dictionary to native Python types.
 

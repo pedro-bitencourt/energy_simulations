@@ -71,5 +71,6 @@ comparative_statics = ComparativeStatics(name,
 
 # All action happens here
 # comparative_statics.submit()
-comparative_statics.process()
+comparative_statics.redo_equilibrium_runs()
+# comparative_statics.process()
 # visualize(comparative_statics, grid_dimension=1)
