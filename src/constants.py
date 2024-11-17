@@ -168,10 +168,10 @@ MARGINAL_COST_DF = {
         'drop_columns':
         ['PROMEDIO', ''],
         'rename_columns': None,
-        'numeric_columns': [f'{i}' for i in range(0, 114)]
+        'numeric_columns': [f'{i}' for i in range(0, 114)],
+        'keep_columns': ['datetime'] + [f'{i}' for i in range(0, 114)]
     },
     'delete_first_row': False,
-    'output_filename': 'marginal_cost'
 }
 
 DEMAND_DF = {
@@ -187,12 +187,51 @@ DEMAND_DF = {
             **{f'ESC{i}': f'{i}' for i in range(0, 114)},
             '': 'paso_start'
         },
-        'numeric_columns': [f'{i}' for i in range(0, 114)]
+        'numeric_columns': [f'{i}' for i in range(0, 114)],
+        'keep_columns': ['datetime'] + [f'{i}' for i in range(0, 114)]
     },
     'delete_first_row': True,
-    'output_filename': 'demand'
 }
 
+VARIABLE_COSTS_THERMAL_DF = {
+    'name': 'variable_costs',
+    'filename': 'TER_new_thermal/costos*xlt',
+    'table_pattern': {
+        'start': 'CANT_POSTE',
+        'end': None
+    },
+    'columns_options': {
+        'drop_columns': ['PROMEDIO_ESC','poste'],
+        'rename_columns': {
+            **{f'ESC{i}': f'{i}' for i in range(0, 114)},
+            '': 'datetime'
+        },
+        'numeric_columns': [f'{i}' for i in range(0, 114)],
+        'keep_columns': ['datetime'] + [f'{i}' for i in range(0, 114)]
+    },
+    'delete_first_row': True,
+    'convert_poste': False
+}
+
+SALTO_WATER_LEVEL_DF = {
+    'name': 'salto_water_level',
+    'filename': 'HID_salto/cota*xlt',
+    'table_pattern': {
+        'start': 'CANT_POSTE',
+        'end': None
+    },
+    'columns_options': {
+        'drop_columns': ['PROMEDIO_ESC','poste'],
+        'rename_columns': {
+            **{f'ESC{i}': f'{i}' for i in range(0, 114)},
+            '': 'datetime'
+        },
+        'numeric_columns': [f'{i}' for i in range(0, 114)],
+        'keep_columns': ['datetime'] + [f'{i}' for i in range(0, 114)]
+    },
+    'delete_first_row': True,
+    'convert_poste': False
+}
 ################################################################################################
 
 BASIC_RES_OPTION = {

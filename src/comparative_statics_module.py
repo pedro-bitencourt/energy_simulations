@@ -280,6 +280,12 @@ class ComparativeStatics:
         logging.info("Results for the comparative statics exercise %s: %s",
                      self.name, results_df)
 
+    def redo_equilibrium_runs(self):
+        for run in self.list_simulations:
+            logger.info("Redoing equilibrium run %s", run.name)
+            run.tear_down()
+            run.submit()
+
     def _submit_processor_jobs(self):
         job_ids: list = []
         for run in self.list_simulations:
@@ -366,20 +372,3 @@ class ComparativeStatics:
         results_df: pd.DataFrame = pd.DataFrame(rows)
 
         return results_df
-
-    ############################
-    # NOT IN USE
-
-    def _get_parameters(self):
-        """
-        Extract name of the run, the initial year and the final year
-        from the .xml file
-        """
-        xml_basefile_filepath = self.general_parameters['xml_basefile']
-        with open(xml_basefile_filepath, 'r', encoding='utf-8') as file:
-            content = file.read()
-            name = content.split("<nombre>")[1].split("</nombre>")[0].strip()
-            initial_year = int(content.split(
-                "<inicioCorrida>")[1].split(" ")[2])
-            final_year = int(content.split("<finCorrida>")[1].split(" ")[2])
-        return name, initial_year, final_year

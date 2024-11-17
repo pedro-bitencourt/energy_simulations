@@ -47,7 +47,7 @@ class RunProcessor(Run):
         paths (dict): Extended dictionary of relevant paths for processing
     """
 
-    def __init__(self, run: Run, resubmit: bool = False):
+    def __init__(self, run: Run):
         """
         Initializes RunProcessor with an existing Run instance.
 
@@ -68,6 +68,26 @@ class RunProcessor(Run):
             raise ValueError(f'Run {self.name} was not successful.')
 
         self._update_paths()
+        # Create dict of participants
+        list_participants = ['wind', 'solar', 'thermal']
+        self.participants_dict: dict[str, Participant] = {var: Participant(var,
+                                                                        self.variables[var]['value'],
+                                                                        self.paths,
+                                                                        self.general_parameters)
+                                                            for var in list_participants}
+
+    def production_participant(self, participant_key: str) -> pd.DataFrame:
+        production_df: pd.DataFrame = self.participants_dict[participant_key].production_df()
+        return production_df
+
+    def variable_costs_participant(self, participant_key: str) -> pd.DataFrame:
+        costs_df: pd.DataFrame = self.participants_dict[participant_key].variable_costs_df()
+        return costs_df
+
+    def water_level_participant(self, participant_key: str) -> pd.DataFrame:
+        water_level_df: pd.DataFrame = self.participants_dict[participant_key].water_level_df()
+        return water_level_df
+
 
     def _update_paths(self) -> None:
         """
@@ -80,6 +100,7 @@ class RunProcessor(Run):
         self.paths['price_distribution'] = self.paths['folder'] / \
             'price_distribution.csv'
         self.paths['results_json'] = self.paths['folder'] / 'results.json'
+
 
     def process(self, process_locally: bool = True) -> None:
         """
@@ -107,8 +128,11 @@ class RunProcessor(Run):
                 price_results = self._get_price_results()
 
                 logger.debug("Saving price distribution for run %s", self.name)
+                # Get price distribution
+                price_distribution = self._intraweek_price_distribution()
                 # Save price distribution
-                price_distribution = self._save_price_distribution()
+                price_distribution.to_csv(
+                    self.paths['price_distribution'], index=False)
                 logger.debug(
                     "Getting production results for run %s", self.name)
                 # Get production results
@@ -118,7 +142,7 @@ class RunProcessor(Run):
                 results = {**header, **price_results, **production_results}
 
                 # Convert numpy types to native Python types for JSON serialization
-                results = self._convert_numpy_types(results)
+                results = src.auxiliary.convert_numpy_types(results)
 
                 # Save results to JSON
                 with open(self.paths['results_json'], 'w') as file:
@@ -126,16 +150,13 @@ class RunProcessor(Run):
 
                 logger.info(
                     f'Results for run {self.name} saved successfully.')
-                return None
             except Exception as e:
                 logger.error(
                     f'Error processing results for run {self.name}: {e}')
-                return None
         else:
             logger.info(
                 f'Submitting processing job for run {self.name} to the cluster.')
-            job_id = self.submit_processor_job()
-            return None  # Since processing is done on the cluster, no results are returned immediately
+            self.submit_processor_job()
 
     def results(self):
         """
@@ -145,22 +166,6 @@ class RunProcessor(Run):
             results = json.load(file)
         return results
 
-    @staticmethod
-    def _convert_numpy_types(data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Converts numpy data types in a dictionary to native Python types.
-
-        Args:
-            data (dict): The dictionary to convert.
-
-        Returns:
-            dict: The converted dictionary.
-        """
-        return {key: (int(value) if isinstance(value, np.integer)
-                      else float(value) if isinstance(value, np.floating)
-                      else value)
-                for key, value in data.items()}
-
     def _extract_marginal_costs_df(self) -> pd.DataFrame:
         """
         Extracts the marginal cost DataFrame from the simulation folder.
@@ -168,40 +173,17 @@ class RunProcessor(Run):
         Returns:
             pd.DataFrame or None: The marginal cost DataFrame, or None if extraction fails.
         """
-        try:
-            # Extract marginal cost DataFrame
-            marginal_cost_df = proc.open_dataframe(
-                MARGINAL_COST_DF, self.paths['sim'])
-            if marginal_cost_df is None:
-                logger.error(
-                    'Marginal cost DataFrame could not be extracted.')
-                raise ValueError(
-                    'Marginal cost DataFrame could not be extracted.')
+        # Extract marginal cost DataFrame
+        marginal_cost_df = proc.open_dataframe(
+            MARGINAL_COST_DF, self.paths['sim'])
 
-            # Process marginal cost DataFrame
-            marginal_cost_df = proc.process_marginal_cost(marginal_cost_df)
-            if marginal_cost_df.isna().sum().sum() > 0:
-                logger.error('Marginal cost DataFrame contains NaN values.')
-                nan_rows = marginal_cost_df[marginal_cost_df.isna().any(
-                    axis=1)]
-                logger.error(f'Rows with NaN values:\n{nan_rows}')
-                raise ValueError(
-                    'Marginal cost DataFrame contains NaN values.')
+        # Save marginal cost DataFrame
+        marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
+        logger.info(
+            f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
+        return marginal_cost_df
 
-            # Ensure 'datetime' column is in correct format
-            marginal_cost_df['datetime'] = pd.to_datetime(
-                marginal_cost_df['datetime'], format=DATETIME_FORMAT)
-
-            # Save marginal cost DataFrame
-            marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
-            logger.info(
-                f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
-            return marginal_cost_df
-        except Exception as e:
-            logger.error(f'Error extracting marginal costs: {e}')
-            raise ValueError('Unexpected error extracting marginal costs.')
-
-    def _save_price_distribution(self) -> Optional[pd.DataFrame]:
+    def _intraweek_price_distribution(self) -> pd.DataFrame:
         """
         Computes and returns the price distribution DataFrame.
 
@@ -209,34 +191,27 @@ class RunProcessor(Run):
             pd.DataFrame or None: The price distribution DataFrame, or None if computation fails.
         """
         price_df = self._extract_marginal_costs_df()
-        if price_df is None:
-            return None
+        # Compute average price across scenarios
+        price_df['price_avg'] = price_df[SCENARIOS].mean(axis=1)
 
-        try:
-            # Compute average price across scenarios
-            price_df['price_avg'] = price_df[SCENARIOS].mean(axis=1)
+        # Add hour of the week
+        price_df['hour_of_week'] = price_df['datetime'].dt.dayofweek * \
+            24 + price_df['datetime'].dt.hour
 
-            # Add hour of the week
-            price_df['hour_of_week'] = price_df['datetime'].dt.dayofweek * \
-                24 + price_df['datetime'].dt.hour
+        # Bin hours into weekly bins
+        price_df['hour_of_week_bin'] = pd.cut(price_df['hour_of_week'],
+                                              bins=WEEK_HOURS_BIN, right=False)
 
-            # Bin hours into weekly bins
-            price_df['hour_of_week_bin'] = pd.cut(price_df['hour_of_week'],
-                                                  bins=WEEK_HOURS_BIN, right=False)
+        # Compute average price per bin
+        price_distribution = price_df.groupby('hour_of_week_bin', as_index=False)[
+            'price_avg'].mean()
 
-            # Compute average price per bin
-            price_distribution = price_df.groupby('hour_of_week_bin', as_index=False)[
-                'price_avg'].mean()
-
-            # Save price distribution
-            price_distribution.to_csv(
-                self.paths['price_distribution'], index=False)
-            logger.info(
-                f'Price distribution saved to {self.paths["price_distribution"]}')
-            return price_distribution
-        except Exception as e:
-            logger.error(f'Error computing price distribution: {e}')
-            return None
+        # Save price distribution
+        price_distribution.to_csv(
+            self.paths['price_distribution'], index=False)
+        logger.info(
+            f'Price distribution saved to {self.paths["price_distribution"]}')
+        return price_distribution
 
     def _get_production_results(self) -> Dict[str, float]:
         """
@@ -264,7 +239,7 @@ class RunProcessor(Run):
 
         return production_results
 
-    def _get_price_results(self) -> Optional[Dict[str, float]]:
+    def _get_price_results(self) -> Dict[str, float]:
         """
         Computes price results from marginal cost and demand data.
 
@@ -273,25 +248,18 @@ class RunProcessor(Run):
         """
         price_df = self._extract_marginal_costs_df()
         demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
-        if price_df is None or demand_df is None:
-            logger.error('Price or demand DataFrame could not be extracted.')
-            return None
 
-        try:
-            # Compute simple average price
-            price_avg = price_df[SCENARIOS].mean().mean()
+        # Compute simple average price
+        price_avg = price_df[SCENARIOS].mean().mean()
 
-            # Compute weighted average price
-            price_times_demand = price_df[SCENARIOS] * demand_df[SCENARIOS]
-            price_weighted_avg = price_times_demand.values.sum() / \
-                demand_df[SCENARIOS].values.sum()
+        # Compute weighted average price
+        price_times_demand = price_df[SCENARIOS] * demand_df[SCENARIOS]
+        price_weighted_avg = price_times_demand.values.sum() / \
+            demand_df[SCENARIOS].values.sum()
 
-            return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
-        except Exception as e:
-            logger.error('Error computing price results: %s', e)
-            return None
+        return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
 
-    def submit_processor_job(self) -> Optional[int]:
+    def submit_processor_job(self) -> Optional[str]:
         """
         Submits a job to process the run on a cluster.
 
@@ -308,7 +276,7 @@ class RunProcessor(Run):
                 f'Failed to submit processing job for run {self.name}')
         return job_id
 
-    def get_profits(self, endogenous_variables_names: list) -> Optional[Dict[str, float]]:
+    def get_profits(self) -> Dict[str, float]:
         """
         Computes profits for the specified endogenous variables.
 
@@ -316,37 +284,22 @@ class RunProcessor(Run):
             endogenous_variables_names (list): List of endogenous variable names.
 
         Returns:
-            dict or None: A dictionary of profits, or None if computation fails.
+            dict: A dictionary of profits.
         """
-        try:
-            # Extract marginal cost
-            marginal_cost_df: pd.DataFrame = self._extract_marginal_costs_df()
+        # Extract marginal cost
+        marginal_cost_df: pd.DataFrame = self._extract_marginal_costs_df()
 
-            capacities = {var: self.variables[var]['value']
-                          for var in endogenous_variables_names}
-            profits = {}
+        profits = {}
+        for participant in self.participants_dict.values():
+            logger.debug(f"Computing profits for {participant.key} participant.")
+            # Compute profit for the participant
+            profit: float = participant.profit(marginal_cost_df)
 
-            for var in endogenous_variables_names:
-                capacity: float = capacities[var]
-                participant: Participant = Participant(var,
-                                                       capacity,
-                                                       self.paths,
-                                                       self.general_parameters)
+            logger.debug('Profit for participant %s: %s', participant.key, profit)
 
-                logger.debug(f"Computing profits for {var} participant.")
-                # Compute profit for the participant
-                profit: float = participant.profit(marginal_cost_df)
-
-                logger.debug('Profit for participant %s: %s', var, profit)
-
-                # Add profit to the dictionary
-                profits[var] = profit
-
-            return profits
-        except Exception as e:
-            logger.critical(f'Error computing profits: {e}')
-            raise ValueError(
-                f'Unexpected error computing profits for RunProcessor {self.name}')
+            # Add profit to the dictionary
+            profits[participant.key] = profit
+        return profits
 
     def processed_status(self):
         if self.paths['results_json'].exists():
@@ -413,9 +366,8 @@ run_processor = RunProcessor(
 results = run_processor.process_run(process_locally=True)
 
 # Extract price distribution
-price_distribution = run_processor._save_price_distribution()
-if price_distribution is not None:
-    price_distribution.to_csv(run_processor.paths['price_distribution'], index=False)
+price_distribution = run_processor._intraweek_price_distribution()
+price_distribution.to_csv(run_processor.paths['price_distribution'], index=False)
 
 sys.stdout.flush()
 sys.stderr.flush()

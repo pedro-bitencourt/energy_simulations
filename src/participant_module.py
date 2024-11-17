@@ -7,18 +7,18 @@ Description: This file implements the Participant class and related methods.
 import copy
 import logging
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from src import processing_module as proc
 from src.constants import (
     COSTS,
     COSTS_BY_PARTICIPANT_TABLE,
-    DATETIME_FORMAT,
-    POSTE_FILEPATH,
     SCENARIOS,
+    VARIABLE_COSTS_THERMAL_DF,
+    SALTO_WATER_LEVEL_DF,
 )
 
 # Configure logging
@@ -35,7 +35,6 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "thermal": {"folder": "TER_new_thermal", "type": "thermal"},
     "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
 }
-
 
 class Participant:
     """
@@ -64,6 +63,43 @@ class Participant:
     def __repr__(self):
         return f"Participant(key={self.key}, capacity={self.capacity})"
 
+    def production_df(self) -> pd.DataFrame:
+        """
+        Extracts and processes the production data for the participant.
+        """
+        dataframe = proc.open_dataframe(self.dataframe_configuration, self.paths["sim"],
+                                                  daily=self.general_parameters.get("daily", False))
+        logger.info(f"Successfully extracted and processed {self.key} production data.")
+        return dataframe
+
+    def variable_costs_df(self) -> pd.DataFrame:
+        """
+        Extracts and processes the variable costs data for the participant.
+        """
+        if self.type_participant != "thermal":
+            logger.error("Variable costs are only available for thermal participants.")
+            raise ValueError("Variable costs are only available for thermal participants.")
+
+        dataframe = proc.open_dataframe(VARIABLE_COSTS_THERMAL_DF, self.paths["sim"],
+                                        self.general_parameters.get("daily", False))
+        logger.info(f"Successfully extracted and processed {self.key} variable costs data.")
+        return dataframe
+
+    def water_level_df(self) -> pd.DataFrame:
+        """
+        Extracts and processes the water level data for the participant.
+        """
+        if self.type_participant != "hydro":
+            logger.error("Water level data is only available for hydro participants.")
+            raise ValueError("Water level data is only available for hydro participants.")
+
+        dataframe = proc.open_dataframe(SALTO_WATER_LEVEL_DF, self.paths["sim"],
+                                        self.general_parameters.get("daily", False))
+        logger.info(f"Successfully extracted and processed {self.key} water level data.")
+        return dataframe
+
+
+
     def profit(self, marginal_cost_df: pd.DataFrame) -> float:
         """
         Computes the profits per MW per year for the participant,
@@ -81,9 +117,7 @@ class Participant:
         """
         Computes the average revenue per year per MW for the participant.
         """
-        participant_df = self._get_production_data()
-
-        present_value_df = self._present_value_per_scenario(participant_df, marginal_cost_df)
+        present_value_df = self._present_value_per_scenario(self.production_df(), marginal_cost_df)
 
         # Compute average revenue over scenarios
         average_revenue = present_value_df.mean(axis=1).values[0]
@@ -100,13 +134,11 @@ class Participant:
         """
         Computes the average total cost per year per MW for the participant.
         """
-        oem_cost = COSTS[self.type_participant]["oem"]
-        installation_cost = COSTS[self.type_participant]["installation"]
         lifetime = COSTS[self.type_participant]["lifetime"]
 
         variable_costs = self._get_variable_costs() if self.type_participant == "thermal" else 0
 
-        lifetime_fixed_cost = self._lifetime_fixed_costs(oem_cost, installation_cost, lifetime)
+        lifetime_fixed_cost = self._lifetime_fixed_costs()
         fixed_cost_per_year = lifetime_fixed_cost / lifetime
 
         # Access parameters from general_parameters dictionary
@@ -118,20 +150,6 @@ class Participant:
         total_cost_per_year_per_mw = (fixed_cost_per_year + variable_cost_per_year) / capacity
         return total_cost_per_year_per_mw
 
-    def _get_production_data(self) -> pd.DataFrame:
-        """
-        Extracts and processes the production data for the participant.
-        """
-        extracted_dataframe = proc.extract_dataframe(self.dataframe_configuration, self.paths["sim"])
-
-        if extracted_dataframe is None:
-            logger.critical("Production file not found.")
-            raise FileNotFoundError
-
-        daily = self.general_parameters.get("daily", False)  # Access 'daily' from general_parameters
-        dataframe = self._convert_from_poste_to_datetime(extracted_dataframe, daily)
-        logger.info(f"Successfully extracted and processed {self.key} production data.")
-        return dataframe
 
     def _initialize_df_configuration(
         self, key_participant: str, sim_folder: str, folder_participant: str
@@ -151,7 +169,6 @@ class Participant:
         dataframe_configuration = copy.deepcopy(dataframe_template)
         dataframe_configuration["name"] = f"{key_participant}_production"
         dataframe_configuration["filename"] = f"{sim_folder}/{folder_participant}/potencias*.xlt"
-        dataframe_configuration["output_filename"] = f"{key_participant}_production"
         return dataframe_configuration
 
     def _get_variable_costs(self) -> float:
@@ -167,10 +184,14 @@ class Participant:
         variable_cost = dataframe["thermal"].sum()
         return variable_cost
 
-    def _lifetime_fixed_costs(self, oem_cost: float, installation_cost: float, lifetime: int) -> float:
+    def _lifetime_fixed_costs(self) -> float:
         """
         Computes the total lifetime fixed costs.
         """
+
+        oem_cost = COSTS[self.type_participant]["oem"]
+        installation_cost = COSTS[self.type_participant]["installation"]
+        lifetime = COSTS[self.type_participant]["lifetime"]
         annual_interest_rate = self.general_parameters["annual_interest_rate"]
 
         if annual_interest_rate > 0:
@@ -225,64 +246,6 @@ class Participant:
         revenues_df = pd.DataFrame.from_dict(results_df, orient="index").T
         return revenues_df
 
-    def _convert_from_poste_to_datetime(self, participant_df: pd.DataFrame, daily: bool) -> pd.DataFrame:
-        """
-        Converts 'poste' time format to datetime.
-        """
-        if daily:
-            if participant_df.columns[-1] == "paso_start" and "paso_start" in participant_df.columns[:-1]:
-                participant_df = participant_df.iloc[:, :-1]
-
-            participant_df["paso_start"] = pd.to_datetime(
-                participant_df["paso_start"], format="%Y/%m/%d/%H:%M:%S"
-            )
-            participant_df["datetime"] = participant_df.apply(
-                lambda row: row["paso_start"] + timedelta(hours=float(row["poste"])), axis=1
-            )
-            return participant_df
-        else:
-            return self._convert_from_poste_to_datetime_weekly(participant_df)
-
-    def _convert_from_poste_to_datetime_weekly(self, participant_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Converts 'poste' time format to datetime for weekly data.
-        """
-        poste_dict_df = pd.read_csv(POSTE_FILEPATH)
-        scenario_columns = [col for col in poste_dict_df.columns if col.isdigit()]
-        poste_dict_long = pd.melt(
-            poste_dict_df,
-            id_vars=["paso", "paso_start", "datetime"],
-            value_vars=scenario_columns,
-            var_name="scenario",
-            value_name="poste",
-        )
-
-        poste_dict_long = poste_dict_long.astype({"paso": int, "poste": int})
-        participant_df = participant_df.astype({"paso": int, "poste": int})
-        poste_dict_long["datetime"] = pd.to_datetime(
-            poste_dict_long["datetime"], format=DATETIME_FORMAT
-        )
-
-        participant_long = pd.melt(
-            participant_df, id_vars=["paso", "poste"], var_name="scenario", value_name="value"
-        )
-
-        result = pd.merge(
-            participant_long,
-            poste_dict_long,
-            on=["paso", "poste", "scenario"],
-            how="left",
-        )
-
-        result = result.dropna(subset=["datetime", "value"])
-        result = result.sort_values(["datetime", "scenario"])
-        result = result.drop_duplicates(subset=["datetime", "scenario"], keep="first")
-
-        final_result = result.pivot(index="datetime", columns="scenario", values="value")
-        final_result = final_result.sort_index()
-        final_result["datetime"] = final_result.index
-
-        return final_result
 
     def _compute_discounted_production(self, production_df: pd.DataFrame) -> float:
         """

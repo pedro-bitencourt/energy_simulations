@@ -259,8 +259,7 @@ class InvestmentProblem:
             run_processor = RunProcessor(run)
             endogenous_variables_list: list[str] = list(
                 self.endogenous_variables.keys())
-            profits_perturb[resource] = run_processor.get_profits(
-                endogenous_variables_list)
+            profits_perturb[resource] = run_processor.get_profits()
 
         # compute derivatives from the profits
         derivatives = derivatives_from_profits(

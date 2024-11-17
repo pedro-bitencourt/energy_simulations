@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 # Local imports
-from src.constants import DATETIME_FORMAT, PRODUCTION_BY_RESOURCE_TABLE, PRODUCTION_BY_PLANT_TABLE
+from src.constants import DATETIME_FORMAT, PRODUCTION_BY_RESOURCE_TABLE, PRODUCTION_BY_PLANT_TABLE, POSTE_FILEPATH
 from src import auxiliary
 
 
@@ -61,6 +61,7 @@ def process_dataframe(dataframe, columns_options):
             traceback.print_exc(limit=10)
 
     dataframe = dataframe.dropna()
+
     return dataframe
 
 
@@ -143,36 +144,6 @@ def read_xlt(file_path, options):
     return data
 
 
-def extract_dataframe(option: dict, input_folder: str):
-    # check if input file exists
-    file_path = auxiliary.try_get_file(input_folder,
-                                       option['filename'])
-
-    # handle case where input file is not found
-    if not file_path:
-        logger.error(
-            f'{option["filename"]} could not be found in folder {input_folder}.')
-        return None
-
-    filename = option['filename']
-    if not file_path:
-        logger.error(f'{option} does not contain a filename key.')
-        return None
-
-    # extract the dataframe
-    dataframe: pd.DataFrame = read_xlt(file_path=file_path, options=option)
-
-    # process the dataframe
-    columns_options = option.get('columns_options', False)
-    process_function = option.get('process', None)
-    if process_function:
-        dataframe = option['process'](dataframe)
-    if columns_options:
-        dataframe = process_dataframe(dataframe, columns_options)
-
-    return dataframe
-
-
 def get_present_value(dataframe: pd.DataFrame,
                       variable: str,
                       annual_interest_rate: float,
@@ -229,12 +200,14 @@ def process_marginal_cost(marginal_cost_df: pd.DataFrame) -> pd.DataFrame:
             row['Int.MuestreoDelPaso'], errors='coerce')
         return (paso_start_date + timedelta(hours=int(hours_added))).strftime(DATETIME_FORMAT)
 
+
     marginal_cost_df['datetime'] = marginal_cost_df.apply(
         datetime_from_row, axis=1)
     return marginal_cost_df
 
 
-def open_dataframe(option: Dict[str, Any], input_folder: Path) -> Optional[pd.DataFrame]:
+def open_dataframe(option: Dict[str, Any], input_folder: Path,
+                   daily: bool = True) -> pd.DataFrame:
     """
     Opens and processes a DataFrame based on provided options.
 
@@ -245,30 +218,63 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path) -> Optional[pd.Da
     Returns:
         pd.DataFrame or None: The processed DataFrame, or None if operation fails.
     """
-    filename_pattern = option.get('filename')
-    if not filename_pattern:
-        logger.error('Filename pattern not provided in options.')
-        return None
+    # Validate the option
+    list_of_keys = ['name', 'filename', 'columns_options']
+    if not all(key in option for key in list_of_keys):
+        logger.error('Option does not contain all required keys.')
+        raise ValueError(f'Option {option} does not contain all required keys.')
 
-    file_path = auxiliary.try_get_file(input_folder, filename_pattern)
+    # Get the file path; raise error if not found
+    file_path = auxiliary.try_get_file(input_folder, option['filename'])
     if not file_path:
         logger.error(
-            f'File matching pattern {filename_pattern} not found in {input_folder}.')
-        return None
+            f'File matching pattern {option["filename"]} not found in {input_folder}.')
+        raise FileNotFoundError(
+            f'File matching pattern {option["filename"]} not found in {input_folder}.')
 
+    # Read the DataFrame; raise error if not found
     logger.info(f'Opening DataFrame from {file_path} with options {option}')
     dataframe = read_xlt(file_path=file_path, options=option)
     if dataframe is None:
         logger.error(f'Could not read DataFrame from {file_path}.')
-        return None
+        raise ValueError(f'Could not read DataFrame from {file_path}.')
 
-    columns_options = option.get('columns_options')
-    if columns_options:
-        dataframe = process_dataframe(dataframe, columns_options)
-        if dataframe is None:
-            logger.error(
-                f'Could not process DataFrame columns for {file_path}.')
-            return None
+    # Process the DataFrame columns
+    dataframe = process_dataframe(dataframe, option['columns_options'])
+    if dataframe is None:
+        logger.error('Error processing DataFrame %s', dataframe)
+        raise ValueError('Error processing DataFrame %s', dataframe)
+
+    # Create the datetime column
+    if option.get('convert_poste', True):
+        if option['name'] == 'marginal_cost':
+            dataframe = process_marginal_cost(dataframe)
+        else:
+            dataframe = convert_from_poste_to_datetime(dataframe, daily)
+
+    columns_to_keep = ['datetime'] + [str(i) for i in range(114)]
+    dataframe = dataframe[columns_to_keep]
+
+    # Ensure datetime is in the correct format
+    if 'datetime' in dataframe.columns:
+        dataframe['datetime'] = pd.to_datetime(
+            dataframe['datetime'], format=DATETIME_FORMAT)
+    else:
+        logger.error('DataFrame %s does not contain a datetime column.', option['name'])
+        raise ValueError(f'DataFrame {option["name"]} does not contain a datetime column.')
+
+    if dataframe is None:
+        logger.error(f'Could not process DataFrame from {file_path}.')
+        raise ValueError(f'Could not process DataFrame from {file_path}, with head {dataframe.head()}.')
+
+    # Check for NaN values
+    if dataframe.isna().sum().sum() > 0:
+        logger.error('DataFrame %s contains NaN values.', option['name'])
+        nan_rows = dataframe[dataframe.isna().any(
+            axis=1)]
+        logger.error(f'Rows with NaN values:\n{nan_rows}')
+        raise ValueError(
+            'Marginal cost DataFrame contains NaN values.')
 
     return dataframe
 
@@ -424,3 +430,62 @@ def read_res_file(option, sim_folder):
     logger.error("process_res_file output: %s", dataframe)
 
     return dataframe
+
+def convert_from_poste_to_datetime(participant_df: pd.DataFrame,
+                                    daily: bool) -> pd.DataFrame:
+    """
+    Converts 'poste' time format to datetime.
+    """
+    if daily:
+        if participant_df.columns[-1] == "paso_start" and "paso_start" in participant_df.columns[:-1]:
+            participant_df = participant_df.iloc[:, :-1]
+
+        participant_df["paso_start"] = pd.to_datetime(
+            participant_df["paso_start"], format="%Y/%m/%d/%H:%M:%S"
+        )
+        participant_df["datetime"] = participant_df.apply(
+            lambda row: row["paso_start"] + timedelta(hours=float(row["poste"])), axis=1
+        )
+        return participant_df
+    return convert_from_poste_to_datetime_weekly(participant_df)
+
+def convert_from_poste_to_datetime_weekly(participant_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts 'poste' time format to datetime for weekly data.
+    """
+    poste_dict_df = pd.read_csv(POSTE_FILEPATH)
+    scenario_columns = [col for col in poste_dict_df.columns if col.isdigit()]
+    poste_dict_long = pd.melt(
+        poste_dict_df,
+        id_vars=["paso", "paso_start", "datetime"],
+        value_vars=scenario_columns,
+        var_name="scenario",
+        value_name="poste",
+    )
+
+    poste_dict_long = poste_dict_long.astype({"paso": int, "poste": int})
+    participant_df = participant_df.astype({"paso": int, "poste": int})
+    poste_dict_long["datetime"] = pd.to_datetime(
+        poste_dict_long["datetime"], format=DATETIME_FORMAT
+    )
+
+    participant_long = pd.melt(
+        participant_df, id_vars=["paso", "poste"], var_name="scenario", value_name="value"
+    )
+
+    result = pd.merge(
+        participant_long,
+        poste_dict_long,
+        on=["paso", "poste", "scenario"],
+        how="left",
+    )
+
+    result = result.dropna(subset=["datetime", "value"])
+    result = result.sort_values(["datetime", "scenario"])
+    result = result.drop_duplicates(subset=["datetime", "scenario"], keep="first")
+
+    final_result = result.pivot(index="datetime", columns="scenario", values="value")
+    final_result = final_result.sort_index()
+    final_result["datetime"] = final_result.index
+
+    return final_result

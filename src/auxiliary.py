@@ -13,6 +13,20 @@ import logging
 #################################
 ### General utility functions ###
 #################################
+def convert_numpy_types(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Converts numpy data types in a dictionary to native Python types.
+
+    Args:
+        data (dict): The dictionary to convert.
+
+    Returns:
+        dict: The converted dictionary.
+    """
+    return {key: (int(value) if isinstance(value, np.integer)
+                  else float(value) if isinstance(value, np.floating)
+                  else value)
+            for key, value in data.items()}
 
 
 def make_name(float_list):

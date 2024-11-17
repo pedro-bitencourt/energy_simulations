@@ -46,7 +46,7 @@ class Run:
         self.variables: dict[str, dict] = variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = self._create_name(parent_folder)
+        self.name: str = self._create_name()
         self.parent_name: str = parent_folder.parts[-1]
 
         # Initialize relevant paths
@@ -64,7 +64,7 @@ class Run:
             shutil.rmtree(self.paths['folder'])
             logger.info("Deleted folder %s", self.paths['folder'])
 
-    def _create_name(self, parent_folder: Path):
+    def _create_name(self):
         exog_var_values: list[float] = [variable['value'] for variable in
                                         self.variables.values()]
         name: str = make_name(exog_var_values)

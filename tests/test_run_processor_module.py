@@ -7,63 +7,66 @@ Currently tests:
 - Creating a Run object with the correct attributes
 - Creating a RunProcessor object with the correct attributes
 '''
+
 import unittest
 from pathlib import Path
 import pandas as pd
-from run_module import Run
-from run_processor_module import RunProcessor
 
-from constants import DATETIME_FORMAT
+# In your test file
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from src.run_module import Run
+from src.run_processor_module import RunProcessor
+from src.constants import DATETIME_FORMAT
 
 
-MOCK_OUTPUT_FOLDER = Path(
-'/Users/pedrobitencourt/quest/data/renewables/zero_mc_thermal/10_45_0_180')
-MOCK_INPUT_FOLDER = Path('~')
 
+PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data')
+OUTPUT_FOLDER: Path = PARENT_FOLDER / 'output'
+
+# Not necessary
+REQUESTED_TIME_RUN: int = 6.5
+REQUESTED_TIME_SOLVER: int = 16
 
 class TestRun(unittest.TestCase):
     def setUp(self):
+        # Set up the mock Run object
+        name = 'salto_capacity'
+        general_parameters: dict = {'daily': True,
+                            'name_subfolder': 'CAD-2024-DIARIA',
+                            'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
+                            'email': 'pedro.bitencourt@u.northwestern.edu',
+                            'annual_interest_rate': 0.0,
+                            'years_run': 6.61,
+                            'requested_time_run': REQUESTED_TIME_RUN,
+                            'requested_time_solver': REQUESTED_TIME_SOLVER}
 
-        self.mock_input_folder = MOCK_INPUT_FOLDER
-        self.mock_output_folder = MOCK_OUTPUT_FOLDER
+        variables = {'hydro_factor': {'pattern': 'HYDRO_FACTOR',
+                                      'label': 'Hydro Factor',
+                                      'value': 1},
+                     'wind': {'pattern': 'WIND_CAPACITY',
+                              'label': 'Wind Capacity',
+                              'value': 3295},
+                     'solar': {'pattern': 'SOLAR_CAPACITY',
+                               'label': 'Solar Capacity',
+                               'value': 1670},
+                     'thermal': {'pattern': 'THERMAL_CAPACITY',
+                                 'label': 'Thermal Capacity',
+                                 'value': 107}}
 
-        def run_name_function(variables):
-            hydro_key: int = int(10*variables['hydro']['value'])
-            thermal_key: int = int(variables['thermal']['value'])
-            wind_key: int = int(variables['wind']['value'])
-            solar_key: int = int(variables['solar']['value'])
-            name: str = f"{hydro_key}_{thermal_key}_{wind_key}_{solar_key}"
-            return name
-
-        self.mock_general_parameters = {'daily': True,
-                                        'name_subfolder': 'CAD-2024-DIARIA',
-                                        'name_function': run_name_function}
-
-        self.mock_variables = {'wind': {'value': 0, 'pattern': 'WIND_CAPACITY'},
-                               'solar': {'value': 180, 'pattern': 'SOLAR_CAPACITY'}}
-        self.mock_run = Run(self.mock_input_folder,
-                            self.mock_general_parameters,
-                            self.mock_variables,
-                            output_folder=self.mock_output_folder)
+        self.mock_run = Run(PARENT_FOLDER, general_parameters, variables)
+        # Initialize the RunProcessor object
         self.mock_run_processor = RunProcessor(self.mock_run)
 
     def tearDown(self):
         # delete all .csv files in output folder
-        for file in self.mock_output_folder.glob('*.csv'):
+        for file in OUTPUT_FOLDER.glob('*.csv'):
             file.unlink(missing_ok=True)
-        pass
 
-    def test_get_price_distribution(self):
-        price_distribution = self.mock_run_processor.get_price_distribution()
-        self.assertIsNotNone(price_distribution)
 
-    def test_get_price_results(self):
-        price_results: dict = self.mock_run_processor.get_price_results()
-        for key, value in price_results.items():
-            self.assertIsNotNone(value)
-
-    def test_extract_marginal_cost(self):
-        dataframe = self.mock_run_processor.extract_marginal_costs_df()
+    def test__extract_marginal_cost(self):
+        dataframe = self.mock_run_processor._extract_marginal_costs_df()
         self.assertIsNotNone(dataframe)
         self.assertFalse(dataframe.isna().values.any(),
                          "DataFrame contains NaN values")
@@ -71,12 +74,14 @@ class TestRun(unittest.TestCase):
             dataframe['datetime'], format=DATETIME_FORMAT, errors='coerce')
         self.assertFalse(parsed_dates.isna().any(
         ), "DataFrame contains invalid dates in the 'datetime' column")
+        print(f'{dataframe.head()=}')
 
-    def test_get_profits(self):
-        profits = self.mock_run_processor.get_profits()
-        print(profits)
-        self.assertIsNotNone(profits)
 
+    def test_production_participant(self):
+        participant_key = 'thermal'
+        dataframe = self.mock_run_processor.production_participant(participant_key)
+        self.assertIsNotNone(dataframe)
+        print(f'{dataframe.head()=}')
 
 if __name__ == '__main__':
     unittest.main()
