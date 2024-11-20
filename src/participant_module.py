@@ -98,20 +98,21 @@ class Participant:
         logger.info(f"Successfully extracted and processed {self.key} water level data.")
         return dataframe
 
-
-
     def profit(self, marginal_cost_df: pd.DataFrame) -> float:
         """
         Computes the profits per MW per year for the participant,
         as a fraction of the total installation cost.
         """
+        # Get average revenue per year per MW and total cost per year per MW
         average_revenue_per_year_per_mw = self._revenue(marginal_cost_df)
         total_cost_per_year_per_mw = self._cost()
+
+        # Compute profits per year per MW
         profits_per_year_per_mw = average_revenue_per_year_per_mw - total_cost_per_year_per_mw
 
-        installation_cost = COSTS[self.type_participant]["installation"]
-        profits = profits_per_year_per_mw / installation_cost
-        return profits
+        # Normalize profits by total costs per year
+        profits_per_year_per_mw_normalized = profits_per_year_per_mw / total_cost_per_year_per_mw
+        return profits_per_year_per_mw_normalized
 
     def _revenue(self, marginal_cost_df: pd.DataFrame) -> float:
         """
@@ -120,34 +121,32 @@ class Participant:
         present_value_df = self._present_value_per_scenario(self.production_df(), marginal_cost_df)
 
         # Compute average revenue over scenarios
-        average_revenue = present_value_df.mean(axis=1).values[0]
+        average_total_revenue = present_value_df.mean(axis=1).values[0]
 
         # Access parameters from general_parameters dictionary
         years_run = self.general_parameters["years_run"]
         capacity = self.capacity
 
         # Compute the average revenue per year per MW
-        average_revenue_per_year_per_mw = average_revenue / (years_run * capacity)
-        return average_revenue_per_year_per_mw
+        average_total_revenue_per_year_per_mw = average_total_revenue / (years_run * capacity)
+        return average_total_revenue_per_year_per_mw
 
     def _cost(self) -> float:
         """
-        Computes the average total cost per year per MW for the participant.
+        Computes the total cost per year per MW for the participant.
         """
+        # Compute variable cost per year
+        total_variable_costs = self._total_variable_costs() if self.type_participant == "thermal" else 0
+        variable_cost_per_year_per_mw = (total_variable_costs / 
+                            self.general_parameters["years_run"]*self.capacity)
+
+        # Compute fixed cost per year
+        lifetime_fixed_cost_per_mw = self._lifetime_fixed_costs_per_mw()
         lifetime = COSTS[self.type_participant]["lifetime"]
+        fixed_cost_per_year_per_mw = lifetime_fixed_cost_per_mw / lifetime
 
-        variable_costs = self._get_variable_costs() if self.type_participant == "thermal" else 0
-
-        lifetime_fixed_cost = self._lifetime_fixed_costs()
-        fixed_cost_per_year = lifetime_fixed_cost / lifetime
-
-        # Access parameters from general_parameters dictionary
-        years_run = self.general_parameters["years_run"]
-        capacity = self.capacity
-
-        variable_cost_per_year = variable_costs / years_run
-
-        total_cost_per_year_per_mw = (fixed_cost_per_year + variable_cost_per_year) / capacity
+        # Compute total cost per year per MW
+        total_cost_per_year_per_mw = variable_cost_per_year_per_mw + fixed_cost_per_year_per_mw
         return total_cost_per_year_per_mw
 
 
@@ -171,9 +170,9 @@ class Participant:
         dataframe_configuration["filename"] = f"{sim_folder}/{folder_participant}/potencias*.xlt"
         return dataframe_configuration
 
-    def _get_variable_costs(self) -> float:
+    def _total_variable_costs(self) -> float:
         """
-        Returns the variable costs of the thermal participant.
+        Returns the total variable costs over the simulation period.
         """
         dataframe = proc.process_res_file(COSTS_BY_PARTICIPANT_TABLE, self.paths["sim"])
 
@@ -181,10 +180,11 @@ class Participant:
             logger.critical("Variable cost file could not be read.")
             raise FileNotFoundError
 
+        # TO DO: Include discounting
         variable_cost = dataframe["thermal"].sum()
         return variable_cost
 
-    def _lifetime_fixed_costs(self) -> float:
+    def _lifetime_fixed_costs_per_mw(self) -> float:
         """
         Computes the total lifetime fixed costs.
         """

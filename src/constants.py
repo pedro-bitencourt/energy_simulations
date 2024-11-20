@@ -3,7 +3,6 @@ from pathlib import Path
 
 from rich.logging import RichHandler
 import logging
-import sys
 
 # Configure the handler with pretty printing enabled
 rich_handler = RichHandler(
@@ -207,7 +206,6 @@ VARIABLE_COSTS_THERMAL_DF = {
             '': 'datetime'
         },
         'numeric_columns': [f'{i}' for i in range(0, 114)],
-        'keep_columns': ['datetime'] + [f'{i}' for i in range(0, 114)]
     },
     'delete_first_row': True,
     'convert_poste': False

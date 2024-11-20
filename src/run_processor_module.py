@@ -15,7 +15,7 @@ Public methods:
 import logging
 from pathlib import Path
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 import numpy as np
 import pandas as pd
 
@@ -23,7 +23,7 @@ import src.auxiliary
 import src.processing_module as proc
 from src.participant_module import Participant
 from src.run_module import Run
-from src.constants import DATETIME_FORMAT, MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
+from src.constants import MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -166,7 +166,7 @@ class RunProcessor(Run):
             results = json.load(file)
         return results
 
-    def _extract_marginal_costs_df(self) -> pd.DataFrame:
+    def marginal_cost_df(self) -> pd.DataFrame:
         """
         Extracts the marginal cost DataFrame from the simulation folder.
 
@@ -190,7 +190,7 @@ class RunProcessor(Run):
         Returns:
             pd.DataFrame or None: The price distribution DataFrame, or None if computation fails.
         """
-        price_df = self._extract_marginal_costs_df()
+        price_df = self.marginal_cost_df()
         # Compute average price across scenarios
         price_df['price_avg'] = price_df[SCENARIOS].mean(axis=1)
 
@@ -220,7 +220,7 @@ class RunProcessor(Run):
         Returns:
             dict: A dictionary containing total production by resource and new thermal production.
         """
-        production_results = {}
+        production_results: dict = {}
 
         # Get total production by resource
         production_by_resource = proc.total_production_by_resource(
@@ -229,13 +229,6 @@ class RunProcessor(Run):
             f'total_production_{resource}': production_by_resource.get(resource, 0.0)
             for resource in production_by_resource
         })
-
-        # Get total production by plant
-        production_by_plant = proc.total_production_by_plant(self.paths['sim'])
-
-        # Get the total production for the new thermal plant
-        new_thermal_production = production_by_plant.get('new_thermal', 0.0)
-        production_results['new_thermal_production'] = new_thermal_production
 
         return production_results
 
@@ -246,7 +239,7 @@ class RunProcessor(Run):
         Returns:
             dict or None: A dictionary containing price averages, or None if computation fails.
         """
-        price_df = self._extract_marginal_costs_df()
+        price_df = self.marginal_cost_df()
         demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
 
         # Compute simple average price
@@ -287,7 +280,7 @@ class RunProcessor(Run):
             dict: A dictionary of profits.
         """
         # Extract marginal cost
-        marginal_cost_df: pd.DataFrame = self._extract_marginal_costs_df()
+        marginal_cost_df: pd.DataFrame = self.marginal_cost_df()
 
         profits = {}
         for participant in self.participants_dict.values():

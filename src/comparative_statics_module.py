@@ -83,10 +83,14 @@ class ComparativeStatics:
                  name: str,
                  variables: Dict[str, Dict],
                  variables_grid: Dict[str, np.ndarray],
-                 general_parameters: Dict):
+                 general_parameters: Dict,
+                 base_path: Optional[str] = None):
         """
         Initialize the ComparativeStatics object.
         """
+        if base_path is None:
+            base_path = str(BASE_PATH)
+
         self.name: str = name
         self.general_parameters: dict = general_parameters
 
@@ -98,7 +102,7 @@ class ComparativeStatics:
         self.variables_grid: dict[str, np.ndarray] = variables_grid
 
         # Initialize relevant paths
-        self.paths: dict = self._initialize_paths()
+        self.paths: dict = self._initialize_paths(base_path)
 
         # Create the folders if they do not exist
         for path in self.paths.values():
@@ -120,6 +124,108 @@ class ComparativeStatics:
         else:
             # Create runs directly
             self.list_simulations = self._initialize_runs()
+
+    def submit(self):
+        """
+        Submit the jobs to the cluster.
+        """
+        if self.endogenous_variables:
+            # Submit investment problems
+            for inv_prob in self.list_investment_problems:
+                inv_prob.submit()
+                logging.info(
+                    f'Submitted job for investment problem %s', inv_prob.name)
+        else:
+            # Submit runs directly
+            for run in self.list_simulations:
+                job_id = run.submit()
+                if job_id is None:
+                    logging.error("Failed to submit run %s", run.name)
+                else:
+                    logging.info("Submitted job for run %s",  run.name)
+
+    def process(self):
+        """
+        Create runs from investment problems, if there are endogenous variables, and process the results.
+        """
+        # If there are endogenous_variables, first process investment problems and create
+        # a list of Run objects
+        if self.endogenous_variables:
+            # Process investment problems
+            results_df = self._investment_results()
+
+            # Save results of the optimization algorithm to CSV
+            output_csv_path: Path = self.paths['results'] / \
+                'investment_results.csv'
+            results_df.to_csv(output_csv_path, index=False)
+
+            # Create runs from investment problems
+            self.list_simulations = self._create_runs_from_investment_problems()
+
+        # Extract comparative statics dataframe
+        dataframes_to_extract: dict = {'water_level': [],
+                                       'production': ['wind', 'solar', 'thermal'],
+                                       'variable_costs': ['thermal'],
+        }
+        for data_type, participants in dataframes_to_extract.items():
+            for participant in participants:
+                df = self.get_dataframe(data_type, participant)
+                df.to_csv(self.paths['results'] / f'{data_type}_{participant}.csv')
+
+        df = self.get_dataframe('marginal_cost')
+        df.to_csv(self.paths['results'] / 'marginal_cost.csv')
+
+        # Process runs
+        self._process_runs()
+
+
+    def redo_equilibrium_runs(self):
+        """
+        Deletes and runs again the equilibrium runs.
+        """
+        for run in self.list_simulations:
+            logger.info("Redoing equilibrium run %s", run.name)
+            run.tear_down()
+            run.submit()
+
+
+    def get_dataframe(self, data_type: str, participant: str = '') -> pd.DataFrame:
+        """
+        Generic method to get dictionary of DataFrames for different data types.
+        
+        Args:
+            data_type: Type of data to retrieve ('water_level', 'production', 'marginal_costs')
+            participant: Participant name (optional, not needed for marginal_costs)
+        
+        Returns:
+            DataFrame with the data for each run.
+        """
+        method_map = {
+            'water_level': lambda proc, p: proc.water_level_participant(p),
+            'production': lambda proc, p: proc.production_participant(p),
+            'variable_costs': lambda proc, p: proc.variable_costs_participant(p),
+            'marginal_cost': lambda proc, _: proc.marginal_cost_df()
+        }
+        
+        if data_type not in method_map:
+            raise ValueError(f"Invalid data type. Must be one of {list(method_map.keys())}")
+        
+        df_dict: dict[str, pd.DataFrame] = {}
+        method = method_map[data_type]
+        
+        for run in self.list_simulations:
+            run_processor = RunProcessor(run)
+            try:
+                df = method(run_processor, participant)
+                df['run'] = run.name
+                df_dict[run.name] = df
+            except FileNotFoundError:
+                logger.error(f"{data_type.replace('_', ' ').title()} file not found for run {run.name}")
+        
+        # Merge the DataFrames into a single DataFrames
+        df_merged = pd.concat(df_dict.values(), keys=df_dict.keys(), names=['run'])
+        return df_merged
+        
 
     def _validate_input(self):
         # Check if all variables have a grid
@@ -166,10 +272,10 @@ class ComparativeStatics:
     def _grid_length(self):
         return len(next(iter(self.variables_grid.values())))
 
-    def _initialize_paths(self):
+    def _initialize_paths(self, base_path: str) -> dict:
         paths = {}
-        paths['main'] = Path(f"{BASE_PATH}/comparative_statics/{self.name}")
-        paths['results'] = Path(f"{BASE_PATH}/results/{self.name}")
+        paths['main'] = Path(f"{base_path}/comparative_statics/{self.name}")
+        paths['results'] = Path(f"{base_path}/results/{self.name}")
         return paths
 
     def _initialize_runs(self):
@@ -214,46 +320,6 @@ class ComparativeStatics:
             problems.append(investment_problem)
         return problems
 
-    def submit(self):
-        """
-        Submit the jobs to the cluster.
-        """
-        if self.endogenous_variables:
-            # Submit investment problems
-            for inv_prob in self.list_investment_problems:
-                inv_prob.submit()
-                logging.info(
-                    f'Submitted job for investment problem %s', inv_prob.name)
-        else:
-            # Submit runs directly
-            for run in self.list_simulations:
-                job_id = run.submit()
-                if job_id is None:
-                    logging.error("Failed to submit run %s", run.name)
-                else:
-                    logging.info("Submitted job for run %s",  run.name)
-
-    def process(self):
-        """
-        Create runs from investment problems, if there are endogenous variables, and process the results.
-        """
-        # If there are endogenous_variables, first process investment problems and create
-        # a list of Run objects
-        if self.endogenous_variables:
-            # Process investment problems
-            results_df = self._investment_results()
-
-            # Save results of the optimization algorithm to CSV
-            output_csv_path: Path = self.paths['results'] / \
-                'investment_results.csv'
-            results_df.to_csv(output_csv_path, index=False)
-
-            # Create runs from investment problems
-            self.list_simulations = self._create_runs_from_investment_problems()
-
-        # Process runs
-        self._process_runs()
-
     def _process_runs(self):
         # if experiment has more than 10 runs, submit jobs to cluster
         if len(self.list_simulations) > 10:
@@ -280,11 +346,6 @@ class ComparativeStatics:
         logging.info("Results for the comparative statics exercise %s: %s",
                      self.name, results_df)
 
-    def redo_equilibrium_runs(self):
-        for run in self.list_simulations:
-            logger.info("Redoing equilibrium run %s", run.name)
-            run.tear_down()
-            run.submit()
 
     def _submit_processor_jobs(self):
         job_ids: list = []

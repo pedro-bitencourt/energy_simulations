@@ -128,9 +128,6 @@ class ComparativeStaticsVisualizer:
         components_df = components_df.assign(**variable_data)
         return components_df
     
-    
-
-
 
     def _load_price_distributions_df(self):
         temp = [result_run['price_distribution']
@@ -236,7 +233,6 @@ class ComparativeStaticsVisualizer:
                 heatmap_config['filename']
             plot_heatmap(
                 self.results_df, heatmap_config['variables'], save_path, title)
-
 
     def _one_d_plots(self):
         """

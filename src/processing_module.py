@@ -233,17 +233,21 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
             f'File matching pattern {option["filename"]} not found in {input_folder}.')
 
     # Read the DataFrame; raise error if not found
-    logger.info(f'Opening DataFrame from {file_path} with options {option}')
-    dataframe = read_xlt(file_path=file_path, options=option)
-    if dataframe is None:
+    logger.debug(f'Opening DataFrame from {file_path}')
+    data = read_xlt(file_path=file_path, options=option)
+    if data is None:
         logger.error(f'Could not read DataFrame from {file_path}.')
         raise ValueError(f'Could not read DataFrame from {file_path}.')
 
+    logger.debug(f'{data[0:2]=}')
+
     # Process the DataFrame columns
-    dataframe = process_dataframe(dataframe, option['columns_options'])
+    dataframe = process_dataframe(data, option['columns_options'])
     if dataframe is None:
         logger.error('Error processing DataFrame %s', dataframe)
         raise ValueError('Error processing DataFrame %s', dataframe)
+    dataframe = dataframe.loc[:, ~dataframe.columns.duplicated()]
+    logger.debug(f'{dataframe.head()=}')
 
     # Create the datetime column
     if option.get('convert_poste', True):
@@ -257,11 +261,21 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
 
     # Ensure datetime is in the correct format
     if 'datetime' in dataframe.columns:
-        dataframe['datetime'] = pd.to_datetime(
-            dataframe['datetime'], format=DATETIME_FORMAT)
+        try:
+            dataframe['datetime'] = pd.to_datetime(
+                dataframe['datetime'], format=DATETIME_FORMAT)
+        except ValueError:
+            dataframe['datetime'] = pd.to_datetime(
+                dataframe['datetime'], format="%Y/%m/%d/%H:%M:%S")
+            dataframe['datetime'] = dataframe['datetime'].dt.strftime(
+                DATETIME_FORMAT)
+            dataframe['datetime'] = pd.to_datetime(
+                dataframe['datetime'], format=DATETIME_FORMAT)
     else:
         logger.error('DataFrame %s does not contain a datetime column.', option['name'])
         raise ValueError(f'DataFrame {option["name"]} does not contain a datetime column.')
+
+    logger.debug(f'{dataframe.head()=}')
 
     if dataframe is None:
         logger.error(f'Could not process DataFrame from {file_path}.')

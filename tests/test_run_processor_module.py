@@ -7,19 +7,18 @@ Currently tests:
 - Creating a Run object with the correct attributes
 - Creating a RunProcessor object with the correct attributes
 '''
-
+import sys
 import unittest
 from pathlib import Path
 import pandas as pd
 
-# In your test file
-import sys
-from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 from src.run_module import Run
 from src.run_processor_module import RunProcessor
-from src.constants import DATETIME_FORMAT
+from src.constants import DATETIME_FORMAT, SCENARIOS
 
+
+COLUMNS_TO_CHECK = ['datetime'] + SCENARIOS
 
 
 PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data')
@@ -75,6 +74,7 @@ class TestRun(unittest.TestCase):
         self.assertFalse(parsed_dates.isna().any(
         ), "DataFrame contains invalid dates in the 'datetime' column")
         print(f'{dataframe.head()=}')
+        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
 
 
     def test_production_participant(self):
@@ -82,6 +82,14 @@ class TestRun(unittest.TestCase):
         dataframe = self.mock_run_processor.production_participant(participant_key)
         self.assertIsNotNone(dataframe)
         print(f'{dataframe.head()=}')
+        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
+
+    def test_variable_costs_participant(self):
+        participant_key = 'thermal'
+        dataframe = self.mock_run_processor.variable_costs_participant(participant_key)
+        self.assertIsNotNone(dataframe)
+        print(f'{dataframe.head()=}')
+        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
 
 if __name__ == '__main__':
     unittest.main()

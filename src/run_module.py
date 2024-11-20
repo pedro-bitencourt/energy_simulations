@@ -170,8 +170,7 @@ class Run:
             logger.info(f"Run {self.name} already successful, skipping.")
             return None
 
-        logger.info(f"""Preparing to submit run {self.name},
-                    with successful status {self.successful()}""")
+        logger.info(f"""Preparing to submit run {self.name}""")
 
         # Tear down the folder
         self.tear_down()
