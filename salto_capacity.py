@@ -18,7 +18,9 @@ rich_handler = RichHandler(
 
 # Configure basic logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
+    filename='salto_capacity.log',  # Name of the log file
+    filemode='a',        # 'a' for append, 'w' for overwrite
     format="%(message)s",
     datefmt="[%X]",
     handlers=[rich_handler]
@@ -70,7 +72,7 @@ comparative_statics = ComparativeStatics(name,
                                          general_parameters)
 
 # All action happens here
-# comparative_statics.submit()
-comparative_statics.redo_equilibrium_runs()
-# comparative_statics.process()
-# visualize(comparative_statics, grid_dimension=1)
+comparative_statics.submit()
+# comparative_statics.redo_equilibrium_runs()
+comparative_statics.process()
+# visualize(comparative_statics, grid_dimension=1, check_convergence=True)

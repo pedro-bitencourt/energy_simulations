@@ -71,23 +71,25 @@ class RunProcessor(Run):
         # Create dict of participants
         list_participants = ['wind', 'solar', 'thermal']
         self.participants_dict: dict[str, Participant] = {var: Participant(var,
-                                                                        self.variables[var]['value'],
-                                                                        self.paths,
-                                                                        self.general_parameters)
-                                                            for var in list_participants}
+                                                                           self.variables[var]['value'],
+                                                                           self.paths,
+                                                                           run.general_parameters)
+                                                          for var in list_participants}
 
     def production_participant(self, participant_key: str) -> pd.DataFrame:
-        production_df: pd.DataFrame = self.participants_dict[participant_key].production_df()
+        production_df: pd.DataFrame = self.participants_dict[participant_key].production_df(
+        )
         return production_df
 
     def variable_costs_participant(self, participant_key: str) -> pd.DataFrame:
-        costs_df: pd.DataFrame = self.participants_dict[participant_key].variable_costs_df()
+        costs_df: pd.DataFrame = self.participants_dict[participant_key].variable_costs_df(
+        )
         return costs_df
 
     def water_level_participant(self, participant_key: str) -> pd.DataFrame:
-        water_level_df: pd.DataFrame = self.participants_dict[participant_key].water_level_df()
+        water_level_df: pd.DataFrame = self.participants_dict[participant_key].water_level_df(
+        )
         return water_level_df
-
 
     def _update_paths(self) -> None:
         """
@@ -100,7 +102,6 @@ class RunProcessor(Run):
         self.paths['price_distribution'] = self.paths['folder'] / \
             'price_distribution.csv'
         self.paths['results_json'] = self.paths['folder'] / 'results.json'
-
 
     def process(self, process_locally: bool = True) -> None:
         """
@@ -284,11 +285,13 @@ class RunProcessor(Run):
 
         profits = {}
         for participant in self.participants_dict.values():
-            logger.debug(f"Computing profits for {participant.key} participant.")
+            logger.debug(
+                f"Computing profits for {participant.key} participant.")
             # Compute profit for the participant
             profit: float = participant.profit(marginal_cost_df)
 
-            logger.debug('Profit for participant %s: %s', participant.key, profit)
+            logger.debug('Profit for participant %s: %s',
+                         participant.key, profit)
 
             # Add profit to the dictionary
             profits[participant.key] = profit

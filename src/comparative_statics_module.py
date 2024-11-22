@@ -120,64 +120,10 @@ class ComparativeStatics:
             self.list_investment_problems: list[InvestmentProblem] = self._initialize_investment_problems(
             )
             # The runs will be obtained from the investment problems after optimization
-            self.list_simulations = self._create_runs_from_investment_problems()
+            self.list_simulations = self.create_runs_from_investment_problems()
         else:
             # Create runs directly
             self.list_simulations = self._initialize_runs()
-
-    def submit(self):
-        """
-        Submit the jobs to the cluster.
-        """
-        if self.endogenous_variables:
-            # Submit investment problems
-            for inv_prob in self.list_investment_problems:
-                inv_prob.submit()
-                logging.info(
-                    f'Submitted job for investment problem %s', inv_prob.name)
-        else:
-            # Submit runs directly
-            for run in self.list_simulations:
-                job_id = run.submit()
-                if job_id is None:
-                    logging.error("Failed to submit run %s", run.name)
-                else:
-                    logging.info("Submitted job for run %s",  run.name)
-
-    def process(self):
-        """
-        Create runs from investment problems, if there are endogenous variables, and process the results.
-        """
-        # If there are endogenous_variables, first process investment problems and create
-        # a list of Run objects
-        if self.endogenous_variables:
-            # Process investment problems
-            results_df = self._investment_results()
-
-            # Save results of the optimization algorithm to CSV
-            output_csv_path: Path = self.paths['results'] / \
-                'investment_results.csv'
-            results_df.to_csv(output_csv_path, index=False)
-
-            # Create runs from investment problems
-            self.list_simulations = self._create_runs_from_investment_problems()
-
-        # Extract comparative statics dataframe
-        dataframes_to_extract: dict = {'water_level': [],
-                                       'production': ['wind', 'solar', 'thermal'],
-                                       'variable_costs': ['thermal'],
-        }
-        for data_type, participants in dataframes_to_extract.items():
-            for participant in participants:
-                df = self.get_dataframe(data_type, participant)
-                df.to_csv(self.paths['results'] / f'{data_type}_{participant}.csv')
-
-        df = self.get_dataframe('marginal_cost')
-        df.to_csv(self.paths['results'] / 'marginal_cost.csv')
-
-        # Process runs
-        self._process_runs()
-
 
     def redo_equilibrium_runs(self):
         """
@@ -188,15 +134,14 @@ class ComparativeStatics:
             run.tear_down()
             run.submit()
 
-
     def get_dataframe(self, data_type: str, participant: str = '') -> pd.DataFrame:
         """
         Generic method to get dictionary of DataFrames for different data types.
-        
+
         Args:
             data_type: Type of data to retrieve ('water_level', 'production', 'marginal_costs')
             participant: Participant name (optional, not needed for marginal_costs)
-        
+
         Returns:
             DataFrame with the data for each run.
         """
@@ -206,26 +151,28 @@ class ComparativeStatics:
             'variable_costs': lambda proc, p: proc.variable_costs_participant(p),
             'marginal_cost': lambda proc, _: proc.marginal_cost_df()
         }
-        
+
         if data_type not in method_map:
-            raise ValueError(f"Invalid data type. Must be one of {list(method_map.keys())}")
-        
+            raise ValueError(
+                f"Invalid data type. Must be one of {list(method_map.keys())}")
+
         df_dict: dict[str, pd.DataFrame] = {}
         method = method_map[data_type]
-        
+
         for run in self.list_simulations:
-            run_processor = RunProcessor(run)
             try:
+                run_processor = RunProcessor(run)
                 df = method(run_processor, participant)
                 df['run'] = run.name
                 df_dict[run.name] = df
             except FileNotFoundError:
-                logger.error(f"{data_type.replace('_', ' ').title()} file not found for run {run.name}")
-        
+                logger.error(
+                    f"{data_type.replace('_', ' ').title()} file not found for run {run.name}")
+
         # Merge the DataFrames into a single DataFrames
-        df_merged = pd.concat(df_dict.values(), keys=df_dict.keys(), names=['run'])
+        df_merged = pd.concat(
+            df_dict.values(), keys=df_dict.keys(), names=['run'])
         return df_merged
-        
 
     def _validate_input(self):
         # Check if all variables have a grid
@@ -245,10 +192,13 @@ class ComparativeStatics:
             raise ValueError(
                 "General parameters do not contain the expected keys.")
 
-    def _create_runs_from_investment_problems(self):
+    def create_runs_from_investment_problems(self, check_convergence:
+                                             bool = False):
         """
         Recover the last iteration of each investment problem and create a Run object from it.
         """
+        logging.critical(
+            f"Creating runs with check_convergence={check_convergence}")
         list_simulations = []
         for investment_problem in self.list_investment_problems:
             # Load the last iteration as the Run
@@ -258,14 +208,23 @@ class ComparativeStatics:
                 logging.critical(
                     f"No successful iteration found for investment problem {investment_problem.name}")
                 continue
+            if check_convergence and not last_iteration.check_convergence():
+                logging.error(
+                    f"Investment problem {investment_problem.name} did not converge, skipping")
+                continue
+            else:
+                logging.info(
+                    f"Investment problem {investment_problem.name} converged")
+
             # Create a Run object from the last iteration
             equilibrium_run = investment_problem.create_run(
                 last_iteration.current_investment)
 
-            # Clear the folder for the other runs
-            logger.info("Deleting run folders for investment problem %s with equilibrium run %s",
-                        investment_problem.name, equilibrium_run.name)
-            investment_problem._clear_runs_folders(equilibrium_run.name)
+            if last_iteration.profits is not None:
+                # Clear the folder for the other runs
+                logger.info("Deleting run folders for investment problem %s with equilibrium run %s",
+                            investment_problem.name, equilibrium_run.name)
+                investment_problem._clear_runs_folders(equilibrium_run.name)
             list_simulations.append(equilibrium_run)
         return list_simulations
 
@@ -320,6 +279,60 @@ class ComparativeStatics:
             problems.append(investment_problem)
         return problems
 
+    def submit(self):
+        """
+        Submit the jobs to the cluster.
+        """
+        if self.endogenous_variables:
+            # Submit investment problems
+            for inv_prob in self.list_investment_problems:
+                inv_prob.submit()
+                logging.info(
+                    f'Submitted job for investment problem %s', inv_prob.name)
+        else:
+            # Submit runs directly
+            for run in self.list_simulations:
+                job_id = run.submit()
+                if job_id is None:
+                    logging.error("Failed to submit run %s", run.name)
+                else:
+                    logging.info("Submitted job for run %s",  run.name)
+
+    def process(self):
+        """
+        Create runs from investment problems, if there are endogenous variables, and process the results.
+        """
+        # If there are endogenous_variables, first process investment problems and create
+        # a list of Run objects
+        if self.endogenous_variables:
+            # Process investment problems
+            results_df = self._investment_results()
+
+            # Save results of the optimization algorithm to CSV
+            output_csv_path: Path = self.paths['results'] / \
+                'investment_results.csv'
+            results_df.to_csv(output_csv_path, index=False)
+
+            # Create runs from investment problems
+            self.list_simulations = self.create_runs_from_investment_problems()
+
+        # Extract comparative statics dataframe
+        dataframes_to_extract: dict = {'water_level': [],
+                                       'production': ['wind', 'solar', 'thermal'],
+                                       'variable_costs': ['thermal'],
+                                       }
+        for data_type, participants in dataframes_to_extract.items():
+            for participant in participants:
+                df = self.get_dataframe(data_type, participant)
+                df.to_csv(self.paths['results'] /
+                          f'{data_type}_{participant}.csv')
+
+        df = self.get_dataframe('marginal_cost')
+        df.to_csv(self.paths['results'] / 'marginal_cost.csv')
+
+        # Process runs
+        self._process_runs()
+
     def _process_runs(self):
         # if experiment has more than 10 runs, submit jobs to cluster
         if len(self.list_simulations) > 10:
@@ -345,7 +358,6 @@ class ComparativeStatics:
         # Log the results
         logging.info("Results for the comparative statics exercise %s: %s",
                      self.name, results_df)
-
 
     def _submit_processor_jobs(self):
         job_ids: list = []

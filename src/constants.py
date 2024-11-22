@@ -46,7 +46,7 @@ ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
 
 # Optimization constants
 # Maximum number of iterations for the optimization algorithm
-MAX_ITER: int = 15
+MAX_ITER: int = 30
 # Delta is used to calculate the numerical derivatives of the profits
 DELTA: float = 10
 # Threshold for the profits to be considered converged, in percentage of the
@@ -98,15 +98,15 @@ ONE_D_PLOTS_CONFIGS = [
         'filename': 'total_production.png'
     },
     # New thermal production
-    {
-        'y_variables': [
-            {'key': 'total_production_hydros', 'label': 'Hydro'},
-            {'key': 'new_thermal_production', 'label': 'New Thermal'}
-        ],
-        'axis_labels': {'y': 'Total Production (GWh)'},
-        'title': 'Production of Hydros and New Thermal',
-        'filename': 'total_production_new_thermal.png'
-    },
+    #    {
+    #        'y_variables': [
+    #            {'key': 'total_production_hydros', 'label': 'Hydro'},
+    #            {'key': 'thermal_production', 'label': 'New Thermal'}
+    #        ],
+    #        'axis_labels': {'y': 'Total Production (GWh)'},
+    #        'title': 'Production of Hydros and New Thermal',
+    #        'filename': 'total_production_new_thermal.png'
+    #    },
     # Average price
     {
         'y_variables': [
@@ -200,7 +200,7 @@ VARIABLE_COSTS_THERMAL_DF = {
         'end': None
     },
     'columns_options': {
-        'drop_columns': ['PROMEDIO_ESC','poste'],
+        'drop_columns': ['PROMEDIO_ESC', 'poste'],
         'rename_columns': {
             **{f'ESC{i}': f'{i}' for i in range(0, 114)},
             '': 'datetime'
@@ -219,7 +219,7 @@ SALTO_WATER_LEVEL_DF = {
         'end': None
     },
     'columns_options': {
-        'drop_columns': ['PROMEDIO_ESC','poste'],
+        'drop_columns': ['PROMEDIO_ESC', 'poste'],
         'rename_columns': {
             **{f'ESC{i}': f'{i}' for i in range(0, 114)},
             '': 'datetime'

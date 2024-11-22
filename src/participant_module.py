@@ -36,6 +36,7 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
 }
 
+
 class Participant:
     """
     Represents a participant in the energy market, such as a wind farm,
@@ -52,7 +53,8 @@ class Participant:
         self.key = key_participant
         self.capacity = capacity
         self.paths = paths
-        self.general_parameters = general_parameters  # Collecting parameters into a dictionary
+        # Collecting parameters into a dictionary
+        self.general_parameters = general_parameters
         self.type_participant = PARTICIPANTS[key_participant]["type"]
 
         participant_folder = PARTICIPANTS[key_participant]["folder"]
@@ -68,8 +70,9 @@ class Participant:
         Extracts and processes the production data for the participant.
         """
         dataframe = proc.open_dataframe(self.dataframe_configuration, self.paths["sim"],
-                                                  daily=self.general_parameters.get("daily", False))
-        logger.info(f"Successfully extracted and processed {self.key} production data.")
+                                        daily=self.general_parameters.get("daily", False))
+        logger.info(
+            f"Successfully extracted and processed {self.key} production data.")
         return dataframe
 
     def variable_costs_df(self) -> pd.DataFrame:
@@ -77,12 +80,15 @@ class Participant:
         Extracts and processes the variable costs data for the participant.
         """
         if self.type_participant != "thermal":
-            logger.error("Variable costs are only available for thermal participants.")
-            raise ValueError("Variable costs are only available for thermal participants.")
+            logger.error(
+                "Variable costs are only available for thermal participants.")
+            raise ValueError(
+                "Variable costs are only available for thermal participants.")
 
         dataframe = proc.open_dataframe(VARIABLE_COSTS_THERMAL_DF, self.paths["sim"],
                                         self.general_parameters.get("daily", False))
-        logger.info(f"Successfully extracted and processed {self.key} variable costs data.")
+        logger.info(
+            f"Successfully extracted and processed {self.key} variable costs data.")
         return dataframe
 
     def water_level_df(self) -> pd.DataFrame:
@@ -90,12 +96,15 @@ class Participant:
         Extracts and processes the water level data for the participant.
         """
         if self.type_participant != "hydro":
-            logger.error("Water level data is only available for hydro participants.")
-            raise ValueError("Water level data is only available for hydro participants.")
+            logger.error(
+                "Water level data is only available for hydro participants.")
+            raise ValueError(
+                "Water level data is only available for hydro participants.")
 
         dataframe = proc.open_dataframe(SALTO_WATER_LEVEL_DF, self.paths["sim"],
                                         self.general_parameters.get("daily", False))
-        logger.info(f"Successfully extracted and processed {self.key} water level data.")
+        logger.info(
+            f"Successfully extracted and processed {self.key} water level data.")
         return dataframe
 
     def profit(self, marginal_cost_df: pd.DataFrame) -> float:
@@ -111,14 +120,16 @@ class Participant:
         profits_per_year_per_mw = average_revenue_per_year_per_mw - total_cost_per_year_per_mw
 
         # Normalize profits by total costs per year
-        profits_per_year_per_mw_normalized = profits_per_year_per_mw / total_cost_per_year_per_mw
+        profits_per_year_per_mw_normalized = profits_per_year_per_mw / \
+            total_cost_per_year_per_mw
         return profits_per_year_per_mw_normalized
 
     def _revenue(self, marginal_cost_df: pd.DataFrame) -> float:
         """
         Computes the average revenue per year per MW for the participant.
         """
-        present_value_df = self._present_value_per_scenario(self.production_df(), marginal_cost_df)
+        present_value_df = self._present_value_per_scenario(
+            self.production_df(), marginal_cost_df)
 
         # Compute average revenue over scenarios
         average_total_revenue = present_value_df.mean(axis=1).values[0]
@@ -128,7 +139,8 @@ class Participant:
         capacity = self.capacity
 
         # Compute the average revenue per year per MW
-        average_total_revenue_per_year_per_mw = average_total_revenue / (years_run * capacity)
+        average_total_revenue_per_year_per_mw = average_total_revenue / \
+            (years_run * capacity)
         return average_total_revenue_per_year_per_mw
 
     def _cost(self) -> float:
@@ -136,9 +148,10 @@ class Participant:
         Computes the total cost per year per MW for the participant.
         """
         # Compute variable cost per year
-        total_variable_costs = self._total_variable_costs() if self.type_participant == "thermal" else 0
-        variable_cost_per_year_per_mw = (total_variable_costs / 
-                            self.general_parameters["years_run"]*self.capacity)
+        total_variable_costs = self._total_variable_costs(
+        ) if self.type_participant == "thermal" else 0
+        variable_cost_per_year_per_mw = (total_variable_costs /
+                                         self.general_parameters["years_run"]*self.capacity)
 
         # Compute fixed cost per year
         lifetime_fixed_cost_per_mw = self._lifetime_fixed_costs_per_mw()
@@ -148,7 +161,6 @@ class Participant:
         # Compute total cost per year per MW
         total_cost_per_year_per_mw = variable_cost_per_year_per_mw + fixed_cost_per_year_per_mw
         return total_cost_per_year_per_mw
-
 
     def _initialize_df_configuration(
         self, key_participant: str, sim_folder: str, folder_participant: str
@@ -174,7 +186,8 @@ class Participant:
         """
         Returns the total variable costs over the simulation period.
         """
-        dataframe = proc.process_res_file(COSTS_BY_PARTICIPANT_TABLE, self.paths["sim"])
+        dataframe = proc.process_res_file(
+            COSTS_BY_PARTICIPANT_TABLE, self.paths["sim"])
 
         if dataframe is None:
             logger.critical("Variable cost file could not be read.")
@@ -195,7 +208,8 @@ class Participant:
         annual_interest_rate = self.general_parameters["annual_interest_rate"]
 
         if annual_interest_rate > 0:
-            annuity_factor = (1 - (1 + annual_interest_rate) ** -lifetime) / annual_interest_rate
+            annuity_factor = (1 - (1 + annual_interest_rate)
+                              ** -lifetime) / annual_interest_rate
         else:
             annuity_factor = lifetime
 
@@ -213,17 +227,19 @@ class Participant:
         marginal_cost_df = marginal_cost_df.copy()
 
         participant_df.set_index("datetime", inplace=True)
-        
+
         logger.debug(f"Marginal cost df: {marginal_cost_df.head()}")
         marginal_cost_df.set_index("datetime", inplace=True)
 
         participant_df.index = pd.to_datetime(participant_df.index)
         marginal_cost_df.index = pd.to_datetime(marginal_cost_df.index)
 
-        common_index = participant_df.index.intersection(marginal_cost_df.index)
+        common_index = participant_df.index.intersection(
+            marginal_cost_df.index)
 
         if common_index.empty:
-            logger.error("No overlapping dates between participant and marginal cost data.")
+            logger.error(
+                "No overlapping dates between participant and marginal cost data.")
             raise ValueError("No overlapping dates for computation.")
 
         participant_df = participant_df.reindex(common_index)
@@ -246,7 +262,6 @@ class Participant:
         revenues_df = pd.DataFrame.from_dict(results_df, orient="index").T
         return revenues_df
 
-
     def _compute_discounted_production(self, production_df: pd.DataFrame) -> float:
         """
         Computes the discounted production for the participant.
@@ -256,5 +271,6 @@ class Participant:
 
         for scenario in SCENARIOS:
             log = scenario == 0
-            total += proc.get_present_value(production_df, str(scenario), annual_interest_rate, log)
+            total += proc.get_present_value(production_df,
+                                            str(scenario), annual_interest_rate, log)
         return total / len(SCENARIOS)

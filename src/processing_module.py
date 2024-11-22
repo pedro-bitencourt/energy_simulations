@@ -200,7 +200,6 @@ def process_marginal_cost(marginal_cost_df: pd.DataFrame) -> pd.DataFrame:
             row['Int.MuestreoDelPaso'], errors='coerce')
         return (paso_start_date + timedelta(hours=int(hours_added))).strftime(DATETIME_FORMAT)
 
-
     marginal_cost_df['datetime'] = marginal_cost_df.apply(
         datetime_from_row, axis=1)
     return marginal_cost_df
@@ -222,7 +221,8 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
     list_of_keys = ['name', 'filename', 'columns_options']
     if not all(key in option for key in list_of_keys):
         logger.error('Option does not contain all required keys.')
-        raise ValueError(f'Option {option} does not contain all required keys.')
+        raise ValueError(
+            f'Option {option} does not contain all required keys.')
 
     # Get the file path; raise error if not found
     file_path = auxiliary.try_get_file(input_folder, option['filename'])
@@ -272,14 +272,17 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
             dataframe['datetime'] = pd.to_datetime(
                 dataframe['datetime'], format=DATETIME_FORMAT)
     else:
-        logger.error('DataFrame %s does not contain a datetime column.', option['name'])
-        raise ValueError(f'DataFrame {option["name"]} does not contain a datetime column.')
+        logger.error(
+            'DataFrame %s does not contain a datetime column.', option['name'])
+        raise ValueError(
+            f'DataFrame {option["name"]} does not contain a datetime column.')
 
     logger.debug(f'{dataframe.head()=}')
 
     if dataframe is None:
         logger.error(f'Could not process DataFrame from {file_path}.')
-        raise ValueError(f'Could not process DataFrame from {file_path}, with head {dataframe.head()}.')
+        raise ValueError(
+            f'Could not process DataFrame from {file_path}, with head {dataframe.head()}.')
 
     # Check for NaN values
     if dataframe.isna().sum().sum() > 0:
@@ -429,24 +432,23 @@ def read_res_file(option, sim_folder):
     dataframe = pd.DataFrame(
         {'year':  [2023 + y for y in range(number_of_years)]})
 
-    logger.debug(dataframe)
-
     # add the data to the DataFrame
     for line in data_table:
         # check if the line has the correct number of columns
         if len(line) != number_of_years + 1:
-            logger.error("Faulty line found while reading %s",
+            logger.debug("Faulty line found while reading %s",
                          file_path)
-            logger.error("Faulty line:%s", line)
+            logger.debug("Faulty line:%s", line)
             continue
         dataframe[line[0]] = line[1:]
 
-    logger.error("process_res_file output: %s", dataframe)
+    logger.debug("process_res_file output: %s", dataframe.head())
 
     return dataframe
 
+
 def convert_from_poste_to_datetime(participant_df: pd.DataFrame,
-                                    daily: bool) -> pd.DataFrame:
+                                   daily: bool) -> pd.DataFrame:
     """
     Converts 'poste' time format to datetime.
     """
@@ -462,6 +464,7 @@ def convert_from_poste_to_datetime(participant_df: pd.DataFrame,
         )
         return participant_df
     return convert_from_poste_to_datetime_weekly(participant_df)
+
 
 def convert_from_poste_to_datetime_weekly(participant_df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -496,9 +499,11 @@ def convert_from_poste_to_datetime_weekly(participant_df: pd.DataFrame) -> pd.Da
 
     result = result.dropna(subset=["datetime", "value"])
     result = result.sort_values(["datetime", "scenario"])
-    result = result.drop_duplicates(subset=["datetime", "scenario"], keep="first")
+    result = result.drop_duplicates(
+        subset=["datetime", "scenario"], keep="first")
 
-    final_result = result.pivot(index="datetime", columns="scenario", values="value")
+    final_result = result.pivot(
+        index="datetime", columns="scenario", values="value")
     final_result = final_result.sort_index()
     final_result["datetime"] = final_result.index
 

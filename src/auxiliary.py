@@ -9,6 +9,7 @@ import glob
 import time
 import subprocess
 import logging
+import numpy as np
 
 #################################
 ### General utility functions ###

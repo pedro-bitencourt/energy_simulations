@@ -17,11 +17,13 @@ general_parameters: dict = {'daily': True,
                             'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
                             'email': 'pedro.bitencourt@u.northwestern.edu',
                             'annual_interest_rate': 0.0,
-                            'requested_time_run': 8.5,
+                            'years_run': 6.61,
+                            'requested_time_run': 5.5,
                             'requested_time_solver': REQUESTED_TIME_SOLVER}
 
 # exog_grid: list[float] = [0.75]
-exog_grid: list[float] = [0.5, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
+# exog_grid: list[float] = [0.5, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 5]
+exog_grid: list[float] = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 5]
 exogenous_variables: dict[str, dict] = {
     'lake_factor': {'pattern': 'LAKE_FACTOR',
                     'label': 'Lake Factor'},

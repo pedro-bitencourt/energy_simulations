@@ -16,18 +16,22 @@ from src.constants import HEATMAP_CONFIGS, ONE_D_PLOTS_CONFIGS
 logger = logging.getLogger(__name__)
 
 
-def visualize(comparative_statics: ComparativeStatics, grid_dimension: int):
-    visualizer = ComparativeStaticsVisualizer(comparative_statics)
+def visualize(comparative_statics: ComparativeStatics, grid_dimension: int,
+              check_convergence: bool = True):
+    visualizer = ComparativeStaticsVisualizer(comparative_statics,
+                                              check_convergence)
     visualizer.visualize(grid_dimension)
 
 
 class ComparativeStaticsVisualizer:
     '''
     '''
-    def __init__(self, comparative_statics: ComparativeStatics):
-        self.name: str = comparative_statics.name
-        self.list_of_runs: list[Run] = comparative_statics.list_simulations
 
+    def __init__(self, comparative_statics: ComparativeStatics,
+                 check_convergence: bool):
+        self.name: str = comparative_statics.name
+        self.list_of_runs: list[Run] = comparative_statics.create_runs_from_investment_problems(
+            check_convergence)
         self.exogenous_variables: dict = comparative_statics.exogenous_variables
 
         # Initialize the paths
@@ -39,9 +43,16 @@ class ComparativeStaticsVisualizer:
             path.mkdir(parents=True, exist_ok=True)
 
         # Load the results dataframe
-        self.results_df: pd.DataFrame = pd.read_csv(
-            self.paths['results'] / f"results_table.csv")
+        results_df: pd.DataFrame = pd.read_csv(
+            self.paths['results'] /
+            f"results_table.csv")
+        print(f"{results_df.head()=}")
+        if check_convergence:
+            list_run_names = [run.name for run in self.list_of_runs]
+            results_df = results_df[results_df['run_name'].isin(
+                list_run_names)]
 
+        self.results_df = results_df
         self.results_runs: dict[str, dict] = self._initialize_results_runs()
 
     def _initialize_paths(self, paths: dict[str, Path]) -> dict[str, Path]:
@@ -87,11 +98,11 @@ class ComparativeStaticsVisualizer:
         """
         from sklearn.decomposition import PCA
         from sklearn.preprocessing import StandardScaler
-        
+
         # Do PCA
         scaler = StandardScaler()
         scaled_data = scaler.fit_transform(price_data)
-        
+
         pca = PCA()
         pca_result = pca.fit_transform(scaled_data)
         # Get the principal components
@@ -116,18 +127,17 @@ class ComparativeStaticsVisualizer:
             columns=[f'PC{i+1}' for i in range(n_components)],
             index=runs  # Use the actual runs list as index
         )
-        
+
         # Then add variables as columns using a dictionary comprehension
         variable_data = {
-            var_name: [run.variables.get(var_name, {}).get('value', None) 
-                      for run in self.list_of_runs]
+            var_name: [run.variables.get(var_name, {}).get('value', None)
+                       for run in self.list_of_runs]
             for var_name in self.list_of_runs[0].variables.keys()
         }
-        
+
         # Update the DataFrame with the variable data
         components_df = components_df.assign(**variable_data)
         return components_df
-    
 
     def _load_price_distributions_df(self):
         temp = [result_run['price_distribution']
@@ -186,14 +196,14 @@ class ComparativeStaticsVisualizer:
         eigenvalue_fig.savefig(self.paths['price_distributions'] /
                                f"{self.name}_eigenvalue_decay.png", dpi=300)
 
-        ## Create a DataFrame with the principal component data
-        #components_df = self._get_components_df(pca_result, runs, n_components=4)
-        #correlation_df = self._get_correlation_matrix(components_df)
-    
-        ## Save the principal components and correlation matrix to CSV
-        #components_df.to_csv(self.paths['price_distributions'] /
+        # Create a DataFrame with the principal component data
+        # components_df = self._get_components_df(pca_result, runs, n_components=4)
+        # correlation_df = self._get_correlation_matrix(components_df)
+
+        # Save the principal components and correlation matrix to CSV
+        # components_df.to_csv(self.paths['price_distributions'] /
         #                     f"{self.name}_principal_components.csv")
-        #correlation_df.to_csv(self.paths['price_distributions'] /
+        # correlation_df.to_csv(self.paths['price_distributions'] /
         # Create a DataFrame with the principal component data
         # components_df = self._get_components_df(pca_result, runs, n_components=4)
         # correlation_df = self._get_correlation_matrix(components_df)
@@ -258,6 +268,8 @@ class ComparativeStaticsVisualizer:
 ################################################################################
 # Plotting functions
 ################################################################################
+
+
 def create_eigenvalue_decay_plot(pca_explained_variance_ratio: np.ndarray):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(np.cumsum(pca_explained_variance_ratio))
@@ -283,7 +295,6 @@ def create_principal_components_plot(pca_components: np.ndarray, n_components: i
             axs[i], pc_df, title=f'Principal Component {i+1}')
     fig.tight_layout()
     return fig
-
 
 
 def plot_intraweek_price_distribution(ax, dataframe: pd.DataFrame, title=None):

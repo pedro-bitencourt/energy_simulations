@@ -659,8 +659,8 @@
             <ev tipo="const">CoefEnergConstantes</ev>
           </compCoefEnergetico>
         </compsPorDefecto>
+        <listaAtributos>energias,potencias,cotaAguasArriba</listaAtributos>
         <listaUtilizados>salto</listaUtilizados>
-        <listaAtributos>potencias,cotaAguasArriba</listaAtributos>
         <listaGHidraulico>
           <gHidraulico>
             <compsGenerales>
@@ -1346,7 +1346,7 @@
               <costoVariable>
                 <ev tipo="const">0.0</ev>
               </costoVariable>
-              <salidaDetallada>false</salidaDetallada>
+              <salidaDetallada>true</salidaDetallada>
               <hayReservaEstrategica>false</hayReservaEstrategica>
               <volumenReservaEstrategica>
                 <ev tipo="const">900.0</ev>

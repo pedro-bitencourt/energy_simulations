@@ -1,0 +1,289 @@
+[19:02:52] DEBUG    matplotlib data path: /home/pdm6134/.local/lib/python3.9/site-packages/matplotlib/mpl-data                                                                               __init__.py:341
+           DEBUG    CONFIGDIR=/home/pdm6134/.config/matplotlib                                                                                                                               __init__.py:341
+           DEBUG    interactive is False                                                                                                                                                    __init__.py:1509
+           DEBUG    platform is linux                                                                                                                                                       __init__.py:1510
+           DEBUG    CACHEDIR=/home/pdm6134/.cache/matplotlib                                                                                                                                 __init__.py:341
+           DEBUG    Using fontManager instance from /home/pdm6134/.cache/matplotlib/fontlist-v390.json                                                                                  font_manager.py:1580
+[19:03:06] INFO     Initializing investment problem salto_volume_investment_0.5                                                                                                      investment_module.py:61
+           INFO     Optimization trajectory not found at /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_0.5/salto_volume_investment_0.5_trajectory.json. investment_module.py:108
+                    Initializing a new one.                                                                                                                                                                 
+           INFO     Created investment_problem object for salto_volume_investment_0.5.                                                                                     comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_0.75                                                                                                     investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_0.75/salto_volume_investment_0.75_trajectory.json.                                                            
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.498773770149461, 'thermal': 7.629731724924451, 'wind': 5.642000615495957},                                                    
+                    profits_derivatives={'solar': {'solar': -0.0029062421321622623, 'thermal': -0.0008781719058421622, 'wind': -0.002063226612738056}, 'thermal': {'solar':                                 
+                    -0.0010913379890760133, 'thermal': -0.051166838360748826, 'wind': -0.0019590690803680034}, 'wind': {'solar': -0.0015404106339376611, 'thermal':                                         
+                    -0.0009977968181296148, 'wind': -0.003180801417279966}})]                                                                                                                               
+           INFO     Created investment_problem object for salto_volume_investment_0.75.                                                                                    comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_1                                                                                                        investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_1/salto_volume_investment_1_trajectory.json.                                                                  
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.487489452224626, 'thermal': 7.559615728623344, 'wind': 5.631769994561735},                                                    
+                    profits_derivatives={'solar': {'solar': -0.0025922928732978077, 'thermal': -0.0002679788612593548, 'wind': -0.0020796287736700057}, 'thermal': {'solar':                                
+                    -0.000706251667022606, 'thermal': -0.049803315913814664, 'wind': -0.0015860712732252758}, 'wind': {'solar': -0.0010129820629096286, 'thermal':                                          
+                    -0.0005600784643283952, 'wind': -0.0031851825336662643}}), OptimizationPathEntry(iteration=1, current_investment={'solar': 1425.0, 'thermal': 394.0, 'wind':                            
+                    2617.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.3542264646130629, 'thermal': 2.00913463062113, 'wind':                                 
+                    0.20903729893951498}, profits_derivatives={'solar': {'solar': -0.0017799246111742995, 'thermal': -6.608899784193989e-06, 'wind': -0.0009033005615053269},                               
+                    'thermal': {'solar': -0.000767020876449731, 'thermal': -0.010956415449691882, 'wind': -0.0011850215605536452}, 'wind': {'solar': -0.0004916763868479973,                                
+                    'thermal': -8.587994840711378e-06, 'wind': -0.0012392612414644122}}), OptimizationPathEntry(iteration=2, current_investment={'solar': 1567.0, 'thermal': 555.0,                         
+                    'wind': 2728.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.026464709117137938, 'thermal': 0.6715812022305814,                             
+                    'wind': 0.019593482659828725}, profits_derivatives={'solar': {'solar': -0.0015147960528470957, 'thermal': -3.467597663252275e-07, 'wind':                                               
+                    -0.0006698782993522633}, 'thermal': {'solar': -0.0003511010874219456, 'thermal': -0.004471880795303118, 'wind': -0.0005464213472002211}, 'wind': {'solar':                              
+                    -0.0003767027376606471, 'thermal': -1.1135679083965066e-06, 'wind': -0.0009929696730790563}}), OptimizationPathEntry(iteration=3, current_investment={'solar':                          
+                    1578.0, 'thermal': 702.0, 'wind': 2744.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': -0.001787044204802843,                                 
+                    'thermal': 0.15494241923406107, 'wind': -0.0011590360047612194}, profits_derivatives={'solar': {'solar': -0.001470627204226307, 'thermal':                                              
+                    -1.1345574796187488e-08, 'wind': -0.000668555343979082}, 'thermal': {'solar': -0.0002159013414015115, 'thermal': -0.0025375148355471612, 'wind':                                        
+                    -0.00036389603476194576}, 'wind': {'solar': -0.00038998492327304527, 'thermal': -7.289208359805705e-08, 'wind': -0.0009872346337111795}}),                                              
+                    OptimizationPathEntry(iteration=4, current_investment={'solar': 1577.0, 'thermal': 763.0, 'wind': 2743.0}, endogenous_variables=['wind', 'solar', 'thermal'],                           
+                    successful=True, profits={'solar': 0.0003972814009054687, 'thermal': 0.012700791940408136, 'wind': 0.00020719151311479638}, profits_derivatives={'solar':                               
+                    {'solar': -0.0014739006691930194, 'thermal': 0.0, 'wind': -0.000690440430721373}, 'thermal': {'solar': -0.00017213057400278058, 'thermal':                                              
+                    -0.0020763841460959293, 'wind': -0.00029733978743457076}, 'wind': {'solar': -0.0003913443397934922, 'thermal': 0.0, 'wind': -0.0009993407250678704}}),                                  
+                    OptimizationPathEntry(iteration=5, current_investment={'solar': 1577.0, 'thermal': 769.0, 'wind': 2743.0}, endogenous_variables=['wind', 'solar', 'thermal'],                           
+                    successful=True, profits={'solar': 0.0003972814009054687, 'thermal': 0.0001634672254484375, 'wind': 0.00020719151311479638}, profits_derivatives={'solar':                              
+                    {'solar': -0.0014739006691930194, 'thermal': 0.0, 'wind': -0.000690440430721373}, 'thermal': {'solar': -0.00016921601564759848, 'thermal':                                              
+                    -0.002037322821192602, 'wind': -0.0002923068229494018}, 'wind': {'solar': -0.0003913443397934922, 'thermal': 0.0, 'wind': -0.0009993407250678704}})]                                    
+           INFO     Created investment_problem object for salto_volume_investment_1.                                                                                       comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_1.25                                                                                                     investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_1.25/salto_volume_investment_1.25_trajectory.json.                                                            
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.7125580114856875, 'thermal': 7.56862332341511, 'wind': 5.858352709929896},                                                    
+                    profits_derivatives={'solar': {'solar': -0.002911580083419807, 'thermal': -0.00026899205118873225, 'wind': -0.0025699202843512126}, 'thermal': {'solar':                                
+                    -0.000777471900123583, 'thermal': -0.049819394619753335, 'wind': -0.0016846458832426414}, 'wind': {'solar': -0.0014868066454965857, 'thermal':                                          
+                    -0.0005028373794860209, 'wind': -0.0035270972943735046}})]                                                                                                                              
+           INFO     Created investment_problem object for salto_volume_investment_1.25.                                                                                    comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_1.5                                                                                                      investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_1.5/salto_volume_investment_1.5_trajectory.json.                                                              
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.718530339427795, 'thermal': 7.538567307560525, 'wind': 5.852915466996555},                                                    
+                    profits_derivatives={'solar': {'solar': -0.002818234878569825, 'thermal': -0.00022426832744333326, 'wind': -0.002566568387476309}, 'thermal': {'solar':                                 
+                    -0.0007757534122937671, 'thermal': -0.04955233538515173, 'wind': -0.0017049715519324772}, 'wind': {'solar': -0.0014151481343699147, 'thermal':                                          
+                    -0.00038570921490306277, 'wind': -0.0035176288890911957}})]                                                                                                                             
+           INFO     Created investment_problem object for salto_volume_investment_1.5.                                                                                     comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_2                                                                                                        investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_2/salto_volume_investment_2_trajectory.json.                                                                  
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.660851906661413, 'thermal': 7.472909053658572, 'wind': 5.783314458302734},                                                    
+                    profits_derivatives={'solar': {'solar': -0.002957118321570906, 'thermal': -0.00019435227535025135, 'wind': -0.0028561823715162584}, 'thermal': {'solar':                                
+                    -0.0008764726280529267, 'thermal': -0.04889711057832535, 'wind': -0.0019099691033789945}, 'wind': {'solar': -0.0016105617720384656, 'thermal':                                          
+                    -0.0004005764953316948, 'wind': -0.0038250606916371945}}), OptimizationPathEntry(iteration=1, current_investment={'solar': 1201.0, 'thermal': 394.0, 'wind':                            
+                    2418.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 1.0409327515475222, 'thermal': 2.3061665378742, 'wind':                                  
+                    0.6286607272480634}, profits_derivatives={'solar': {'solar': -0.0022986224770994877, 'thermal': -1.1514789326172447e-05, 'wind': -0.0013279164502522534},                               
+                    'thermal': {'solar': -0.0009266684882308418, 'thermal': -0.012442628926619381, 'wind': -0.001264934781112892}, 'wind': {'solar': -0.0007419756467597405,                                
+                    'thermal': -7.86475751392013e-06, 'wind': -0.0017181933691179374}}), OptimizationPathEntry(iteration=2, current_investment={'solar': 1522.0, 'thermal': 532.0,                          
+                    'wind': 2644.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.15990946905084724, 'thermal': 0.7670058830790426,                              
+                    'wind': 0.12247060597465052}, profits_derivatives={'solar': {'solar': -0.0017168700845668684, 'thermal': -6.226944220533159e-07, 'wind':                                                
+                    -0.0008457306701315975}, 'thermal': {'solar': -0.0003410867546725704, 'thermal': -0.0048961443495909255, 'wind': -0.0006930994602270868}, 'wind': {'solar':                             
+                    -0.0004754648358333724, 'thermal': -2.20111988089855e-06, 'wind': -0.0011489345932698084}}), OptimizationPathEntry(iteration=3, current_investment={'solar':                            
+                    1573.0, 'thermal': 673.0, 'wind': 2729.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.012072594932921813,                                  
+                    'thermal': 0.1840310406460845, 'wind': 0.006672408807481285}, profits_derivatives={'solar': {'solar': -0.0015606748222761861, 'thermal':                                                
+                    -4.782644646462997e-09, 'wind': -0.0006884857759040591}, 'thermal': {'solar': -0.00024366620630506542, 'thermal': -0.002655785784306941, 'wind':                                        
+                    -0.00042444193565369657}, 'wind': {'solar': -0.00039997335252181884, 'thermal': -4.4485839478282385e-09, 'wind': -0.0009983943855125996}}),                                             
+                    OptimizationPathEntry(iteration=4, current_investment={'solar': 1579.0, 'thermal': 741.0, 'wind': 2733.0}, endogenous_variables=['wind', 'solar', 'thermal'],                           
+                    successful=True, profits={'solar': -0.00022178191269130325, 'thermal': 0.01749829907499436, 'wind': 0.0001887375793141675}, profits_derivatives={'solar':                               
+                    {'solar': -0.001488152585673814, 'thermal': -7.425504385528384e-09, 'wind': -0.0007170680756879618}, 'thermal': {'solar': -0.0002058039453877166, 'thermal':                            
+                    -0.002106110459828188, 'wind': -0.0003529186664238008}, 'wind': {'solar': -0.0003970901139764667, 'thermal': -5.789255111369606e-09, 'wind':                                            
+                    -0.0010177726957929028}})]                                                                                                                                                              
+           INFO     Created investment_problem object for salto_volume_investment_2.                                                                                       comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_3                                                                                                        investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_3/salto_volume_investment_3_trajectory.json.                                                                  
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.614746126887089, 'thermal': 7.3601370496491745, 'wind': 5.731859335377772},                                                   
+                    profits_derivatives={'solar': {'solar': -0.0029821424471888846, 'thermal': -0.0002176510698632228, 'wind': -0.002731692076995884}, 'thermal': {'solar':                                 
+                    -0.0008913036600239899, 'thermal': -0.04780603076011962, 'wind': -0.0018438461702451115}, 'wind': {'solar': -0.001637209678451068, 'thermal':                                           
+                    -0.00038515214555667754, 'wind': -0.0036850224769586328}}), OptimizationPathEntry(iteration=1, current_investment={'solar': 1210.0, 'thermal': 394.0, 'wind':                           
+                    2452.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.8526816917413687, 'thermal': 2.0915896724479492, 'wind':                               
+                    0.47944077001226204}, profits_derivatives={'solar': {'solar': -0.0022258975158119033, 'thermal': -1.4318113774358654e-05, 'wind': -0.0012403910512002847},                              
+                    'thermal': {'solar': -0.0009478106352414084, 'thermal': -0.011397027034329122, 'wind': -0.0013516908011927953}, 'wind': {'solar': -0.000702493437618612,                                
+                    'thermal': -1.4468912280363178e-05, 'wind': -0.001559578687161689}}), OptimizationPathEntry(iteration=2, current_investment={'solar': 1492.0, 'thermal': 533.0,                         
+                    'wind': 2631.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.10758238337898303, 'thermal': 0.6815708703674791,                              
+                    'wind': 0.06727350523575741}, profits_derivatives={'solar': {'solar': -0.0016391152693008878, 'thermal': -5.38739373778796e-08, 'wind':                                                 
+                    -0.0008434602019289112}, 'thermal': {'solar': -0.00034117296833230393, 'thermal': -0.004586523149345023, 'wind': -0.0006403458003328532}, 'wind': {'solar':                             
+                    -0.0004885841299023016, 'thermal': -2.4878355164320578e-06, 'wind': -0.0011431396833429975}}), OptimizationPathEntry(iteration=3, current_investment={'solar':                          
+                    1538.0, 'thermal': 673.0, 'wind': 2670.0}, endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.002266878810521706,                                  
+                    'thermal': 0.15310095768711343, 'wind': 0.002390412753546116}, profits_derivatives={'solar': {'solar': -0.001516769831704973, 'thermal':                                                
+                    -3.6100269861123746e-09, 'wind': -0.0007751721020158372}, 'thermal': {'solar': -0.0002266770437275717, 'thermal': -0.0025629307759894916, 'wind':                                       
+                    -0.0004203283323503365}, 'wind': {'solar': -0.00043078677107249763, 'thermal': -1.1940579295720982e-09, 'wind': -0.0010680281557589196}}),                                              
+                    OptimizationPathEntry(iteration=4, current_investment={'solar': 1538.0, 'thermal': 732.0, 'wind': 2672.0}, endogenous_variables=['wind', 'solar', 'thermal'],                           
+                    successful=True, profits={'solar': 0.0006722529899883862, 'thermal': 0.01288902573764146, 'wind': 0.00017691207917697386}, profits_derivatives={'solar':                                
+                    {'solar': -0.0015133483944784706, 'thermal': -6.196018609012747e-09, 'wind': -0.0007822584958816945}, 'thermal': {'solar': -0.00018150224780322938, 'thermal':                          
+                    -0.002100636523266022, 'wind': -0.0003428498051089017}, 'wind': {'solar': -0.0004289609542921526, 'thermal': -7.902342424333632e-08, 'wind':                                            
+                    -0.0010559535219201682}}), OptimizationPathEntry(iteration=5, current_investment={'solar': 1538.0, 'thermal': 738.0, 'wind': 2672.0},                                                   
+                    endogenous_variables=['wind', 'solar', 'thermal'], successful=True, profits={'solar': 0.000672199425469364, 'thermal': 0.0002030948303290811, 'wind':                                   
+                    0.00017614917153271865}, profits_derivatives={'solar': {'solar': -0.0015137568039034215, 'thermal': -2.0987117898153133e-09, 'wind': -0.0007822544055808902},                           
+                    'thermal': {'solar': -0.00017796174677144663, 'thermal': -0.0020602303383815204, 'wind': -0.0003363567066057356}, 'wind': {'solar': -0.00042892255485257923,                            
+                    'thermal': -6.827469082457062e-09, 'wind': -0.0010558813192537452}})]                                                                                                                   
+           INFO     Created investment_problem object for salto_volume_investment_3.                                                                                       comparative_statics_module.py:277
+           INFO     Initializing investment problem salto_volume_investment_5                                                                                                        investment_module.py:61
+           INFO     Successfully loaded optimization trajectory from                                                                                                                investment_module.py:101
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_5/salto_volume_investment_5_trajectory.json.                                                                  
+           DEBUG    Optimization trajectory: [OptimizationPathEntry(iteration=0, current_investment={'solar': 1000, 'thermal': 300, 'wind': 1000}, endogenous_variables=['wind',    investment_module.py:103
+                    'solar', 'thermal'], successful=True, profits={'solar': 4.645777802479432, 'thermal': 7.193576776364565, 'wind': 5.762295642262677},                                                    
+                    profits_derivatives={'solar': {'solar': -0.0029466022410385762, 'thermal': -3.69769166125522e-05, 'wind': -0.0028607496142160293}, 'thermal': {'solar':                                 
+                    -0.0009895434254276303, 'thermal': -0.04644045036361897, 'wind': -0.0020499506470756934}, 'wind': {'solar': -0.0015750893010986645, 'thermal':                                          
+                    -0.000177451330799272, 'wind': -0.0037017835231612393}})]                                                                                                                               
+           INFO     Created investment_problem object for salto_volume_investment_5.                                                                                       comparative_statics_module.py:277
+           CRITICAL Creating runs with check_convergence=False                                                                                                             comparative_statics_module.py:200
+           ERROR    No successful iteration found in the optimization trajectory.                                                                                                 optimization_module.py:144
+                            Returning the first entry.                                                                                                                                                      
+           INFO     Investment problem salto_volume_investment_0.5 converged                                                                                               comparative_statics_module.py:216
+           INFO     Investment problem salto_volume_investment_0.75 converged                                                                                              comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_0.75 with equilibrium run 0.75_1000_1000_300                                       comparative_statics_module.py:225
+[19:03:14] INFO     Investment problem salto_volume_investment_1 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_1 with equilibrium run 1_2743_1577_769                                             comparative_statics_module.py:225
+[19:03:44] INFO     Investment problem salto_volume_investment_1.25 converged                                                                                              comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_1.25 with equilibrium run 1.25_1000_1000_300                                       comparative_statics_module.py:225
+[19:03:52] INFO     Investment problem salto_volume_investment_1.5 converged                                                                                               comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_1.5 with equilibrium run 1.5_1000_1000_300                                         comparative_statics_module.py:225
+[19:04:00] INFO     Investment problem salto_volume_investment_2 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_2 with equilibrium run 2_2733_1579_741                                             comparative_statics_module.py:225
+[19:04:24] INFO     Investment problem salto_volume_investment_3 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_3 with equilibrium run 3_2672_1538_738                                             comparative_statics_module.py:225
+[19:04:56] INFO     Investment problem salto_volume_investment_5 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_5 with equilibrium run 5_1000_1000_300                                             comparative_statics_module.py:225
+[19:05:03] INFO     Preparing to run salto_volume_investment_0.5 on quest                                                                                                           investment_module.py:327
+[19:05:06] INFO     Submitted job for investment problem salto_volume_investment_0.5                                                                                       comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_0.75 on quest                                                                                                          investment_module.py:327
+[19:05:11] INFO     Submitted job for investment problem salto_volume_investment_0.75                                                                                      comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_1 on quest                                                                                                             investment_module.py:327
+[19:05:14] INFO     Submitted job for investment problem salto_volume_investment_1                                                                                         comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_1.25 on quest                                                                                                          investment_module.py:327
+[19:05:17] INFO     Submitted job for investment problem salto_volume_investment_1.25                                                                                      comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_1.5 on quest                                                                                                           investment_module.py:327
+[19:05:20] INFO     Submitted job for investment problem salto_volume_investment_1.5                                                                                       comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_2 on quest                                                                                                             investment_module.py:327
+[19:05:23] INFO     Submitted job for investment problem salto_volume_investment_2                                                                                         comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_3 on quest                                                                                                             investment_module.py:327
+           INFO     Submitted job for investment problem salto_volume_investment_3                                                                                         comparative_statics_module.py:290
+           INFO     Preparing to run salto_volume_investment_5 on quest                                                                                                             investment_module.py:327
+[19:05:26] INFO     Submitted job for investment problem salto_volume_investment_5                                                                                         comparative_statics_module.py:290
+           ERROR    No successful iteration found in the optimization trajectory.                                                                                                 optimization_module.py:144
+                            Returning the first entry.                                                                                                                                                      
+           ERROR    Unexpected: profits_dict is None for salto_volume_investment_0.5                                                                                       comparative_statics_module.py:424
+Objective function values:
+Iteration 0: {'solar': 4.498773770149461, 'thermal': 7.629731724924451, 'wind': 5.642000615495957}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+Objective function values:
+Iteration 0: {'solar': 4.487489452224626, 'thermal': 7.559615728623344, 'wind': 5.631769994561735}
+
+Iteration 1: {'solar': 0.3542264646130629, 'thermal': 2.00913463062113, 'wind': 0.20903729893951498}
+
+Iteration 2: {'solar': 0.026464709117137938, 'thermal': 0.6715812022305814, 'wind': 0.019593482659828725}
+
+Iteration 3: {'solar': -0.001787044204802843, 'thermal': 0.15494241923406107, 'wind': -0.0011590360047612194}
+
+Iteration 4: {'solar': 0.0003972814009054687, 'thermal': 0.012700791940408136, 'wind': 0.00020719151311479638}
+
+Iteration 5: {'solar': 0.0003972814009054687, 'thermal': 0.0001634672254484375, 'wind': 0.00020719151311479638}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+Iteration 1: {'solar': 1425.0, 'thermal': 394.0, 'wind': 2617.0}
+
+Iteration 2: {'solar': 1567.0, 'thermal': 555.0, 'wind': 2728.0}
+
+Iteration 3: {'solar': 1578.0, 'thermal': 702.0, 'wind': 2744.0}
+
+Iteration 4: {'solar': 1577.0, 'thermal': 763.0, 'wind': 2743.0}
+
+Iteration 5: {'solar': 1577.0, 'thermal': 769.0, 'wind': 2743.0}
+
+Objective function values:
+Iteration 0: {'solar': 4.7125580114856875, 'thermal': 7.56862332341511, 'wind': 5.858352709929896}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+Objective function values:
+Iteration 0: {'solar': 4.718530339427795, 'thermal': 7.538567307560525, 'wind': 5.852915466996555}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+Objective function values:
+Iteration 0: {'solar': 4.660851906661413, 'thermal': 7.472909053658572, 'wind': 5.783314458302734}
+
+Iteration 1: {'solar': 1.0409327515475222, 'thermal': 2.3061665378742, 'wind': 0.6286607272480634}
+
+Iteration 2: {'solar': 0.15990946905084724, 'thermal': 0.7670058830790426, 'wind': 0.12247060597465052}
+
+Iteration 3: {'solar': 0.012072594932921813, 'thermal': 0.1840310406460845, 'wind': 0.006672408807481285}
+
+Iteration 4: {'solar': -0.00022178191269130325, 'thermal': 0.01749829907499436, 'wind': 0.0001887375793141675}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+Iteration 1: {'solar': 1201.0, 'thermal': 394.0, 'wind': 2418.0}
+
+Iteration 2: {'solar': 1522.0, 'thermal': 532.0, 'wind': 2644.0}
+
+Iteration 3: {'solar': 1573.0, 'thermal': 673.0, 'wind': 2729.0}
+
+Iteration 4: {'solar': 1579.0, 'thermal': 741.0, 'wind': 2733.0}
+
+Objective function values:
+Iteration 0: {'solar': 4.614746126887089, 'thermal': 7.3601370496491745, 'wind': 5.731859335377772}
+
+Iteration 1: {'solar': 0.8526816917413687, 'thermal': 2.0915896724479492, 'wind': 0.47944077001226204}
+
+Iteration 2: {'solar': 0.10758238337898303, 'thermal': 0.6815708703674791, 'wind': 0.06727350523575741}
+
+Iteration 3: {'solar': 0.002266878810521706, 'thermal': 0.15310095768711343, 'wind': 0.002390412753546116}
+
+Iteration 4: {'solar': 0.0006722529899883862, 'thermal': 0.01288902573764146, 'wind': 0.00017691207917697386}
+
+Iteration 5: {'solar': 0.000672199425469364, 'thermal': 0.0002030948303290811, 'wind': 0.00017614917153271865}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+Iteration 1: {'solar': 1210.0, 'thermal': 394.0, 'wind': 2452.0}
+
+Iteration 2: {'solar': 1492.0, 'thermal': 533.0, 'wind': 2631.0}
+
+Iteration 3: {'solar': 1538.0, 'thermal': 673.0, 'wind': 2670.0}
+
+Iteration 4: {'solar': 1538.0, 'thermal': 732.0, 'wind': 2672.0}
+
+Iteration 5: {'solar': 1538.0, 'thermal': 738.0, 'wind': 2672.0}
+
+Objective function values:
+Iteration 0: {'solar': 4.645777802479432, 'thermal': 7.193576776364565, 'wind': 5.762295642262677}
+
+Investment path:
+Iteration 0: {'solar': 1000, 'thermal': 300, 'wind': 1000}
+
+           CRITICAL Creating runs with check_convergence=False                                                                                                             comparative_statics_module.py:200
+           ERROR    No successful iteration found in the optimization trajectory.                                                                                                 optimization_module.py:144
+                            Returning the first entry.                                                                                                                                                      
+           INFO     Investment problem salto_volume_investment_0.5 converged                                                                                               comparative_statics_module.py:216
+           INFO     Investment problem salto_volume_investment_0.75 converged                                                                                              comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_0.75 with equilibrium run 0.75_1000_1000_300                                       comparative_statics_module.py:225
+           INFO     Investment problem salto_volume_investment_1 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_1 with equilibrium run 1_2743_1577_769                                             comparative_statics_module.py:225
+           INFO     Investment problem salto_volume_investment_1.25 converged                                                                                              comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_1.25 with equilibrium run 1.25_1000_1000_300                                       comparative_statics_module.py:225
+           INFO     Investment problem salto_volume_investment_1.5 converged                                                                                               comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_1.5 with equilibrium run 1.5_1000_1000_300                                         comparative_statics_module.py:225
+           INFO     Investment problem salto_volume_investment_2 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_2 with equilibrium run 2_2733_1579_741                                             comparative_statics_module.py:225
+           INFO     Investment problem salto_volume_investment_3 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_3 with equilibrium run 3_2672_1538_738                                             comparative_statics_module.py:225
+           INFO     Investment problem salto_volume_investment_5 converged                                                                                                 comparative_statics_module.py:216
+           INFO     Deleting run folders for investment problem salto_volume_investment_5 with equilibrium run 5_1000_1000_300                                             comparative_statics_module.py:225
+           DEBUG    File tiempos* not found in /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_0.5/0.5_1000_1000_300/CAD-2024-DIARIA/2024-11-20-18-1-18-OPT        auxiliary.py:73
+           DEBUG    File resumIng* not found in /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_0.5/0.5_1000_1000_300/CAD-2024-DIARIA/2024-11-20-18-1-18-SIM       auxiliary.py:73
+           ERROR    No sim folder found for run 0.5_1000_1000_300 in folder                                                                                                                run_module.py:158
+                    /projects/p32342/comparative_statics/salto_volume/salto_volume_investment_0.5/0.5_1000_1000_300/CAD-2024-DIARIA                                                                         
+           ERROR    Run 0.5_1000_1000_300 was not successful.                                                                                                                     run_processor_module.py:67

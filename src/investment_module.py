@@ -3,7 +3,7 @@ File name: investment_module.py
 Description: this file implements the InvestmentProblem class.
 
 The InvestmentProblem class represents a zero-profit condition problem, where you supply
-a base xml file, a set of exogenous variables, endogenous variables, and general parameters. 
+a base xml file, a set of exogenous variables, endogenous variables, and general parameters.
 
 Public methods:
     - __init__: initializes the InvestmentProblem object.
@@ -129,7 +129,8 @@ class InvestmentProblem:
                     self.paths["optimization_trajectory"])
 
     def solve_investment(self):
-        # initialize the current investment as the last element of the optimization trajectory
+        # initialize the current investment as the last el, check_convergence:
+        # boolement of the optimization trajectory
         current_iteration: OptimizationPathEntry = self.optimization_trajectory[-1]
         logger.info('Initializing the solver at iteration %s',
                     current_iteration)
@@ -182,7 +183,11 @@ class InvestmentProblem:
         """
         for directory in self.paths['folder'].iterdir():
             if directory.is_dir() and directory.name != equilibrium_run_name:
-                shutil.rmtree(directory)
+                try:
+                    shutil.rmtree(directory)
+                except OSError:
+                    logger.critical("Could not delete directory %s",
+                                    directory)
 
     def _update_current_iteration(self,
                                   current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
@@ -307,9 +312,15 @@ class InvestmentProblem:
             # create the run object
             run: Run = self.create_run(last_iteration.current_investment)
             # delete the runs folders for all other runs
-            self._clear_runs_folders()
+            self._clear_runs_folders(run.name)
             return run
         return None
+
+    def check_convergence(self):
+        # get the last successful iteration
+        last_iteration: OptimizationPathEntry = get_last_successful_iteration(
+            self.optimization_trajectory)
+        return last_iteration.check_convergence()
 
     #########################################
     # Methods to submit the job to Quest
