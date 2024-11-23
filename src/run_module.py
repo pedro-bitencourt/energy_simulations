@@ -136,8 +136,13 @@ class Run:
         sim_folder = self.paths.get('sim', False)
         if sim_folder:
             # Check if the resumen file exists
-            resumen_file = try_get_file(sim_folder, r'resumen*')
-            if resumen_file:
+            resumen_file_found = try_get_file(sim_folder, r'resumen*')
+
+            # Check if there is a production file
+            production_file_found = try_get_file(
+                sim_folder, r'EOLO_eoloDeci/potencias*.xlt')
+
+            if resumen_file_found and production_file_found:
                 return True
 
             # If no resumen file found, delete the sim folder

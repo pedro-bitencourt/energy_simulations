@@ -168,6 +168,11 @@ class ComparativeStatics:
             except FileNotFoundError:
                 logger.error(
                     f"{data_type.replace('_', ' ').title()} file not found for run {run.name}")
+                continue
+            except ValueError:
+                logger.error(
+                    f"Run {run.name} not successful, skipping it")
+                continue
 
         # Merge the DataFrames into a single DataFrames
         df_merged = pd.concat(
@@ -286,9 +291,14 @@ class ComparativeStatics:
         if self.endogenous_variables:
             # Submit investment problems
             for inv_prob in self.list_investment_problems:
-                inv_prob.submit()
-                logging.info(
-                    f'Submitted job for investment problem %s', inv_prob.name)
+                if inv_prob.check_convergence():
+                    logging.info("Investment problem %s reached convergence",
+                                 inv_prob.name)
+                    continue
+                else:
+                    inv_prob.submit()
+                    logging.info(
+                        f'Submitted job for investment problem %s', inv_prob.name)
         else:
             # Submit runs directly
             for run in self.list_simulations:

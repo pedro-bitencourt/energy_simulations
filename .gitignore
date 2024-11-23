@@ -2,3 +2,6 @@ __pycache__/
 old/
 *.csv
 tests/data/
+*.log
+*.swp
+

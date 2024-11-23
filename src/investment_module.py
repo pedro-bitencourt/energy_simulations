@@ -232,7 +232,7 @@ class InvestmentProblem:
             runs_dict[var] = self.create_run(investment)
 
         # Submit the runs, give up after 3 attempts
-        max_attempts: int = 3
+        max_attempts: int = 6
         attempts: int = 0
         while attempts < max_attempts:
             job_ids_list: list[str] = []
@@ -244,8 +244,11 @@ class InvestmentProblem:
                     job_id = run.submit()
                     if job_id:
                         job_ids_list.append(job_id)
-            logger.info("Attempt %s, submitted jobs %s", attempts,
-                        job_ids_list)
+                if attempts == 1:
+                    logger.info("First attempt for %s", run.name)
+                else:
+                    logger.critical("RETRYING %s, attempts = %s", run.name,
+                                attempts)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1

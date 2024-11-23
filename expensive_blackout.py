@@ -63,6 +63,6 @@ comparative_statics = ComparativeStatics(name,
                                          exogenous_variables_grid,
                                          general_parameters)
 
-# comparative_statics.submit()
+comparative_statics.submit()
 comparative_statics.process()
 visualize(comparative_statics, grid_dimension=1, check_convergence=True)

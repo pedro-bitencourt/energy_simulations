@@ -15,7 +15,6 @@ rich_handler = RichHandler(
     markup=True
 )
 
-
 # Configure basic logging
 logging.basicConfig(
     level=logging.INFO,
@@ -29,8 +28,9 @@ logging.basicConfig(
 logging.getLogger().handlers = [rich_handler]
 
 # Option 2: If you want to suppress all matplotlib debugj
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 # Your module's logger
+logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Input parameters for the comparative statics exercise
@@ -72,7 +72,7 @@ comparative_statics = ComparativeStatics(name,
                                          general_parameters)
 
 # All action happens here
-comparative_statics.submit()
+# comparative_statics.submit()
 # comparative_statics.redo_equilibrium_runs()
 comparative_statics.process()
-# visualize(comparative_statics, grid_dimension=1, check_convergence=True)
+visualize(comparative_statics, grid_dimension=1, check_convergence=True)
