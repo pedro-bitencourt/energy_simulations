@@ -22,7 +22,6 @@ Required modules:
 import logging
 from pathlib import Path
 from typing import Optional, Dict
-from rich.logging import RichHandler
 import numpy as np
 import pandas as pd
 
@@ -32,22 +31,6 @@ from src.run_processor_module import RunProcessor
 from src.optimization_module import OptimizationPathEntry, get_last_successful_iteration
 
 from src.constants import BASE_PATH
-
-# Configure the root logger with rich handler
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[
-        RichHandler(
-            rich_tracebacks=True,
-            tracebacks_show_locals=True,
-            show_time=True,
-            show_path=True,
-            markup=True
-        )
-    ]
-)
 
 # Get logger for current module
 logger = logging.getLogger(__name__)
@@ -59,7 +42,7 @@ class ComparativeStatics:
     Arguments:
         - name: name of the comparative statics exercise.
         - variables: dictionary containing the exogenous and endogenous variables.
-        - variables_grid: dictionary containing the grids for the exogenous variables.
+        - exogenous_variable_grid: dictionary containing the grids for the exogenous variables.
         - general_parameters: dictionary containing the general parameters, with keys
             o xml_basefile: path to the template xml file.
             o daily: boolean indicating if the runs are daily (True) or weekly (False).
@@ -71,9 +54,9 @@ class ComparativeStatics:
     Attributes:
         - name: name of the comparative statics exercise.
         - general_parameters: dictionary containing the general parameters.
-        - exogenous_variables: dictionary containing the exogenous variables.
+        - exogenous_variable: dictionary containing the exogenous variables.
         - endogenous_variables: dictionary containing the endogenous variables.
-        - variables_grid: dictionary containing the grids for the exogenous variables.
+        - exogenous_variable_grid: dictionary containing the grids for the exogenous variables.
         - paths: dictionary containing the paths for the input, output, and result folders.
         - list_simulations: list containing the Run objects.
         - list_investment_problems: list containing the InvestmentProblem objects.
@@ -82,7 +65,6 @@ class ComparativeStatics:
     def __init__(self,
                  name: str,
                  variables: Dict[str, Dict],
-                 variables_grid: Dict[str, np.ndarray],
                  general_parameters: Dict,
                  base_path: Optional[str] = None):
         """
@@ -95,11 +77,15 @@ class ComparativeStatics:
         self.general_parameters: dict = general_parameters
 
         # Variables can be exogenous and endogenous
-        self.exogenous_variables: dict[str,
+        self.exogenous_variable: dict[str,
                                        dict] = variables.get('exogenous', {})
+        self.exogenous_variable_key: str = list(
+            self.exogenous_variable.keys())[0]
         self.endogenous_variables: dict[str,
                                         dict] = variables.get('endogenous', {})
-        self.variables_grid: dict[str, np.ndarray] = variables_grid
+
+        self.exogenous_variable_grid: dict[str, np.ndarray] = {var_name: np.array(variable['grid'])
+            for var_name, variable in self.exogenous_variable.items()}
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths(base_path)
@@ -181,16 +167,16 @@ class ComparativeStatics:
 
     def _validate_input(self):
         # Check if all variables have a grid
-        for variable in self.exogenous_variables:
-            if variable not in self.variables_grid:
+        for variable in self.exogenous_variable:
+            if variable not in self.exogenous_variable_grid:
                 logging.error(f"Variable {variable} does not have a grid.")
                 raise ValueError(f"Variable {variable} does not have a grid.")
         # Check if the grids have the same length
-        if len(set([len(grid) for grid in self.variables_grid.values()])) != 1:
+        if len(set([len(grid) for grid in self.exogenous_variable_grid.values()])) != 1:
             logging.error("The grids have different lengths.")
             raise ValueError("The grids have different lengths.")
         # Check if general parameters contain the expected keys
-        expected_keys = ['xml_basefile', 'daily', 'name_subfolder', 'email']
+        expected_keys = ['xml_basefile', 'daily', 'name_subfolder']
         if not all(key in self.general_parameters for key in expected_keys):
             logging.error(
                 "General parameters do not contain the expected keys.")
@@ -234,7 +220,7 @@ class ComparativeStatics:
         return list_simulations
 
     def _grid_length(self):
-        return len(next(iter(self.variables_grid.values())))
+        return len(next(iter(self.exogenous_variable_grid.values())))
 
     def _initialize_paths(self, base_path: str) -> dict:
         paths = {}
@@ -247,9 +233,9 @@ class ComparativeStatics:
         list_simulations: list[Run] = []
         for i in range(self._grid_length()):
             variables = {
-                key: {"pattern": self.exogenous_variables[key]["pattern"],
-                      "value": self.variables_grid[key][i]}
-                for key in self.exogenous_variables
+                key: {"pattern": self.exogenous_variable[key]["pattern"],
+                      "value": self.exogenous_variable_grid[key][i]}
+                for key in self.exogenous_variable
             }
             # create a run
             list_simulations.append(
@@ -265,17 +251,17 @@ class ComparativeStatics:
         # iterate over the grid of exogenous variables
         for idx in range(self._grid_length()):
             # get the exogenous variables for the current iteration
-            exogenous_variables_temp: dict = {
+            exogenous_variable_temp: dict = {
                 variable: {
-                    'value': self.variables_grid[variable][idx],
+                    'value': self.exogenous_variable_grid[variable][idx],
                     **var_dict
                 }
-                for variable, var_dict in self.exogenous_variables.items()
+                for variable, var_dict in self.exogenous_variable.items()
             }
 
             # initialize the InvestmentProblem object
             investment_problem = InvestmentProblem(self.paths['main'],
-                                                   exogenous_variables_temp,
+                                                   exogenous_variable_temp,
                                                    self.endogenous_variables,
                                                    self.general_parameters)
 
@@ -315,17 +301,27 @@ class ComparativeStatics:
         # If there are endogenous_variables, first process investment problems and create
         # a list of Run objects
         if self.endogenous_variables:
-            # Process investment problems
-            results_df = self._investment_results()
-
-            # Save results of the optimization algorithm to CSV
-            output_csv_path: Path = self.paths['results'] / \
-                'investment_results.csv'
-            results_df.to_csv(output_csv_path, index=False)
-
             # Create runs from investment problems
             self.list_simulations = self.create_runs_from_investment_problems()
 
+        # Process the runs
+        self._process_runs()
+
+        # Compile the dataframes
+        self._compile_dataframes()
+
+        # Construct the results table
+        results_df = self._construct_results_table()
+
+        # Log the results
+        logging.info("Results for the comparative statics exercise %s: %s",
+                     self.name, results_df)
+
+        # Save the results to a .csv file
+        results_df.to_csv(
+            self.paths['results'] / 'results_table.csv', index=False)
+
+    def _compile_dataframes(self):
         # Extract comparative statics dataframe
         dataframes_to_extract: dict = {'water_level': [],
                                        'production': ['wind', 'solar', 'thermal'],
@@ -340,54 +336,18 @@ class ComparativeStatics:
         df = self.get_dataframe('marginal_cost')
         df.to_csv(self.paths['results'] / 'marginal_cost.csv')
 
-        # Process runs
-        self._process_runs()
-
     def _process_runs(self):
-        # if experiment has more than 10 runs, submit jobs to cluster
-        if len(self.list_simulations) > 10:
-            process_locally: bool = False
-        else:
-            process_locally: bool = True
-
+        # Process the runs
         for run in self.list_simulations:
             try:
                 run_processor = RunProcessor(run)
-                run_processor.process(process_locally)
+                run_processor.process()
                 logging.info("Processed run %s", run.name)
             except ValueError:
                 logging.critical("Run %s not successful", run.name)
 
-        # gather the results
-        results_df: pd.DataFrame = self._results()
 
-        # save the results to a .csv file
-        results_df.to_csv(
-            self.paths['results'] / 'results_table.csv', index=False)
-
-        # Log the results
-        logging.info("Results for the comparative statics exercise %s: %s",
-                     self.name, results_df)
-
-    def _submit_processor_jobs(self):
-        job_ids: list = []
-        for run in self.list_simulations:
-            run_processor = RunProcessor(run)
-            if run_processor is None:
-                logging.error("Run %s could not be processed.", run.name)
-                continue
-            if run_processor.processed_status():
-                logging.info("Run %s already processed", run.name)
-                continue
-
-            job_id = run_processor.submit_processor_job()
-
-            job_ids.append(job_id)
-            logging.info("Submitted processor job with id %s for run %s",
-                         job_id, run.name)
-        return job_ids
-
-    def _results(self):
+    def _construct_results_table(self):
         # initialize a list to store the results over the simulations
         results_dict: list[dict] = []
 
@@ -414,6 +374,14 @@ class ComparativeStatics:
         # transform results into a pandas dataframe
         results_df: pd.DataFrame = pd.DataFrame(results_dict)
 
+        # If there are endogenous variables, compile results for the solver
+        if self.endogenous_variables:
+            # Process investment problems
+            investment_results_df = self._investment_results()
+            # Merge the solver's results into results_df
+            results_df = pd.merge(results_df, investment_results_df,
+                                  on=[self.exogenous_variable_key])
+
         return results_df
 
     def _investment_results(self):
@@ -426,7 +394,7 @@ class ComparativeStatics:
             convergence_reached: bool = last_iteration.check_convergence()
             iteration_number: int = last_iteration.iteration
             exo_vars: dict = {key: entry['value']
-                              for key, entry in investment_problem.exogenous_variables.items()}
+                              for key, entry in investment_problem.exogenous_variable.items()}
 
             profits_dict: Optional[dict] = last_iteration.profits
 
@@ -448,9 +416,6 @@ class ComparativeStatics:
 
             # Append the new row to results_df
             rows.append(row)
-
-            # Print the optimization trajectory
-            investment_problem.print_optimization_trajectory()
 
         results_df: pd.DataFrame = pd.DataFrame(rows)
 

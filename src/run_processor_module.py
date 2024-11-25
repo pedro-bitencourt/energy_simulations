@@ -159,7 +159,7 @@ class RunProcessor(Run):
                 f'Submitting processing job for run {self.name} to the cluster.')
             self.submit_processor_job()
 
-    def results(self):
+    def load_results(self):
         """
         Loads the results from the JSON file.
         """

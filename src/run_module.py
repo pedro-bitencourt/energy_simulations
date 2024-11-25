@@ -284,6 +284,11 @@ class Run:
         hours = self.general_parameters['requested_time_run']
         requested_time_run = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
 
+        if self.general_parameters.get('email', None):
+            email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
+        else:
+            email_line = ""
+
         with open(bash_path, 'w') as file:
             file.write(f'''#!/bin/bash
 #SBATCH --account=b1048
@@ -295,9 +300,9 @@ class Run:
 #SBATCH --job-name={job_name}
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err
-#SBATCH --mail-user={self.general_parameters['email']}
 #SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
+{email_line}
 
 export WINEPREFIX=/home/pdm6134/rcs_wine_test
 module purge

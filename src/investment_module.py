@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class InvestmentProblem:
     def __init__(self,
                  parent_folder: str,
-                 exogenous_variables: dict,
+                 exogenous_variable: dict,
                  endogenous_variables: dict,
                  general_parameters: dict):
         """
@@ -46,14 +46,14 @@ class InvestmentProblem:
 
         Args:
             - folder: Path to the folder where the investment problem is stored.
-            - exogenous_variables: Dictionary containing the exogenous variables.
+            - exogenous_variable: Dictionary containing the exogenous variables.
             - endogenous_variables: Dictionary containing the endogenous variables.
             - general_parameters: Dictionary containing general parameters for the run.
                 o all the parameters from the Run class.
                 o requested_time_run: Requested time for the run.
         """
         parent_folder: Path = Path(parent_folder)
-        self.exogenous_variables: dict = exogenous_variables
+        self.exogenous_variable: dict = exogenous_variable
         self.endogenous_variables: dict = endogenous_variables
         self.general_parameters: dict = general_parameters
 
@@ -68,13 +68,13 @@ class InvestmentProblem:
 
     def _create_name(self, parent_folder: Path):
         exog_var_values: list[float] = [variable['value'] for variable in
-                                        self.exogenous_variables.values()]
+                                        self.exogenous_variable.values()]
         parent_name: str = parent_folder.name
         name: str = f"{parent_name}_investment_{make_name(exog_var_values)}"
         return name
 
     def __repr__(self):
-        return f"InvestmentProblem: exogenous variables {self.exogenous_variables}"
+        return f"InvestmentProblem: exogenous variables {self.exogenous_variable}"
 
     def _initialize_paths(self, folder: Path):
         paths: dict[str, Path] = {}
@@ -290,7 +290,7 @@ class InvestmentProblem:
         }
 
         # create the variables dictionary
-        variables: dict = self.exogenous_variables.copy()
+        variables: dict = self.exogenous_variable.copy()
         variables.update(endogenous_variables_temp)
 
         # create the Run object
@@ -346,7 +346,7 @@ class InvestmentProblem:
         # create the data dictionary
         investment_data = {
             "parent_folder": str(self.paths['parent_folder']),
-            "exogenous_variables": self.exogenous_variables,
+            "exogenous_variable": self.exogenous_variable,
             "endogenous_variables": self.endogenous_variables,
             "general_parameters": self.general_parameters
         }
@@ -370,6 +370,11 @@ class InvestmentProblem:
         with open(data_path, 'w') as f:
             json.dump(investment_data, f)
 
+        if self.general_parameters.get('email', None):
+            email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
+        else:
+            email_line = ""
+
         # write the bash script
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''#!/bin/bash
@@ -382,9 +387,9 @@ class InvestmentProblem:
 #SBATCH --job-name={self.name}
 #SBATCH --output={self.paths['parent_folder']}/{self.name}.out
 #SBATCH --error={self.paths['parent_folder']}/{self.name}.err
-#SBATCH --mail-user={self.general_parameters['email']}
 #SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
+{email_line}
 
 module purge
 module load python-miniconda3/4.12.0
