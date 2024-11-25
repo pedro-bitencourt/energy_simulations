@@ -2,24 +2,25 @@
 
 ## Introduction
 
-This repository's code is a wrapper for the software Modelo Padron de Operacion (MOP), developed by UTE.  MOP takes an `.xml` file outlining the characteristics of an energy system as input, solves the optimal energy dispatch problem, and outputs the value function while simulating the energy system's operation using historical data from Uruguay.  The code in this repository allows the user to perform comparative statics exercises on the energy system characteristics, enabling the determination of plant capacities endogenously based on a zero-profit condition.
+This repository's code is a wrapper for the software Modelo Padron de Operacion (MOP), developed by UTE. MOP takes an `.xml` file outlining the characteristics of an energy system as input, solves the optimal energy dispatch problem, and outputs the value function while simulating the energy system's operation using historical data from Uruguay. The code in this repository allows the user to perform comparative statics exercises on the energy system characteristics, enabling the determination of plant capacities endogenously based on a zero-profit condition.
 
-## Usage guide
+## Usage Guide
 
-### Set up
-To set up a comparative statics exercise, there are two main steps: 
-1. Create a `xml` template file
-2. Write a python script to execute the exercise
-   
-The steps to use this package to perform comparative statics exercise are the following. First, one should decide the exact parameter in the `xml` configuration file to be our exogenous variable. In the past, we have used:
+### Set Up
 
-1. The capacity of power plants: for this, we can change the field `potMax` (units here are MW)
+To set up a comparative statics exercise, follow these steps:
+
+1. Create an XML template file
+2. Write a Python script to execute the program
+
+First, you should decide the exact parameter in the `xml` configuration file to be your exogenous variable. Common choices include:
+
+1. The capacity of power plants: modify the field `potMax` (units are MW)
 2. The lake volume for hydropower plants
 
-The user should also define the variables that are endogenous and will be solved for using the zero-profit condition. So far, this is only possible with capacity. Having defined that and identified the field (or fields) over which we're doing comparative statics, one should create a template for the `xml` files (the example should illustrate how to set up a template). Having the template, the user should write a `.py` script to execute the program. 
+You should also define which variables will be endogenous and solved for using the zero-profit condition. Currently, this is only possible with capacity. After identifying the fields for comparative statics, create an XML template and write a Python script to execute the program.
 
-Let's go over a specific example: `expensive_blackout.py`, which performs comparative statics over the volume of the lake of Salto Grande using a penalty of $20,000 for blackouts.
-
+Let's examine a specific example: `expensive_blackout.py`, which performs comparative statics over the volume of the lake of Salto Grande using a penalty of $20,000 for blackouts.
 
 ```python
 """
@@ -41,20 +42,24 @@ from src.comparative_statics_visualizer_module import visualize
 name: str = 'expensive_blackout'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
 
-general_parameters: dict = {'daily': True,
-                            'name_subfolder': 'CAD-2024-DIARIA',
-                            'xml_basefile': xml_basefile,
-                            'email': 'pedro.bitencourt@u.northwestern.edu',
-                            'annual_interest_rate': 0.0,
-                            'years_run': 6.61,
-                            'requested_time_run': 6.5,
-                            'requested_time_solver': 16.5}
+general_parameters: dict = {
+    'daily': True,
+    'name_subfolder': 'CAD-2024-DIARIA',
+    'xml_basefile': xml_basefile,
+    'email': 'your.email@domain.com',
+    'annual_interest_rate': 0.0,
+    'years_run': 6.61,
+    'requested_time_run': 6.5,
+    'requested_time_solver': 16.5
+}
 
 exog_grid: list[float] = [0.6, 0.75, 1, 1.25, 1.5, 2, 3]
 exogenous_variables: dict[str, dict] = {
-    'lake_factor': {'pattern': 'LAKE_FACTOR',
-                    'label': 'Lake Factor',
-                    'grid': exog_grid},
+    'lake_factor': {
+        'pattern': 'LAKE_FACTOR',
+        'label': 'Lake Factor',
+        'grid': exog_grid
+    },
 }
 endogenous_variables: dict[str, dict] = {
     'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1000},
@@ -62,13 +67,17 @@ endogenous_variables: dict[str, dict] = {
     'thermal': {'pattern': 'THERMAL_CAPACITY', 'initial_guess': 300}
 }
 
-variables: dict[str, dict] = {'exogenous': exogenous_variables,
-                              'endogenous': endogenous_variables}
+variables: dict[str, dict] = {
+    'exogenous': exogenous_variables,
+    'endogenous': endogenous_variables
+}
 
 # Create the ComparativeStatics object
-comparative_statics = ComparativeStatics(name,
-                                         variables,
-                                         general_parameters)
+comparative_statics = ComparativeStatics(
+    name,
+    variables,
+    general_parameters
+)
 # Submit the solver jobs
 comparative_statics.submit()
 # Process the results
@@ -76,22 +85,29 @@ comparative_statics.process()
 # Visualize the results
 visualize(comparative_statics, grid_dimension=1, check_convergence=True)
 ```
-First, we need to define a name for the exercise, which will be used to name the files and folders; to keep the files organized, I suggest naming the .py and the .xml file with this name as well. The `general_parameters` dictionary contains the following entries:
-  - **xml_basefile** (`str`): Path to the template XML file.
-  - **daily** (`bool`): Indicates if the runs are daily (`True`) or weekly (`False`).
-  - **name_subfolder** (`str`): Name of the subfolder where runs are stored.
-  - **annual_interest_rate** (`float`): Annual interest rate for the investment problems.
-  - **years_run** (`float`): Number of years to run the investment problems.
-  - **requested_time_run** (`float`): Requested time for each MOP run on the cluster, in hours.
-  - **requested_time_solver** (`float`): Requested time for the solver job on the cluster, in hours.
-  - **email** (`str`): the email that will receive notifications about the simulations.
 
-Lastly, we need to define the variables for the exercise. The `variables` input should be a dictionary with two entries: endogenous and exogenous. Both entries should also be dictionaries, with keys being the names of the variable (for example, 'wind'), and the value being a dictionary containing:
+The script requires several parameters:
 
-  - `pattern`: the pattern in the .xml to be substituted for the specific values for the variable
-  - `grid` (exogenous variables only): should contain a list of values for the exogenous variable
-  - `initial_guess` (endogenous variables only): specifies the initial guess for the endogenous variable
-  - `label`: will be used to construct graphs in the visualization step
+1. A name for the exercise (used to name files and folders)
+2. The `general_parameters` dictionary containing:
+   - **xml_basefile** (`str`): Path to the template XML file
+   - **daily** (`bool`): Indicates if runs are daily (`True`) or weekly (`False`)
+   - **name_subfolder** (`str`): Name of the subfolder where runs are stored
+   - **annual_interest_rate** (`float`): Annual interest rate for investment problems
+   - **years_run** (`float`): Number of years to run investment problems
+   - **requested_time_run** (`float`): Requested time for each MOP run on the cluster, in hours
+   - **requested_time_solver** (`float`): Requested time for the solver job on the cluster, in hours
+   - **email** (`str`, optional): Email for simulation notifications
+
+3. Variable definitions in the `variables` dictionary with two entries:
+   - **endogenous**: Dictionary of endogenous variables
+   - **exogenous**: Dictionary of exogenous variables
+   
+   Each variable entry contains:
+   - `pattern`: Pattern in the XML to be substituted
+   - `grid` (exogenous only): List of values
+   - `initial_guess` (endogenous only): Initial guess for the solver
+   - `label`: Used to construct graphs in the visualization stage
 
 ### The zero-profit solver
 The solver seeks to find roots of the profit functions:
@@ -103,112 +119,109 @@ $R_i(k)$ is the average yearly revenue per MW of resource $i$ given capacities $
 $C_i(k)$ is the average yearly cost per MW of resource $i$ given capacities $k$
 
 Convergence is achieved when:
-$\frac{\pi_i(k)}{C_i(k)} < 1%$
-That is, the ratio of average yearly profits to average yearly costs falls below 1%.
+$|\frac{\pi_i(k)}{C_i(k)}| < 1%$
+or 
+$\pi_i(k)<0, k_i = 1$
+That is, the ratio of average yearly profits to average yearly costs falls below 1%, or the yearly profit is negative and capacity is 1MW.
 
-### Job flow
-After we execute `comparative_statics.submit()`, the package will submit, for each value of the exogenous variable, a job to the server that will be handling the task of finding the zero-profit levels of investment, for each of the endogenous variables. These jobs are named `f{name}_investment_{value}`, where name is the name of the exercise, and value is the specific value for the exogenous variable. For example, in this case, the solver for lake_factor = 1 will be named `expensive_blackout_investment_problem_1`. Each solver job will dynamically create and submit `run` jobs, which consist of a single MOP run, for a given set of values for the endogenous variables. 
 
-(include example after squeue)
+### Job Flow
 
-### Folder structure
-Inside the main folder for the exercise (currently, these are located in /p32342/comparative_statics/, so in this case the main folder is /p32342/comparative_statics/expensive_blackout), the folder structure will be the following, after the first iteration:
+When `comparative_statics.submit()` executes, it submits jobs for each exogenous variable value to find zero-profit investment levels for endogenous variables. Jobs are named `f{name}_investment_{value}`. For example, with lake_factor = 1, the job would be `expensive_blackout_investment_problem_1`. Each solver job creates and submits `run` jobs for different endogenous variable combinations.
+
+### Folder Structure
+
+Inside the main exercise folder (e.g., /p32342/comparative_statics/expensive_blackout/):
+
 ```
 expensive_blackout/
-├── expensive_blackout_investment_0.6/                      
-├── expensive_blackout_investment_0.75/                      
-├── expensive_blackout_investment_1/    
-│   ├── 1_1000_1000_300           # Folder for the run with lake_factor = 1, wind = solar = 1000, thermal = 300
-│   │   ├── CAD-2024-DIARIA       # Folder containing MOP's raw outputs
-│   │   ├── 1_1000_1000_300.xml   # xml file for that run
-│   │   ├── 1_1000_1000_300.sh    # Bash file to submit the run to the server
-│   │   ├── 1_1000_1000_300.out   # Output log from the server
-│   │   ├── 1_1000_1000_300.err   # Error log from the server
+├── expensive_blackout_investment_0.6/
+├── expensive_blackout_investment_0.75/
+├── expensive_blackout_investment_1/
+│   ├── 1_1000_1000_300           # Run folder for specific parameters
+│   │   ├── CAD-2024-DIARIA       # MOP's raw outputs
+│   │   ├── 1_1000_1000_300.xml   # Run XML file
+│   │   ├── 1_1000_1000_300.sh    # Run submission script
+│   │   ├── 1_1000_1000_300.out   # Output log
+│   │   ├── 1_1000_1000_300.err   # Error log
 │   ├── 1_1010_1000_300
 │   ├── 1_1000_1010_300
 │   ├── 1_1000_1000_310
-│   ├── expensive_blackout_investment_1_trajectory.json  # File saving the trajectory of the solver.
+│   ├── expensive_blackout_investment_1_trajectory.json  # Solver trajectory
 ```
 
-### Processing and visualization
-The `comparative_statics.process()` method will process the results for each level of the exogenous variable, at the levels of investment for the last iteration present in the `f"{name}_investment_{value}_trajectory.json"` file. Currently, the following results are extracted for each run:
+### Processing and Visualization
 
-(TO DO: list results)
+The `comparative_statics.process()` method processes results for each exogenous variable level using investment levels from the last iteration in the trajectory JSON file. Results are saved in the `/p32342/results` folder. The folder structure is:
 
-The results are saved in the `results` folder, which is currently /p32342/results. 
+```
+expensive_blackout/
+├── results_table.csv         # Table with the main results
+├── marginal_cost.csv         # Raw marginal cost data
+├── production_solar.csv      # Raw solar production data
+├── other files
+```
 
+The `results_table.csv` file contains the main results of the exercise. Rows correspond to a specific value for the exogenous variable. Currently, the columns are:
 
-## Known issues
-
-
+- `wind`, `solar`, `thermal`: the zero-profit level of capacities for each resource, in MW
+- `profit_wind`, `profit_solar`, `profit_thermal`: the yearly profits for each resource, as a fraction of the yearly costs (in dollars / MW / year)
+- `convergence_reached`: whether convergence was reached for that value of the exogenous variable
+- `production_hydros`, `produciton_thermals`, etc: the total production for each resource over the entire timeline, in GWh
+- `price_avg`: the simple average of the spot price of energy, in dollars/MWh
+- `price_weighted_avg`: the average spot price of energy, weighted by demand, in dollars/MWh
+  
+The other files contain the raw data from the simulations; that is, data at the hour-scenario level.
 
 
 ## Documentation
-This is incomplete, and only covers the main scripts. 
 
-### src
+### src Folder
 
-This folder contains the main files of the repository. It is divided into the following modules, in rough order of importance:
+Contains the main repository modules:
 
-#### `comparative_statics_module.py`
+#### comparative_statics_module.py
 
-This is the main module of the repository.  
-It contains the `ComparativeStatics` class, which is used to perform comparative statics exercises on the energy system.
+Main module containing the `ComparativeStatics` class for performing comparative statics exercises.
 
 ##### Inputs:
-
-- **name**: Name of the comparative statics exercise; used to name the folder where results are stored.
-- **variables**: Dictionary containing the exogenous and endogenous variables.  
-  **Keys**:
-  - **exogenous**: List of exogenous variables.
-  - **endogenous**: List of endogenous variables.
+- **name**: Exercise name for folder naming
+- **variables**: Dictionary of exogenous and endogenous variables
+  - **exogenous**: List of exogenous variables
+  - **endogenous**: List of endogenous variables
   
-  Each variable is a dictionary with the following keys:
-  - **name** (`str`): Name of the variable.
-  - **pattern** (`str`): Pattern in the XML template file to be substituted by the value of the variable.
-  - **initial_guess** (optional, `float`): Initial guess for the endogenous variables.
-
-- **variables_grid**: Dictionary containing the grids for the exogenous variables.  
-  **Keys** (`str`): Names of the exogenous variables.  
-  **Values** (`float`): List of values for the exogenous variable.
-
-- **general_parameters**: Dictionary containing general parameters with the following keys:
-  - **xml_basefile** (`str`): Path to the template XML file.
-  - **daily** (`bool`): Indicates if the runs are daily (`True`) or weekly (`False`).
-  - **name_subfolder** (`str`): Name of the subfolder where runs are stored.
-  - **annual_interest_rate** (`float`): Annual interest rate for the investment problems.
-  - **years_run** (`float`): Number of years to run the investment problems.
-  - **requested_time_run** (`float`): Requested time for each MOP run on the cluster, in hours.
+  Each variable contains:
+  - **name** (`str`): Variable name
+  - **pattern** (`str`): XML template pattern
+  - **initial_guess** (`float`, optional): Initial value for endogenous variables
 
 ##### Public Methods:
+- **submit()**: Creates and submits runs or investment problems
+- **process()**: Processes results using RunProcessor
+- **visualize()**: Generates result visualizations
 
-- **`submit`**: For each value of the exogenous variables, creates a `Run` (if no endogenous variables) or an `InvestmentProblem` (if at least one endogenous variable) and submits it to the cluster.
-- **`process`**: Processes the results of the runs using the `RunProcessor` class, storing results in the `results` subfolder.
-- **`visualize`**: Visualizes experiment results. If the exogenous variable grid has 1 dimension, it plots `y` vs. `x` graphs. If the grid has 2 dimensions, it plots heatmaps. Configurations for these figures can be altered in the `constants.py` file.
+#### investment_module.py
 
-#### `investment_module.py`
-
-This module creates the `InvestmentProblem` class, use d to solve the investment problem, which is a zero-profit condition system for the endogenous variables.
+Contains `InvestmentProblem` class for solving zero-profit conditions.
 
 ##### Inputs:
-
-- **folder**: Path to the folder where the investment problem is stored.
-- **exogenous_variables**: Dictionary containing the exogenous variables.
-- **endogenous_variables**: Dictionary containing the endogenous variables.
-- **general_parameters**: Dictionary containing general parameters for the run, including:
-  - All parameters from the `Run` class.
-  - **requested_time_run**: Requested time for the run.
+- **folder**: Storage path
+- **exogenous_variables**: Exogenous variable definitions
+- **endogenous_variables**: Endogenous variable definitions
+- **general_parameters**: Run parameters
 
 ##### Public Methods:
+- **solve_investment()**: Solves investment problem
+- **equilibrium_run()**: Returns converged solution
+- **submit()**: Submits cluster job
 
-- **`solve_investment`**: Solves the investment problem.
-- **`equilibrium_run`**: Returns the equilibrium run if the last iteration converged.
-- **`submit`**: Submits the investment problem to Quest.
+### xml Folder
 
-### xml
+Contains XML templates used by `ComparativeStatics`. Add new template files here for new exercises, including patterns for variable substitution.
 
-This folder contains the XML template files used by the `ComparativeStatics` class. When creating a new comparative statics exercise, add a new XML template file to this folder. The template should include patterns to be replaced by variable values.
+### old_exercises Folder
 
-### old_exercises
+Contains reference scripts from previous comparative statics exercises.
 
-This folder contains scripts from previous comparative statics exercises.
+
+
