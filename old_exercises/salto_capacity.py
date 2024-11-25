@@ -5,7 +5,6 @@ from rich.logging import RichHandler
 import logging
 import sys
 
-from outer_constants import REQUESTED_TIME_SOLVER, REQUESTED_TIME_RUN
 
 # Configure the handler with pretty printing enabled
 rich_handler = RichHandler(
