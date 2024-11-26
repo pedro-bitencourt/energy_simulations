@@ -2,16 +2,16 @@
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
 # Set up logging
+from src.comparative_statics_visualizer_module import visualize
+from src.comparative_statics_module import ComparativeStatics
 import logging
 from src.logging_config import setup_logging
 
 # Change the global logging level if needed; options are:
 # logging.CRITICAL, logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG
-logger = setup_logging(level=logging.INFO)
+setup_logging(level=logging.INFO)
 
 # Import modules from the src folder
-from src.comparative_statics_module import ComparativeStatics
-from src.comparative_statics_visualizer_module import visualize
 
 # Input parameters
 name: str = 'expensive_blackout'
@@ -46,7 +46,7 @@ comparative_statics = ComparativeStatics(name,
                                          variables,
                                          general_parameters)
 # Submit the solver jobs
-comparative_statics.submit()
+# comparative_statics.submit()
 # Process the results
 comparative_statics.process()
 # Visualize the results

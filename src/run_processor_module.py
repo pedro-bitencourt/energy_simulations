@@ -67,9 +67,14 @@ class RunProcessor(Run):
 
         self._update_paths()
         # Create dict of participants
-        list_participants = ['wind', 'solar', 'thermal']
+        list_participants = ['wind', 'solar', 'thermal', 'salto']
+        capacities = {var: variable['value'] for var, variable in
+                      self.variables.items()}
+        # WRONG AND HARDCODED, TO FIX
+        capacities['salto'] = 2215
+
         self.participants_dict: dict[str, Participant] = {var: Participant(var,
-                                                                           self.variables[var]['value'],
+                                                                           capacities[var],
                                                                            self.paths,
                                                                            run.general_parameters)
                                                           for var in list_participants}
