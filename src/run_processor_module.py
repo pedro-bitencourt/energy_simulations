@@ -116,6 +116,9 @@ class RunProcessor(Run):
                                                  + random_variables_df['production_salto'])
         random_variables_df['lost_load'] = random_variables_df['demand'] - random_variables_df['total_production']
 
+        # HARD CODED, TO FIX
+        random_variables_df['profits_thermal'] = random_variables_df['marginal_cost'] * ( random_variables_df['production_thermal'] - 191)
+
         # Save to disk
         random_variables_df.to_csv(self.paths['folder'] / 'random_variables.csv', index=False)
 
@@ -145,6 +148,10 @@ class RunProcessor(Run):
 
         lost_load_95 = random_variables_df['lost_load'].quantile(0.95)
         lost_load_99 = random_variables_df['lost_load'].quantile(0.99)
+
+        profits_thermal_75 = random_variables_df['profits_thermal'].quantile(0.75)
+        profits_thermal_95 = random_variables_df['profits_thermal'].quantile(0.95)
+
          
         queries_dict = {
             'drought_low_wind_25': f'water_level_salto < {salto_height_25} and production_wind < {production_wind_25}',
@@ -152,6 +159,8 @@ class RunProcessor(Run):
             'blackout_95': f'lost_load > {lost_load_95}',
             'blackout_99': f'lost_load > {lost_load_99}',
             'blackout_positive': f'lost_load > 0',
+            'profits_thermal_75': f'profits_thermal > {profits_thermal_75}',
+            'profits_thermal_95': f'profits_thermal > {profits_thermal_95}',
         }
 
         for query_name, query in queries_dict.items():
