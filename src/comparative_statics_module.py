@@ -328,6 +328,41 @@ class ComparativeStatics:
         results_df.to_csv(
             self.paths['results'] / 'results_table.csv', index=False)
 
+        # Compile the random_variables_df
+        random_variables_df = self._compile_random_variables()
+        # Save
+        random_variables_df.to_csv(
+            self.paths['results'] / 'random_variables.csv', index=False)
+
+    def _compile_random_variables(self):
+        # Initialize a list to store the random variables over the simulations
+        random_variables_dict: list[dict] = []
+
+        # Iterate over the simulations
+        for run in self.list_simulations:
+            # Check if the run was successful
+            if not run.successful():
+                logging.error("Run %s was not successful", run.name)
+                continue
+
+            # Create RunProcessor object
+            run_processor = RunProcessor(run)
+
+            # Check if the run was processed
+            if not run_processor.processed_status():
+                logging.error("Run %s was not processed", run.name)
+                continue
+
+            # Load random variables from the json results file
+            random_variables: dict = run_processor.load_random_variables_df()
+
+            random_variables_dict.append(random_variables)
+
+        # Transform random variables into a pandas dataframe
+        random_variables_df: pd.DataFrame = pd.DataFrame(random_variables_dict)
+
+        return random_variables_df
+
     def construct_new_results(self):
         first_flag = True
         for inv_prob in self.list_investment_problems:
