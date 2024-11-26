@@ -114,9 +114,9 @@ The solver seeks to find roots of the profit functions:
 $\pi_i(k) = R_i(k) - C_i(k)$
 where:
 
-$i \in {\text{wind, solar, thermal}}$
-$R_i(k)$ is the average yearly revenue per MW of resource $i$ given capacities $k=(k_{\text{wind}}, k_{\text{solar}}, k_{\text{thermal}})$
-$C_i(k)$ is the average yearly cost per MW of resource $i$ given capacities $k$
+- $i \in {\text{wind, solar, thermal}}$
+- $R_i(k)$ is the average yearly revenue per MW of resource $i$ given capacities $k=(k_{\text{wind}}, k_{\text{solar}}, k_{\text{thermal}})$
+- $C_i(k)$ is the average yearly cost per MW of resource $i$ given capacities $k$
 
 Convergence is achieved when:
 $|\frac{\pi_i(k)}{C_i(k)}| < 1%$
