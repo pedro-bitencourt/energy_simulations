@@ -304,7 +304,7 @@ class Run:
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
 
-export WINEPREFIX=/home/pdm6134/rcs_wine_test
+export WINEPREFIX=/projects/p32342/software/.wine
 module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3

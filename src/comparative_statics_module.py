@@ -323,7 +323,7 @@ class ComparativeStatics:
 
     def _compile_dataframes(self):
         # Extract comparative statics dataframe
-        dataframes_to_extract: dict = {'water_level': [],
+        dataframes_to_extract: dict = {'water_level': ['salto'],
                                        'production': ['wind', 'solar', 'thermal'],
                                        'variable_costs': ['thermal'],
                                        }

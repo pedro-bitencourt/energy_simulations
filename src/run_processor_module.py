@@ -11,12 +11,10 @@ Public methods:
 - get_profits: Computes profits for the specified endogenous variables.
 - submit_processor_job: Submits a job to process the run on a cluster.
 """
-
 import logging
 from pathlib import Path
 import json
 from typing import Optional, Dict
-import numpy as np
 import pandas as pd
 
 import src.auxiliary

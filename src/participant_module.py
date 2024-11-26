@@ -34,6 +34,7 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
     "thermal": {"folder": "TER_new_thermal", "type": "thermal"},
     "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
+    "salto": {"folder": "HID_salto", "type": "hydro"},
 }
 
 
