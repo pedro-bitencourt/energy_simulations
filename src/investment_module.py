@@ -310,14 +310,17 @@ class InvestmentProblem:
         # get the last successful iteration
         last_iteration: OptimizationPathEntry = get_last_successful_iteration(
             self.optimization_trajectory)
-        # check if the last iteration converged
-        if last_iteration.check_convergence():
-            # create the run object
-            run: Run = self.create_run(last_iteration.current_investment)
+
+        # create the run object
+        run: Run = self.create_run(last_iteration.current_investment)
+        
+        convergence = last_iteration.check_convergence()
+
+        if convergence:
             # delete the runs folders for all other runs
             self._clear_runs_folders(run.name)
-            return run
-        return None
+
+        return run, convergence
 
     def check_convergence(self):
         # get the last successful iteration

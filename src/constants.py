@@ -15,7 +15,7 @@ rich_handler = RichHandler(
 
 # Configure basic logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(message)s",
     datefmt="[%X]",
     handlers=[rich_handler]

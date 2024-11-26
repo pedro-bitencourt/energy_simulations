@@ -310,6 +310,13 @@ class ComparativeStatics:
         # Compile the dataframes
         self._compile_dataframes()
 
+        # Construct the new results dataframe
+        new_results_df = self.construct_new_results()
+
+        # Save the results to a .csv file
+        new_results_df.to_csv(
+            self.paths['results'] / 'new_results_table.csv', index=False)
+
         # Construct the results table
         results_df = self._construct_results_table()
 
@@ -320,6 +327,23 @@ class ComparativeStatics:
         # Save the results to a .csv file
         results_df.to_csv(
             self.paths['results'] / 'results_table.csv', index=False)
+
+    def construct_new_results(self):
+        first_flag = True
+        for inv_prob in self.list_investment_problems:
+            equilibrium_run, converged = inv_prob.equilibrium_run() 
+            processor = RunProcessor(equilibrium_run)
+
+            results_dict = processor.construct_results_dict()
+            if first_flag:
+                new_results_df = pd.DataFrame([results_dict])
+                first_flag = False
+            else:
+                new_results_df = new_results_df.append(results_dict, ignore_index=True)
+
+        return new_results_df
+
+
 
     def _compile_dataframes(self):
         # Extract comparative statics dataframe
