@@ -128,6 +128,15 @@ class InvestmentProblem:
         logger.info('Saved optimization trajectory to %s',
                     self.paths["optimization_trajectory"])
 
+    def prototype(self):
+        # Create run at the initial guesses
+        initial_guess = {
+            endogenous_variable: entry['initial_guess']
+            for endogenous_variable, entry in self.endogenous_variables.items()
+        }
+        run_initial_guess = self.create_run(initial_guess)
+        run_initial_guess.prototype()
+
     def solve_investment(self):
         # initialize the current investment as the last el, check_convergence:
         # boolement of the optimization trajectory
@@ -248,7 +257,7 @@ class InvestmentProblem:
                     logger.info("First attempt for %s", run.name)
                 else:
                     logger.critical("RETRYING %s, attempts = %s", run.name,
-                                attempts)
+                                    attempts)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1
@@ -274,7 +283,7 @@ class InvestmentProblem:
             profits_perturb, DELTA, list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
-    def create_run(self, current_investment: dict):
+    def create_run(self, current_investment: dict) -> Run:
         """
         Creates a Run object from a level of current investment_problem in the 
         endogenous capacities
@@ -313,7 +322,7 @@ class InvestmentProblem:
 
         # create the run object
         run: Run = self.create_run(last_iteration.current_investment)
-        
+
         convergence = last_iteration.check_convergence()
 
         if convergence:

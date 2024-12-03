@@ -79,54 +79,52 @@ class RunProcessor(Run):
                                                                            run.general_parameters)
                                                           for var in list_participants}
 
+    def load_random_variables_df(self) -> pd.DataFrame:
+        random_variables_df = pd.read_csv(
+            self.paths['folder'] / 'random_variables.csv')
+        return random_variables_df
+
     def construct_random_variables_df(self) -> pd.DataFrame:
         def melt_df(df: pd.DataFrame, name: str) -> pd.DataFrame:
-            df = df.melt(id_vars=['datetime'], var_name='scenario', value_name=name)
+            df = df.melt(id_vars=['datetime'],
+                         var_name='scenario', value_name=name)
             return df
+
         dataframes_to_extract: dict = {'water_level': ['salto'],
                                        'production': ['wind', 'solar', 'thermal', 'salto'],
-                                       #'variable_costs': ['thermal'],
+                                       # 'variable_costs': ['thermal'],
                                        }
         logging.info('Extracting random variables dataframes...')
 
         random_variables_df = melt_df(self.marginal_cost_df(), 'marginal_cost')
-        
-        demand_df = melt_df(self.demand_df(),'demand')
-        random_variables_df = pd.merge(random_variables_df, demand_df, on=['datetime','scenario'], how='left')
+
+        demand_df = melt_df(self.demand_df(), 'demand')
+        random_variables_df = pd.merge(random_variables_df, demand_df, on=[
+                                       'datetime', 'scenario'], how='left')
 
         method_map = {
             'water_level': lambda p: self.water_level_participant(p),
             'production': lambda p: self.production_participant(p),
-            #'variable_costs': lambda p: self.variable_costs_participant(p),
+            # 'variable_costs': lambda p: self.variable_costs_participant(p),
             'marginal_cost': lambda _: self.marginal_cost_df()
         }
-
 
         for data_type, participants in dataframes_to_extract.items():
             method = method_map[data_type]
             for participant in participants:
+                logger.info("Extracting %s for participant %s for run %s",
+                            data_type, participant, self.name)
                 df = method(participant)
                 df = melt_df(df, f'{data_type}_{participant}')
-                random_variables_df = pd.merge(random_variables_df, df, on=['datetime','scenario'], how='left')
-
-
-        random_variables_df['total_production'] = (random_variables_df['production_wind'] 
-                                                 + random_variables_df['production_solar'] 
-                                                 + random_variables_df['production_thermal']
-                                                 + random_variables_df['production_salto'])
-        random_variables_df['lost_load'] = random_variables_df['demand'] - random_variables_df['total_production']
-
-        # HARD CODED, TO FIX
-        random_variables_df['profits_thermal'] = random_variables_df['marginal_cost'] * ( random_variables_df['production_thermal'] - 191)
-
-        # Save to disk
-        random_variables_df.to_csv(self.paths['folder'] / 'random_variables.csv', index=False)
+                random_variables_df = pd.merge(random_variables_df, df, on=[
+                                               'datetime', 'scenario'], how='left')
 
         return random_variables_df
 
     def construct_results_dict(self) -> dict:
         # Open the random variables dataframe
-        random_variables_df = pd.read_csv(self.paths['folder'] / 'random_variables.csv')
+        random_variables_df = pd.read_csv(
+            self.paths['folder'] / 'random_variables.csv')
 
         # Get the random variables names
         random_variables = random_variables_df.columns.tolist()
@@ -139,21 +137,31 @@ class RunProcessor(Run):
         results_dict = {'run': self.name,
                         **{var: var_dict['value'] for var, var_dict in self.variables.items()}
                         }
-        
-        salto_height_25 = random_variables_df['water_level_salto'].quantile(0.25)
-        salto_height_10 = random_variables_df['water_level_salto'].quantile(0.10)
 
-        production_wind_25 = random_variables_df['production_wind'].quantile(0.25)
-        production_wind_10 = random_variables_df['production_wind'].quantile(0.10)
+        salto_height_25 = random_variables_df['water_level_salto'].quantile(
+            0.25)
+        salto_height_10 = random_variables_df['water_level_salto'].quantile(
+            0.10)
+
+        production_wind_25 = random_variables_df['production_wind'].quantile(
+            0.25)
+        production_wind_10 = random_variables_df['production_wind'].quantile(
+            0.10)
 
         lost_load_95 = random_variables_df['lost_load'].quantile(0.95)
         lost_load_99 = random_variables_df['lost_load'].quantile(0.99)
 
-        profits_thermal_75 = random_variables_df['profits_thermal'].quantile(0.75)
-        profits_thermal_95 = random_variables_df['profits_thermal'].quantile(0.95)
+        profits_thermal_75 = random_variables_df['profits_thermal'].quantile(
+            0.75)
+        profits_thermal_95 = random_variables_df['profits_thermal'].quantile(
+            0.95)
 
-         
         queries_dict = {
+            'all': 'index==index',
+            'drought_25': f'water_level_salto < {salto_height_25}',
+            'drought_10': f'water_level_salto < {salto_height_10}',
+            'low_wind_25': f'production_wind < {production_wind_25}',
+            'low_wind_10': f'production_wind < {production_wind_10}',
             'drought_low_wind_25': f'water_level_salto < {salto_height_25} and production_wind < {production_wind_25}',
             'drought_low_wind_10': f'water_level_salto < {salto_height_10} and production_wind < {production_wind_10}',
             'blackout_95': f'lost_load > {lost_load_95}',
@@ -164,14 +172,15 @@ class RunProcessor(Run):
         }
 
         for query_name, query in queries_dict.items():
-            query_frequency = random_variables_df.query(query).shape[0] / random_variables_df.shape[0]
+            query_frequency = random_variables_df.query(
+                query).shape[0] / random_variables_df.shape[0]
             results_dict[query_name] = query_frequency
             for variable in random_variables:
                 print(f'{query_name=}, {variable=}')
-                results_dict[f'{query_name}_{variable}'] = random_variables_df.query(query)[variable].mean()
+                results_dict[f'{query_name}_{variable}'] = random_variables_df.query(query)[
+                    variable].mean()
 
         return results_dict
-
 
     def production_participant(self, participant_key: str) -> pd.DataFrame:
         production_df: pd.DataFrame = self.participants_dict[participant_key].production_df(
@@ -184,7 +193,10 @@ class RunProcessor(Run):
         return costs_df
 
     def water_level_participant(self, participant_key: str) -> pd.DataFrame:
-        water_level_df: pd.DataFrame = self.participants_dict[participant_key].water_level_df(
+        print("210")
+        participant = self.participants_dict[participant_key]
+        print("211")
+        water_level_df: pd.DataFrame = participant.water_level_df(
         )
         return water_level_df
 
@@ -232,28 +244,44 @@ class RunProcessor(Run):
                 logger.debug("Saving price distribution for run %s", self.name)
 
                 # Get price distribution
-                #price_distribution = self._intraweek_price_distribution()
-                ## Save price distribution
-                #price_distribution.to_csv(
-                #    self.paths['price_distribution'], index=False)
-                #logger.debug(
-                #    "Getting production results for run %s", self.name)
+                price_distribution = self._intraweek_price_distribution()
+                # Save price distribution
+                price_distribution.to_csv(
+                    self.paths['price_distribution'], index=False)
+                logger.debug(
+                    "Getting production results for run %s", self.name)
                 # Get production results
                 production_results = self._get_production_results()
-
 
                 # Concatenate results
                 results = {**header, **price_results, **production_results}
 
                 # Convert numpy types to native Python types for JSON serialization
                 results = src.auxiliary.convert_numpy_types(results)
-
                 # Save results to JSON
                 with open(self.paths['results_json'], 'w') as file:
                     json.dump(results, file, indent=4)
 
                 logger.info(
                     f'Results for run {self.name} saved successfully.')
+
+                # Extract random varaibles
+                # random_variables_df = self.construct_random_variables_df()
+
+                # Load random variables
+                random_variables_df = self.load_random_variables_df()
+
+                # Process random variables
+                random_variables_df = process_random_variables_df(
+                    random_variables_df)
+
+                logger.info("Saving random variables df for run %s", self.name)
+                logger.debug("random variables df: %s",
+                             random_variables_df.head())
+                # Save to disk
+                random_variables_df.to_csv(
+                    self.paths['folder'] / 'random_variables.csv', index=False)
+
             except Exception as e:
                 logger.error(
                     f'Error processing results for run {self.name}: {e}')
@@ -356,7 +384,6 @@ class RunProcessor(Run):
 
         return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
 
-
     def submit_processor_job(self) -> Optional[str]:
         """
         Submits a job to process the run on a cluster.
@@ -389,6 +416,8 @@ class RunProcessor(Run):
 
         profits = {}
         for participant in self.participants_dict.values():
+            if participant == 'salto':
+                continue
             logger.debug(
                 f"Computing profits for {participant.key} participant.")
             # Compute profit for the participant
@@ -480,3 +509,47 @@ END
 
         logger.info(f'Bash script created at {script_path}')
         return script_path
+
+
+def process_random_variables_df(random_variables_df):
+    def fill_daily_columns(df, daily_columns):
+        """
+        Fills daily frequency data to match hourly frequency for specified columns
+
+        Parameters:
+            df (pd.DataFrame): DataFrame with datetime index and mixed frequency data
+            daily_columns (list): List of column names that are in daily frequency
+        """
+        # Ensure datetime is index
+        if 'datetime' in df.columns:
+            df = df.set_index('datetime')
+
+        # Forward fill each daily column to match hourly frequency
+        for column in daily_columns:
+            if column in df.columns:
+                # Resample to hourly frequency and forward fill
+                df[column] = df[column].resample('H').ffill()
+
+        # Reset index if it was originally a column
+        if 'datetime' not in df.columns:
+            df = df.reset_index()
+
+        return df
+    random_variables_df['total_production'] = (random_variables_df['production_wind']
+                                               + random_variables_df['production_solar']
+                                               + random_variables_df['production_thermal']
+                                               + random_variables_df['production_salto'])
+    random_variables_df['lost_load'] = random_variables_df['demand'] - \
+        random_variables_df['total_production']
+
+    # HARD CODED, TO FIX
+    random_variables_df['profits_thermal'] = random_variables_df['production_thermal'] * (
+        random_variables_df['marginal_cost'] - 191)
+
+    # Upsample variables
+    variables_to_upsample = ['salto']
+    logger.info("Upsampling variables observed at the daily level: %s",
+                variables_to_upsample)
+    random_variables_df = fill_daily_columns(random_variables_df, variables_to_upsample
+                                             )
+    return random_variables_df

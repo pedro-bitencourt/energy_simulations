@@ -360,7 +360,7 @@
               <listaCombustibles>gasOil</listaCombustibles>
               <listaBarrasComb>barraGasOil1</listaBarrasComb>
               <potMin>
-                <ev tipo="const">5.0</ev>
+                <ev tipo="const">1.0</ev>
               </potMin>
               <potMax>
 			  <ev tipo="const">THERMAL_CAPACITY<</ev>

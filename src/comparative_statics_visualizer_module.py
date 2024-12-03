@@ -32,7 +32,7 @@ class ComparativeStaticsVisualizer:
         self.name: str = comparative_statics.name
         self.list_of_runs: list[Run] = comparative_statics.create_runs_from_investment_problems(
             check_convergence)
-        self.exogenous_variables: dict = comparative_statics.exogenous_variables
+        self.exogenous_variables: dict = comparative_statics.exogenous_variable
 
         # Initialize the paths
         self.paths: dict[str, Path] = self._initialize_paths(
@@ -46,6 +46,7 @@ class ComparativeStaticsVisualizer:
         results_df: pd.DataFrame = pd.read_csv(
             self.paths['results'] /
             f"results_table.csv")
+
         print(f"{results_df.head()=}")
         if check_convergence:
             list_run_names = [run.name for run in self.list_of_runs]

@@ -355,7 +355,7 @@
               <propietario>UTE</propietario>
               <barra>barraPrueba1</barra>
               <cantModInst>
-                <ev tipo="const">6</ev>
+                <ev tipo="const">1</ev>
               </cantModInst>
               <listaCombustibles>gasOil</listaCombustibles>
               <listaBarrasComb>barraGasOil1</listaBarrasComb>

@@ -96,6 +96,7 @@ class Participant:
         """
         Extracts and processes the water level data for the participant.
         """
+        print("part 99")
         if self.type_participant != "hydro":
             logger.error(
                 "Water level data is only available for hydro participants.")

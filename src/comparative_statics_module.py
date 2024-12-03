@@ -78,14 +78,14 @@ class ComparativeStatics:
 
         # Variables can be exogenous and endogenous
         self.exogenous_variable: dict[str,
-                                       dict] = variables.get('exogenous', {})
+                                      dict] = variables.get('exogenous', {})
         self.exogenous_variable_key: str = list(
             self.exogenous_variable.keys())[0]
         self.endogenous_variables: dict[str,
                                         dict] = variables.get('endogenous', {})
 
         self.exogenous_variable_grid: dict[str, np.ndarray] = {var_name: np.array(variable['grid'])
-            for var_name, variable in self.exogenous_variable.items()}
+                                                               for var_name, variable in self.exogenous_variable.items()}
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths(base_path)
@@ -111,6 +111,11 @@ class ComparativeStatics:
             # Create runs directly
             self.list_simulations = self._initialize_runs()
 
+    def prototype(self):
+        # Get first investment problem
+        investment_problem_0: InvestmentProblem = self.list_investment_problems[0]
+        investment_problem_0.prototype()
+
     def redo_equilibrium_runs(self):
         """
         Deletes and runs again the equilibrium runs.
@@ -120,40 +125,18 @@ class ComparativeStatics:
             run.tear_down()
             run.submit()
 
-    def get_dataframe(self, data_type: str, participant: str = '') -> pd.DataFrame:
-        """
-        Generic method to get dictionary of DataFrames for different data types.
-
-        Args:
-            data_type: Type of data to retrieve ('water_level', 'production', 'marginal_costs')
-            participant: Participant name (optional, not needed for marginal_costs)
-
-        Returns:
-            DataFrame with the data for each run.
-        """
-        method_map = {
-            'water_level': lambda proc, p: proc.water_level_participant(p),
-            'production': lambda proc, p: proc.production_participant(p),
-            'variable_costs': lambda proc, p: proc.variable_costs_participant(p),
-            'marginal_cost': lambda proc, _: proc.marginal_cost_df()
-        }
-
-        if data_type not in method_map:
-            raise ValueError(
-                f"Invalid data type. Must be one of {list(method_map.keys())}")
-
+    def get_random_variables_df(self) -> pd.DataFrame:
         df_dict: dict[str, pd.DataFrame] = {}
-        method = method_map[data_type]
 
         for run in self.list_simulations:
             try:
                 run_processor = RunProcessor(run)
-                df = method(run_processor, participant)
+                df = run_processor.load_random_variables_df()
                 df['run'] = run.name
                 df_dict[run.name] = df
             except FileNotFoundError:
                 logger.error(
-                    f"{data_type.replace('_', ' ').title()} file not found for run {run.name}")
+                    f"Random variables df file not found for run {run.name}")
                 continue
             except ValueError:
                 logger.error(
@@ -308,7 +291,9 @@ class ComparativeStatics:
         self._process_runs()
 
         # Compile the dataframes
-        self._compile_dataframes()
+        # random_variables_df = self.get_random_variables_df()
+        # random_variables_df.to_csv(
+        #    self.paths['results'] / 'random_variables.csv')
 
         # Construct the new results dataframe
         new_results_df = self.construct_new_results()
@@ -331,34 +316,25 @@ class ComparativeStatics:
     def construct_new_results(self):
         first_flag = True
         for inv_prob in self.list_investment_problems:
-            equilibrium_run, converged = inv_prob.equilibrium_run() 
-            processor = RunProcessor(equilibrium_run)
+            logging.info("Constructing results for investment_problem %s",
+                         inv_prob.name)
+            equilibrium_run, converged = inv_prob.equilibrium_run()
+            try:
+                processor = RunProcessor(equilibrium_run)
+            except ValueError:
+                logging.error("Run %s not successful, skipping",
+                              equilibrium_run.name)
+                continue
 
             results_dict = processor.construct_results_dict()
             if first_flag:
                 new_results_df = pd.DataFrame([results_dict])
                 first_flag = False
             else:
-                new_results_df = new_results_df.append(results_dict, ignore_index=True)
+                new_results_df = pd.concat(
+                    [new_results_df, pd.DataFrame([results_dict])], ignore_index=True)
 
         return new_results_df
-
-
-
-    def _compile_dataframes(self):
-        # Extract comparative statics dataframe
-        dataframes_to_extract: dict = {'water_level': ['salto'],
-                                       'production': ['wind', 'solar', 'thermal'],
-                                       'variable_costs': ['thermal'],
-                                       }
-        for data_type, participants in dataframes_to_extract.items():
-            for participant in participants:
-                df = self.get_dataframe(data_type, participant)
-                df.to_csv(self.paths['results'] /
-                          f'{data_type}_{participant}.csv')
-
-        df = self.get_dataframe('marginal_cost')
-        df.to_csv(self.paths['results'] / 'marginal_cost.csv')
 
     def _process_runs(self):
         # Process the runs
@@ -369,7 +345,6 @@ class ComparativeStatics:
                 logging.info("Processed run %s", run.name)
             except ValueError:
                 logging.critical("Run %s not successful", run.name)
-
 
     def _construct_results_table(self):
         # initialize a list to store the results over the simulations
@@ -404,7 +379,10 @@ class ComparativeStatics:
             investment_results_df = self._investment_results()
             # Merge the solver's results into results_df
             results_df = pd.merge(results_df, investment_results_df,
-                                  on=[self.exogenous_variable_key])
+                                  on=[self.exogenous_variable_key],
+                                  suffixes=('', '_drop'))
+            results_df = results_df.drop(
+                columns=[col for col in results_df.columns if col.endswith('_drop')])
 
         return results_df
 

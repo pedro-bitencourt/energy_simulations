@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional
 import logging
 import pandas as pd
+import subprocess
 
 from src.auxiliary import make_name, try_get_file, submit_slurm_job
 
@@ -166,6 +167,21 @@ class Run:
 
         return False
 
+    def prototype(self):
+        # Create the directory
+        self.paths['folder'].mkdir(parents=True, exist_ok=True)
+
+        # Create the xml file
+        xml_path: Path = self._create_xml()
+
+        # Create the bash file
+        bash_path: Path = self._create_bash(xml_path)
+
+        # Print bash path
+        print("Bash path:")
+        print(bash_path)
+        subprocess.run(['bash', bash_path])
+
     def submit(self):
         """
         Submits a run to the cluster.
@@ -304,6 +320,7 @@ class Run:
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
 
+echo "Starting {job_name} at: $(date +'%H:%M:%S')"
 export WINEPREFIX=/projects/p32342/software/.wine
 module purge
 module load wine/6.0.1
