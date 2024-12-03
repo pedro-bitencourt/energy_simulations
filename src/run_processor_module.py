@@ -121,10 +121,14 @@ class RunProcessor(Run):
 
         return random_variables_df
 
-    def construct_results_dict(self) -> dict:
-        # Open the random variables dataframe
+    def load_random_variables_df(self) -> pd.DataFrame:
         random_variables_df = pd.read_csv(
             self.paths['folder'] / 'random_variables.csv')
+        return random_variables_df
+
+    def construct_results_dict(self) -> dict:
+        # Open the random variables dataframe
+        random_variables_df = self.load_random_variables_df()
 
         # Get the random variables names
         random_variables = random_variables_df.columns.tolist()
