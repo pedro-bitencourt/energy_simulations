@@ -121,11 +121,6 @@ class RunProcessor(Run):
 
         return random_variables_df
 
-    def load_random_variables_df(self) -> pd.DataFrame:
-        random_variables_df = pd.read_csv(
-            self.paths['folder'] / 'random_variables.csv')
-        return random_variables_df
-
     def construct_results_dict(self) -> dict:
         # Open the random variables dataframe
         random_variables_df = self.load_random_variables_df()
@@ -141,38 +136,44 @@ class RunProcessor(Run):
         results_dict = {'run': self.name,
                         **{var: var_dict['value'] for var, var_dict in self.variables.items()}
                         }
+    # Create cutoffs dictionary or add as columns to random_variables_df
+        cutoffs = {
+            'water_level_salto': {
+                '25': random_variables_df['water_level_salto'].quantile(0.25),
+                '10': random_variables_df['water_level_salto'].quantile(0.10)
+            },
+            'production_wind': {
+                '25': random_variables_df['production_wind'].quantile(0.25),
+                '10': random_variables_df['production_wind'].quantile(0.10)
+            },
+            'lost_load': {
+                '95': random_variables_df['lost_load'].quantile(0.95),
+                '99': random_variables_df['lost_load'].quantile(0.99)
+            },
+            'profits_thermal': {
+                '75': random_variables_df['profits_thermal'].quantile(0.75),
+                '95': random_variables_df['profits_thermal'].quantile(0.95)
+            }
+        }
 
-        salto_height_25 = random_variables_df['water_level_salto'].quantile(
-            0.25)
-        salto_height_10 = random_variables_df['water_level_salto'].quantile(
-            0.10)
-
-        production_wind_25 = random_variables_df['production_wind'].quantile(
-            0.25)
-        production_wind_10 = random_variables_df['production_wind'].quantile(
-            0.10)
-
-        lost_load_95 = random_variables_df['lost_load'].quantile(0.95)
-        lost_load_99 = random_variables_df['lost_load'].quantile(0.99)
-
-        profits_thermal_75 = random_variables_df['profits_thermal'].quantile(
-            0.75)
-        profits_thermal_95 = random_variables_df['profits_thermal'].quantile(
-            0.95)
+        # Add cutoffs as columns to the dataframe
+        for var, percentiles in cutoffs.items():
+            for perc, value in percentiles.items():
+                random_variables_df[f'{var}_cutoff_{perc}'] = value
 
         queries_dict = {
             'all': 'index==index',
-            'drought_25': f'water_level_salto < {salto_height_25}',
-            'drought_10': f'water_level_salto < {salto_height_10}',
-            'low_wind_25': f'production_wind < {production_wind_25}',
-            'low_wind_10': f'production_wind < {production_wind_10}',
-            'drought_low_wind_25': f'water_level_salto < {salto_height_25} and production_wind < {production_wind_25}',
-            'drought_low_wind_10': f'water_level_salto < {salto_height_10} and production_wind < {production_wind_10}',
-            'blackout_95': f'lost_load > {lost_load_95}',
-            'blackout_99': f'lost_load > {lost_load_99}',
+            'drought_25': f'water_level_salto < water_level_salto_cutoff_25',
+            'drought_10': f'water_level_salto < water_level_salto_cutoff_10',
+            'low_wind_25': f'production_wind < production_wind_cutoff_25',
+            'low_wind_10': f'production_wind < production_wind_cutoff_10',
+            'drought_low_wind_25': f'water_level_salto < water_level_salto_cutoff_25 and production_wind < production_wind_cutoff_25',
+            'drought_low_wind_10': f'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
+            'blackout_95': f'lost_load > lost_load_cutoff_95',
+            'blackout_99': f'lost_load > lost_load_cutoff_99',
             'blackout_positive': f'lost_load > 0',
-            'profits_thermal_75': f'profits_thermal > {profits_thermal_75}',
-            'profits_thermal_95': f'profits_thermal > {profits_thermal_95}',
+            'profits_thermal_75': f'profits_thermal > profits_thermal_cutoff_75',
+            'profits_thermal_95': f'profits_thermal > profits_thermal_cutoff_95',
         }
 
         for query_name, query in queries_dict.items():
@@ -180,9 +181,50 @@ class RunProcessor(Run):
                 query).shape[0] / random_variables_df.shape[0]
             results_dict[query_name] = query_frequency
             for variable in random_variables:
-                print(f'{query_name=}, {variable=}')
+                print(f'{query_name}, {variable}')
                 results_dict[f'{query_name}_{variable}'] = random_variables_df.query(query)[
                     variable].mean()
+#        salto_height_25 = random_variables_df['water_level_salto'].quantile(
+#            0.25)
+#        salto_height_10 = random_variables_df['water_level_salto'].quantile(
+#            0.10)
+#
+#        production_wind_25 = random_variables_df['production_wind'].quantile(
+#            0.25)
+#        production_wind_10 = random_variables_df['production_wind'].quantile(
+#            0.10)
+#
+#        lost_load_95 = random_variables_df['lost_load'].quantile(0.95)
+#        lost_load_99 = random_variables_df['lost_load'].quantile(0.99)
+#
+#        profits_thermal_75 = random_variables_df['profits_thermal'].quantile(
+#            0.75)
+#        profits_thermal_95 = random_variables_df['profits_thermal'].quantile(
+#            0.95)
+#
+#        queries_dict = {
+#            'all': 'index==index',
+#            'drought_25': f'water_level_salto < {salto_height_25}',
+#            'drought_10': f'water_level_salto < {salto_height_10}',
+#            'low_wind_25': f'production_wind < {production_wind_25}',
+#            'low_wind_10': f'production_wind < {production_wind_10}',
+#            'drought_low_wind_25': f'water_level_salto < {salto_height_25} and production_wind < {production_wind_25}',
+#            'drought_low_wind_10': f'water_level_salto < {salto_height_10} and production_wind < {production_wind_10}',
+#            'blackout_95': f'lost_load > {lost_load_95}',
+#            'blackout_99': f'lost_load > {lost_load_99}',
+#            'blackout_positive': f'lost_load > 0',
+#            'profits_thermal_75': f'profits_thermal > {profits_thermal_75}',
+#            'profits_thermal_95': f'profits_thermal > {profits_thermal_95}',
+#        }
+#
+#        for query_name, query in queries_dict.items():
+#            query_frequency = random_variables_df.query(
+#                query).shape[0] / random_variables_df.shape[0]
+#            results_dict[query_name] = query_frequency
+#            for variable in random_variables:
+#                print(f'{query_name=}, {variable=}')
+#                results_dict[f'{query_name}_{variable}'] = random_variables_df.query(query)[
+#                    variable].mean()
 
         return results_dict
 
@@ -548,10 +590,10 @@ def process_random_variables_df(random_variables_df):
 
     # HARD CODED, TO FIX
     random_variables_df['profits_thermal'] = random_variables_df['production_thermal'] * (
-        random_variables_df['marginal_cost'] - 191)
+        random_variables_df['marginal_cost'] - 193.02)
 
     # Upsample variables
-    variables_to_upsample = ['salto']
+    variables_to_upsample = ['water_level_salto']
     logger.info("Upsampling variables observed at the daily level: %s",
                 variables_to_upsample)
     random_variables_df = fill_daily_columns(random_variables_df, variables_to_upsample

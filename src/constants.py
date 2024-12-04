@@ -97,16 +97,6 @@ ONE_D_PLOTS_CONFIGS = [
         'title': 'Total Production by Resources',
         'filename': 'total_production.png'
     },
-    # New thermal production
-    #    {
-    #        'y_variables': [
-    #            {'key': 'total_production_hydros', 'label': 'Hydro'},
-    #            {'key': 'thermal_production', 'label': 'New Thermal'}
-    #        ],
-    #        'axis_labels': {'y': 'Total Production (GWh)'},
-    #        'title': 'Production of Hydros and New Thermal',
-    #        'filename': 'total_production_new_thermal.png'
-    #    },
     # Average price
     {
         'y_variables': [

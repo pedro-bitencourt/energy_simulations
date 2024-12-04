@@ -125,7 +125,14 @@ class ComparativeStatics:
             run.tear_down()
             run.submit()
 
-    def get_random_variables_df(self) -> pd.DataFrame:
+    def get_random_variables_df(self, lazy=True) -> pd.DataFrame:
+        # Check whether file exists
+        random_variables_df_path = self.paths['results'] / \
+            'random_variables.csv'
+        if random_variables_df_path.exists() and lazy:
+            random_variables_df = pd.read_csv(random_variables_df_path)
+            return random_variables_df
+
         df_dict: dict[str, pd.DataFrame] = {}
 
         for run in self.list_simulations:
@@ -146,6 +153,9 @@ class ComparativeStatics:
         # Merge the DataFrames into a single DataFrames
         df_merged = pd.concat(
             df_dict.values(), keys=df_dict.keys(), names=['run'])
+
+        random_variables_df.to_csv(
+        )
         return df_merged
 
     def _validate_input(self):
@@ -277,7 +287,7 @@ class ComparativeStatics:
                 else:
                     logging.info("Submitted job for run %s",  run.name)
 
-    def process(self):
+    def process(self, lazy=True):
         """
         Create runs from investment problems, if there are endogenous variables, and process the results.
         """
@@ -291,9 +301,7 @@ class ComparativeStatics:
         self._process_runs()
 
         # Compile the dataframes
-        # random_variables_df = self.get_random_variables_df()
-        # random_variables_df.to_csv(
-        #    self.paths['results'] / 'random_variables.csv')
+        random_variables_df = self.get_random_variables_df(lazy)
 
         # Construct the new results dataframe
         new_results_df = self.construct_new_results()
