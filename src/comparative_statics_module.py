@@ -252,10 +252,20 @@ class ComparativeStatics:
                 for variable, var_dict in self.exogenous_variable.items()
             }
 
+            endogenous_variables_temp: dict = {
+                variable: {
+                    'value': var_dict['value'],
+                    'pattern': var_dict['pattern'],
+                    'initial_guess': var_dict['initial_guess'][exogenous_variable_temp[variable]['value']],
+                }
+                for variable, var_dict in self.endogenous_variables.items()
+            }
+
+
             # initialize the InvestmentProblem object
             investment_problem = InvestmentProblem(self.paths['main'],
                                                    exogenous_variable_temp,
-                                                   self.endogenous_variables,
+                                                   endogenous_variables_temp,
                                                    self.general_parameters)
 
             logger.info('Created investment_problem object for %s.',
@@ -327,6 +337,8 @@ class ComparativeStatics:
         random_variables_df.to_csv(
             self.paths['results'] / 'random_variables.csv', index=False)
 
+
+
     def _compile_random_variables(self):
         # Initialize a list to store the random variables over the simulations
         random_variables_dict: list[dict] = []
@@ -355,6 +367,7 @@ class ComparativeStatics:
         random_variables_df: pd.DataFrame = pd.DataFrame(random_variables_dict)
 
         return random_variables_df
+
 
     def construct_new_results(self):
         first_flag = True
