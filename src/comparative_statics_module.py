@@ -19,17 +19,23 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict
 import numpy as np
+import json
 import pandas as pd
+
+from src.auxiliary import submit_slurm_job
 
 from .investment_module import InvestmentProblem
 from .run_module import Run
 from .run_processor_module import RunProcessor
 from .optimization_module import OptimizationPathEntry, get_last_successful_iteration
+from .auxiliary import submit_slurm_job
 
 from src.constants import BASE_PATH
 
 # Get logger for current module
 logger = logging.getLogger(__name__)
+
+PROCESS_TIME = '05:00:00'
 
 
 class ComparativeStatics:
@@ -70,6 +76,7 @@ class ComparativeStatics:
 
         self.name: str = name
         self.general_parameters: dict = general_parameters
+        self.variables: dict = variables
 
         # Variables can be exogenous and endogenous
         self.exogenous_variable: dict[str,
@@ -201,6 +208,83 @@ class ComparativeStatics:
                 investment_problem._clear_runs_folders(equilibrium_run.name)
             list_simulations.append(equilibrium_run)
         return list_simulations
+
+    def _create_bash(self):
+        # construct a temporary path for the data to pass it to the bash script
+        data_path = f"{self.paths['folder']}/{self.name}_data.json"
+
+        # create the data dictionary
+        comparative_statics_data = {
+            'name': self.name,
+            'variables': self.variables,
+            'exogenous_variable_grid': self.exogenous_variable_grid,
+            'general_parameters': self.general_parameters
+        }
+
+
+        # (find better fix) ensure data does not have np.int64 types
+        def convert_int64(obj):
+            if isinstance(obj, np.int64):
+                return int(obj)
+            elif isinstance(obj, dict):
+                return {k: convert_int64(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_int64(v) for v in obj]
+            return obj
+
+        comparative_statics_data = convert_int64(comparative_statics_data)
+
+
+        if self.general_parameters.get('email', None):
+            email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
+        else:
+            email_line = ""
+
+        # write the bash script
+        with open(self.paths['bash'], 'w') as f:
+            f.write(f'''#!/bin/bash
+#SBATCH --account=b1048
+#SBATCH --partition=b1048
+#SBATCH --time={PROCESS_TIME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=2G
+#SBATCH --job-name={self.name}_processing
+#SBATCH --output={self.paths['main']}/{self.name}_processing.out
+#SBATCH --error={self.paths['main']}/{self.name}_processing.err
+#SBATCH --mail-type=ANY
+#SBATCH --exclude=qhimem[0207-0208]
+{email_line}
+
+module purge
+module load python-miniconda3/4.12.0
+
+
+python - <<END
+
+
+import sys
+import json
+sys.path.append('/projects/p32342/code')
+from src.comparative_statics_module import ComparativeStatics
+
+comparative_statics_data = {json.dumps(comparative_statics_data)}
+comparative_statics = ComparativeStatics(**comparative_statics_data)
+comparative_statics.submit_processing()
+
+END
+''')
+
+        return self.paths['bash']
+
+    def submit_processing(self):
+        """
+        Submit the processing job to the cluster.
+        """
+        bash_path = self._create_bash()
+        logger.info(f"Submitting processing job for {self.name}")
+        job_id = submit_slurm_job(bash_path)
+        return job_id
     
 
     def _grid_length(self):
@@ -464,6 +548,10 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
 
     queries_dict = {
         'unconditional': 'index==index',
+        'water_level_34': f'water_level_salto < 34',
+        'water_level_33': f'water_level_salto < 33',
+        'water_level_32': f'water_level_salto < 32',
+        'water_level_31': f'water_level_salto < 31',
         'drought_25': f'water_level_salto < water_level_salto_cutoff_25',
         'drought_10': f'water_level_salto < water_level_salto_cutoff_10',
         'low_wind_25': f'production_wind < production_wind_cutoff_25',
