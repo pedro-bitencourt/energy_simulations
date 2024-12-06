@@ -15,7 +15,7 @@ rich_handler = RichHandler(
 
 # Configure basic logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(message)s",
     datefmt="[%X]",
     handlers=[rich_handler]
@@ -38,6 +38,11 @@ COSTS = {
     'wind': {'oem': 20_000, 'installation': 1_300_000, 'lifetime': 25},
     'solar': {'oem': 7_300, 'installation': 1_160_000, 'lifetime': 35},
     'thermal': {'oem': 12_000, 'installation': 975_000, 'lifetime': 20}
+}
+
+HOURLY_FIXED_COSTS = {
+    participant: (COSTS[participant]['installation'] / COSTS[participant]['lifetime'] + COSTS[participant]['oem']) / 8760
+    for participant in COSTS.keys()
 }
 
 # Error codes

@@ -7,12 +7,9 @@ Description: this file implements the Run class and related methods.
 
 import os
 import re
-import json
 import shutil
 from pathlib import Path
-from typing import Optional
 import logging
-import pandas as pd
 import subprocess
 
 from src.auxiliary import make_name, try_get_file, submit_slurm_job
@@ -136,6 +133,29 @@ class Run:
         # Check if SIM folder exists
         sim_folder = self.paths.get('sim', False)
         if sim_folder:
+            files_to_check = [r'resumen*',
+                              r'EOLO_eoloDeci/potencias*.xlt',
+                              r'FOTOV_solarDeci/potencias*.xlt',
+                              r'DEM_demandaPrueba/potencias*.xlt']
+
+            # Check if files exist
+            for file in files_to_check:
+                file_found = try_get_file(sim_folder, file)
+                if not file_found:
+                    logger.critical(
+                        "%s does not contain file %s", sim_folder, file)
+                    logger.critical("Deleting sim folder.")
+                    try:
+                        shutil.rmtree(sim_folder)
+                        if log:
+                            logger.error(
+                                'No %s file found for run %s in folder %s. Deleting sim folder.', file, self.name, self.paths['subfolder'])
+                    except Exception as e:
+                        if log:
+                            logger.error(
+                                'Error deleting sim folder for run %s: %s', self.name, str(e))
+                    return False
+
             # Check if the resumen file exists
             resumen_file_found = try_get_file(sim_folder, r'resumen*')
 
@@ -146,8 +166,9 @@ class Run:
             if resumen_file_found and production_file_found:
                 return True
 
+            logger.critical("%s does not contain either a resumen file or EOLO_eoloDeci/potencias*.xlt", sim_folder)
+
             # If no resumen file found, delete the sim folder
-            import shutil
             try:
                 shutil.rmtree(sim_folder)
                 if log:
@@ -161,7 +182,7 @@ class Run:
                                  str(e))
         else:
             if log:
-                logger.error('No sim folder found for run %s in folder %s',
+                logger.critical('No sim folder found for run %s in folder %s',
                              self.name,
                              self.paths['subfolder'])
 
@@ -329,39 +350,3 @@ sleep $((RANDOM%60 + 10))
 wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G -jar MOP_Mingo.JAR "Z:{xml_path}"
 ''')
         return bash_path
-
-    def load_results(self) -> Optional[dict]:
-        """
-        Loads the results from the results.json file.
-        """
-        if self.paths['results_json'].exists():
-            with open(self.paths['results_json'], 'r') as file:
-                results = json.load(file)
-            return results
-        logger.error(
-            f"Results file {self.paths['results_json']} does not exist for run {self.name}")
-        return None
-
-    def load_price_distribution(self) -> Optional[pd.DataFrame]:
-        """
-        Loads the price distribution from the CSV file.
-        """
-        if self.paths['price_distribution'].exists():
-            price_distribution: pd.DataFrame = pd.read_csv(
-                self.paths['price_distribution'])
-            # Convert 'hour_of_week_bin' to just the start hour
-            price_distribution['hour_of_week_bin'] = (
-                price_distribution['hour_of_week_bin'].str.extract(r'(\d+)'))
-            # Pivot the table to have hours as columns
-            wide_df = price_distribution.pivot_table(
-                values='price_avg',
-                index=None,
-                columns='hour_of_week_bin'
-            )
-            # Convert all column names to integers and sort
-            wide_df.columns = wide_df.columns.astype(int)
-            wide_df = wide_df.sort_index(axis=1).reset_index(drop=True)
-            return price_distribution
-        logger.error(
-            f"Price distribution file {self.paths['price_distribution']} does not exist for run {self.name}")
-        return None

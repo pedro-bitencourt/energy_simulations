@@ -15,23 +15,6 @@ import numpy as np
 ### General utility functions ###
 #################################
 
-
-def convert_numpy_types(data: dict) -> dict:
-    """
-    Converts numpy data types in a dictionary to native Python types.
-
-    Args:
-        data (dict): The dictionary to convert.
-
-    Returns:
-        dict: The converted dictionary.
-    """
-    return {key: (int(value) if isinstance(value, np.integer)
-                  else float(value) if isinstance(value, np.floating)
-                  else value)
-            for key, value in data.items()}
-
-
 def make_name(float_list):
     """
     Takes list of floats, returns string with at most 2 decimals

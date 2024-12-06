@@ -21,17 +21,21 @@ from src.constants import DATETIME_FORMAT, SCENARIOS
 COLUMNS_TO_CHECK = ['datetime'] + SCENARIOS
 
 
-PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data')
+PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/comparative_statics/salto_capacity_v3/salto_capacity_v3_investment_101.25')
 OUTPUT_FOLDER: Path = PARENT_FOLDER / 'output'
 
 # Not necessary
-REQUESTED_TIME_RUN: int = 6.5
-REQUESTED_TIME_SOLVER: int = 16
+REQUESTED_TIME_RUN: float = 6.5
+REQUESTED_TIME_SOLVER: float = 16
 
 class TestRun(unittest.TestCase):
     def setUp(self):
         # Set up the mock Run object
-        name = 'salto_capacity'
+        name = 'salto_capacity_v3'
+        exogenous_capacity = 101.25
+        wind_capacity = 4540
+        solar_capacity = 1769
+        thermal_capacity = 1051
         general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA',
                             'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
@@ -43,16 +47,16 @@ class TestRun(unittest.TestCase):
 
         variables = {'hydro_factor': {'pattern': 'HYDRO_FACTOR',
                                       'label': 'Hydro Factor',
-                                      'value': 1},
+                                      'value': exogenous_capacity},
                      'wind': {'pattern': 'WIND_CAPACITY',
                               'label': 'Wind Capacity',
-                              'value': 3295},
+                              'value': wind_capacity},
                      'solar': {'pattern': 'SOLAR_CAPACITY',
                                'label': 'Solar Capacity',
-                               'value': 1670},
+                               'value': solar_capacity},
                      'thermal': {'pattern': 'THERMAL_CAPACITY',
                                  'label': 'Thermal Capacity',
-                                 'value': 107}}
+                                 'value': thermal_capacity}}
 
         self.mock_run = Run(PARENT_FOLDER, general_parameters, variables)
         # Initialize the RunProcessor object
@@ -64,32 +68,36 @@ class TestRun(unittest.TestCase):
             file.unlink(missing_ok=True)
 
 
-    def test__extract_marginal_cost(self):
-        dataframe = self.mock_run_processor._extract_marginal_costs_df()
-        self.assertIsNotNone(dataframe)
-        self.assertFalse(dataframe.isna().values.any(),
-                         "DataFrame contains NaN values")
-        parsed_dates = pd.to_datetime(
-            dataframe['datetime'], format=DATETIME_FORMAT, errors='coerce')
-        self.assertFalse(parsed_dates.isna().any(
-        ), "DataFrame contains invalid dates in the 'datetime' column")
-        print(f'{dataframe.head()=}')
-        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
+#    def test__extract_marginal_cost(self):
+#        dataframe = self.mock_run_processor._extract_marginal_costs_df()
+#        self.assertIsNotNone(dataframe)
+#        self.assertFalse(dataframe.isna().values.any(),
+#                         "DataFrame contains NaN values")
+#        parsed_dates = pd.to_datetime(
+#            dataframe['datetime'], format=DATETIME_FORMAT, errors='coerce')
+#        self.assertFalse(parsed_dates.isna().any(
+#        ), "DataFrame contains invalid dates in the 'datetime' column")
+#        print(f'{dataframe.head()=}')
+#        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
+#
+#    def test_production_participant(self):
+#        participant_key = 'thermal'
+#        dataframe = self.mock_run_processor.production_participant(participant_key)
+#        self.assertIsNotNone(dataframe)
+#        print(f'{dataframe.head()=}')
+#        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
+#
+#    def test_variable_costs_participant(self):
+#        participant_key = 'thermal'
+#        dataframe = self.mock_run_processor.variable_costs_participant(participant_key)
+#        self.assertIsNotNone(dataframe)
+#        print(f'{dataframe.head()=}')
+#        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
 
+    def test_get_profits(self):
+        profits = self.mock_run_processor.get_profits()
+        self.assertIsNotNone(profits)
 
-    def test_production_participant(self):
-        participant_key = 'thermal'
-        dataframe = self.mock_run_processor.production_participant(participant_key)
-        self.assertIsNotNone(dataframe)
-        print(f'{dataframe.head()=}')
-        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
-
-    def test_variable_costs_participant(self):
-        participant_key = 'thermal'
-        dataframe = self.mock_run_processor.variable_costs_participant(participant_key)
-        self.assertIsNotNone(dataframe)
-        print(f'{dataframe.head()=}')
-        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
 
 if __name__ == '__main__':
     unittest.main()

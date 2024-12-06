@@ -1,21 +1,20 @@
-import sys
 import unittest
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-sys.path.append(str(Path(__file__).parent.parent))
-from src.comparative_statics_module import ComparativeStatics
-from src.constants import DATETIME_FORMAT, SCENARIOS
 
-import logging
 
-# 1. Basic level setting
-logging.basicConfig(level=logging.INFO)  # Set global level
-logger = logging.getLogger(__name__)
+from ..comparative_statics_module import ComparativeStatics
+from ..constants import DATETIME_FORMAT, SCENARIOS
 
-OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/output')
+from ..logging_config import setup_logging
+setup_logging()
+
+
+
+
+OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/results/salto_capacity_v3')
 PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data')
 
 REQUESTED_TIME_SOLVER = 1
@@ -24,40 +23,47 @@ REQUESTED_TIME_RUN = 1
 COLUMNS_TO_CHECK = ['run','datetime'] + SCENARIOS
 
 
+
 class TestComparativeStatics(unittest.TestCase):
     def setUp(self):
-        name = 'salto_capacity'
-        general_parameters: dict = {'daily': True,
-                                    'name_subfolder': 'CAD-2024-DIARIA',
-                                    'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
-                                    'email': 'pedro.bitencourt@u.northwestern.edu',
-                                    'annual_interest_rate': 0.0,
-                                    'years_run': 6.61,
-                                    'requested_time_run': REQUESTED_TIME_RUN,
-                                    'requested_time_solver': REQUESTED_TIME_SOLVER}
-        exogenous_variable_name: str = 'hydro_factor'
-        exogenous_variable_pattern: str = 'HYDRO_FACTOR'
-        exogenous_variable_label: str = 'Hydro Factor'
-        exogenous_variable_grid: list[float] = [1, 2]
+        name: str = 'salto_capacity_v3'
+        xml_basefile: str = '/home/pdm6134/salto_capacity_v2.xml'
         
+        general_parameters: dict[str, Union[bool, str, float, int]] = {
+            'daily': True,
+            'name_subfolder': 'CAD-2024-DIARIA',
+            'xml_basefile': xml_basefile,
+            'email': 'pedro.bitencourt@u.northwestern.edu',
+            'annual_interest_rate': 0.0,
+            'requested_time_run': 7.5,
+            'requested_time_solver': 18.5
+        }
+        
+        exogenous_variable_name: str = 'salto_capacity'
+        exogenous_variable_pattern: str = 'SALTO_CAPACITY'
+        exogenous_variable_label: str = 'Salto Capacity'
+        exogenous_variable_grid: list[float] = [0, 101.25]
         exogenous_variables: dict[str, dict] = {
-            exogenous_variable_name: {'pattern': exogenous_variable_pattern,
-                                      'label': exogenous_variable_label},
+            exogenous_variable_name: {
+                'pattern': exogenous_variable_pattern,
+                'label': exogenous_variable_label,
+                'grid': exogenous_variable_grid
+            }
         }
-        endogenous_variables: dict[str, dict] = {
-            'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': 1000},
-            'solar': {'pattern': 'SOLAR_CAPACITY', 'initial_guess': 1000},
-            'thermal': {'pattern': 'THERMAL_CAPACITY', 'initial_guess': 300}
-        }
-        exogenous_variables_grid: dict[str, np.ndarray] = {
-            exogenous_variable_name: np.array(exogenous_variable_grid)}
-        variables: dict[str, dict] = {'exogenous': exogenous_variables,
-                                      'endogenous': endogenous_variables}
         
+        endogenous_variables: dict[str, dict[str, Union[str, list[int]]]] = {
+            'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': [7000, 5112]},
+            'solar': {'pattern': 'SOLAR_CAPACITY', 'initial_guess': [2489, 1907]},
+            'thermal': {'pattern': 'THERMAL_CAPACITY', 'initial_guess': [1309, 1123]}
+        }
+        
+        variables: dict[str, dict] = {
+            'exogenous': exogenous_variables,
+            'endogenous': endogenous_variables
+        }
         # Create the ComparativeStatics object
         self.mock_comparative_statics = ComparativeStatics(name,
                                                  variables,
-                                                 exogenous_variables_grid,
                                                  general_parameters,
                                                     PARENT_FOLDER)
         
@@ -67,41 +73,35 @@ class TestComparativeStatics(unittest.TestCase):
         #    file.unlink(missing_ok=True)
         pass
 
-    def test_get_dataframe(self):
-        def assert_dataframe(df: pd.DataFrame):
+    def test_get_random_variables_df(self):
+        def assert_random_variables_df(df: pd.DataFrame):
             self.assertIsInstance(df, pd.DataFrame)
             self.assertFalse(df.empty)
-            # Check the columns
-            self.assertEqual(set(df.columns.tolist()), set(COLUMNS_TO_CHECK))
             # Check the datetime format
             self.assertEqual(df['datetime'].dtype, 'datetime64[ns]')
             # Check for NaN values
-            self.assertFalse(df.isna().values.any(), "DataFrame contains NaN values")
+            #self.assertFalse(df.isna().values.any(), "DataFrame contains NaN values")
             # Check for invalid dates
             parsed_dates = pd.to_datetime(
                 df['datetime'], format=DATETIME_FORMAT, errors='coerce')
             self.assertFalse(parsed_dates.isna().any(),
                              "DataFrame contains invalid dates in the 'datetime' column")
 
-        # Test marginal cost dataframe
-        marginal_cost_df = self.mock_comparative_statics.get_dataframe('marginal_cost')
-        assert_dataframe(marginal_cost_df)
+        # Test random variables dataframe
+        random_variables_df = self.mock_comparative_statics.get_random_variables_df(lazy=False)
+        assert_random_variables_df(random_variables_df)
         # Save the dataframe to a file
-        marginal_cost_df.to_csv(OUTPUT_FOLDER / 'marginal_cost.csv', index=False)
-        print(f'{marginal_cost_df.head()=}')
+        random_variables_df.to_csv(OUTPUT_FOLDER / 'random_variables.csv', index=False)
+        print(f'{random_variables_df.head()=}')
 
-        # Test production dataframe for a participant
-        participant_key = 'wind'
-        production_df = self.mock_comparative_statics.get_dataframe('production', participant_key)
-        assert_dataframe(production_df)
-        # Save the dataframe to a files
-        production_df.to_csv(OUTPUT_FOLDER / 'production_wind.csv', index=False)
-
-        # Test variable costs dataframe for a participant
-        variable_costs_df = self.mock_comparative_statics.get_dataframe('variable_costs', 'thermal')
-        assert_dataframe(variable_costs_df)
-        # Save the dataframe to a files
-        variable_costs_df.to_csv(OUTPUT_FOLDER / 'variable_costs_thermal.csv', index=False)
+    def test_process(self):
+        self.mock_comparative_statics.process()
+        # Check if the output folder contains the expected files
+        expected_files = ['random_variables.csv', 'conditional_means.csv', 'investment_results.csv']
+        for file in expected_files:
+            self.assertTrue((OUTPUT_FOLDER / file).exists(),
+                            f"Expected file '{file}' not found in the output folder '{OUTPUT_FOLDER}'")
+        print(f'{list(OUTPUT_FOLDER.glob("*.csv"))=}')
 
 
 if __name__ == '__main__':

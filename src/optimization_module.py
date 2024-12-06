@@ -141,8 +141,8 @@ def get_last_successful_iteration(opt_trajectory: list[OptimizationPathEntry]) -
     for entry in reversed(opt_trajectory):
         if entry.successful:
             return entry
-    logger.error("""No successful iteration found in the optimization trajectory.
-        Returning the first entry.""")
+    logger.warning("No successful iteration found in the optimization trajectory, returning the first entry.")
+    logger.debug("Optimization trajectory: %s", opt_trajectory)
     return opt_trajectory[0]
 
 

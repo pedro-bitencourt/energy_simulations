@@ -105,7 +105,7 @@ class InvestmentProblem:
         else:
             # if not, initialize it with the first iteration
             optimization_trajectory: list[OptimizationPathEntry] = []
-            logger.info("Optimization trajectory not found at %s. Initializing a new one.",
+            logger.critical("Optimization trajectory not found at %s. Initializing a new one.",
                         self.paths['optimization_trajectory'])
 
             # initialize the first iteration
@@ -178,7 +178,9 @@ class InvestmentProblem:
             self.optimization_trajectory.append(current_iteration)
 
             # clear the runs folders
-            # self._clear_runs_folders()
+            current_run: Run = self.create_run(
+                current_iteration.current_investment)
+            self._clear_runs_folders(current_run.name)
 
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
@@ -281,7 +283,7 @@ class InvestmentProblem:
         # compute derivatives from the profits
         derivatives = derivatives_from_profits(
             profits_perturb, DELTA, list(self.endogenous_variables.keys()))
-        return profits_perturb['current'], derivatives
+        return profits_perturb['current'], derivatives, runs_dict['current']
 
     def create_run(self, current_investment: dict) -> Run:
         """

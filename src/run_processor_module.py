@@ -7,21 +7,16 @@ It extracts data such as marginal costs, price distributions, production results
 
 Public methods:
 - RunProcessor: Initializes the RunProcessor with an existing Run instance.
-- process_run: Processes the run locally or submits a processing job to the cluster.
 - get_profits: Computes profits for the specified endogenous variables.
-- submit_processor_job: Submits a job to process the run on a cluster.
 """
 import logging
-from pathlib import Path
-import json
-from typing import Optional, Dict
+from typing import Dict
 import pandas as pd
 
-import src.auxiliary
 import src.processing_module as proc
 from src.participant_module import Participant
 from src.run_module import Run
-from src.constants import MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
+from src.constants import MARGINAL_COST_DF, DEMAND_DF, HOURLY_FIXED_COSTS
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -78,10 +73,16 @@ class RunProcessor(Run):
                                                                            self.paths,
                                                                            run.general_parameters)
                                                           for var in list_participants}
+    def get_random_variables_df(self, lazy=True) -> pd.DataFrame:
+        if (self.paths['random_variables'] / 'random_variables.csv').exists() and lazy:
+            random_variables_df = self.load_random_variables_df()
+        else:
+            random_variables_df = self.construct_random_variables_df()
+        return random_variables_df
 
     def load_random_variables_df(self) -> pd.DataFrame:
         random_variables_df = pd.read_csv(
-            self.paths['folder'] / 'random_variables.csv')
+            self.paths['random_variables'] / 'random_variables.csv')
         return random_variables_df
 
     def construct_random_variables_df(self) -> pd.DataFrame:
@@ -119,114 +120,13 @@ class RunProcessor(Run):
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                                                'datetime', 'scenario'], how='left')
 
+        # Process random variables
+        random_variables_df = process_random_variables_df(random_variables_df)
+
+        # Save to disk
+        random_variables_df.to_csv(self.paths['random_variables'], index=False)
+
         return random_variables_df
-
-    def construct_results_dict(self) -> dict:
-        # Open the random variables dataframe
-        random_variables_df = self.load_random_variables_df()
-
-        # Get the random variables names
-        random_variables = random_variables_df.columns.tolist()
-        # Remove datetime and scenario columns
-        random_variables.remove('datetime')
-        random_variables.remove('scenario')
-        print(f'{random_variables=}')
-
-        # Initialize results dictionary
-        results_dict = {'run': self.name,
-                        **{var: var_dict['value'] for var, var_dict in self.variables.items()}
-                        }
-    # Create cutoffs dictionary or add as columns to random_variables_df
-        cutoffs = {
-            'water_level_salto': {
-                '25': random_variables_df['water_level_salto'].quantile(0.25),
-                '10': random_variables_df['water_level_salto'].quantile(0.10)
-            },
-            'production_wind': {
-                '25': random_variables_df['production_wind'].quantile(0.25),
-                '10': random_variables_df['production_wind'].quantile(0.10)
-            },
-            'lost_load': {
-                '95': random_variables_df['lost_load'].quantile(0.95),
-                '99': random_variables_df['lost_load'].quantile(0.99)
-            },
-            'profits_thermal': {
-                '75': random_variables_df['profits_thermal'].quantile(0.75),
-                '95': random_variables_df['profits_thermal'].quantile(0.95)
-            }
-        }
-
-        # Add cutoffs as columns to the dataframe
-        for var, percentiles in cutoffs.items():
-            for perc, value in percentiles.items():
-                random_variables_df[f'{var}_cutoff_{perc}'] = value
-
-        queries_dict = {
-            'all': 'index==index',
-            'drought_25': f'water_level_salto < water_level_salto_cutoff_25',
-            'drought_10': f'water_level_salto < water_level_salto_cutoff_10',
-            'low_wind_25': f'production_wind < production_wind_cutoff_25',
-            'low_wind_10': f'production_wind < production_wind_cutoff_10',
-            'drought_low_wind_25': f'water_level_salto < water_level_salto_cutoff_25 and production_wind < production_wind_cutoff_25',
-            'drought_low_wind_10': f'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
-            'blackout_95': f'lost_load > lost_load_cutoff_95',
-            'blackout_99': f'lost_load > lost_load_cutoff_99',
-            'blackout_positive': f'lost_load > 0',
-            'profits_thermal_75': f'profits_thermal > profits_thermal_cutoff_75',
-            'profits_thermal_95': f'profits_thermal > profits_thermal_cutoff_95',
-        }
-
-        for query_name, query in queries_dict.items():
-            query_frequency = random_variables_df.query(
-                query).shape[0] / random_variables_df.shape[0]
-            results_dict[query_name] = query_frequency
-            for variable in random_variables:
-                print(f'{query_name}, {variable}')
-                results_dict[f'{query_name}_{variable}'] = random_variables_df.query(query)[
-                    variable].mean()
-#        salto_height_25 = random_variables_df['water_level_salto'].quantile(
-#            0.25)
-#        salto_height_10 = random_variables_df['water_level_salto'].quantile(
-#            0.10)
-#
-#        production_wind_25 = random_variables_df['production_wind'].quantile(
-#            0.25)
-#        production_wind_10 = random_variables_df['production_wind'].quantile(
-#            0.10)
-#
-#        lost_load_95 = random_variables_df['lost_load'].quantile(0.95)
-#        lost_load_99 = random_variables_df['lost_load'].quantile(0.99)
-#
-#        profits_thermal_75 = random_variables_df['profits_thermal'].quantile(
-#            0.75)
-#        profits_thermal_95 = random_variables_df['profits_thermal'].quantile(
-#            0.95)
-#
-#        queries_dict = {
-#            'all': 'index==index',
-#            'drought_25': f'water_level_salto < {salto_height_25}',
-#            'drought_10': f'water_level_salto < {salto_height_10}',
-#            'low_wind_25': f'production_wind < {production_wind_25}',
-#            'low_wind_10': f'production_wind < {production_wind_10}',
-#            'drought_low_wind_25': f'water_level_salto < {salto_height_25} and production_wind < {production_wind_25}',
-#            'drought_low_wind_10': f'water_level_salto < {salto_height_10} and production_wind < {production_wind_10}',
-#            'blackout_95': f'lost_load > {lost_load_95}',
-#            'blackout_99': f'lost_load > {lost_load_99}',
-#            'blackout_positive': f'lost_load > 0',
-#            'profits_thermal_75': f'profits_thermal > {profits_thermal_75}',
-#            'profits_thermal_95': f'profits_thermal > {profits_thermal_95}',
-#        }
-#
-#        for query_name, query in queries_dict.items():
-#            query_frequency = random_variables_df.query(
-#                query).shape[0] / random_variables_df.shape[0]
-#            results_dict[query_name] = query_frequency
-#            for variable in random_variables:
-#                print(f'{query_name=}, {variable=}')
-#                results_dict[f'{query_name}_{variable}'] = random_variables_df.query(query)[
-#                    variable].mean()
-
-        return results_dict
 
     def production_participant(self, participant_key: str) -> pd.DataFrame:
         production_df: pd.DataFrame = self.participants_dict[participant_key].production_df(
@@ -239,9 +139,7 @@ class RunProcessor(Run):
         return costs_df
 
     def water_level_participant(self, participant_key: str) -> pd.DataFrame:
-        print("210")
         participant = self.participants_dict[participant_key]
-        print("211")
         water_level_df: pd.DataFrame = participant.water_level_df(
         )
         return water_level_df
@@ -256,93 +154,8 @@ class RunProcessor(Run):
         """
         self.paths['marginal_cost'] = self.paths['folder'] / \
             'marginal_cost.csv'
-        self.paths['bash_script'] = self.paths['folder'] / \
-            f'{self.name}_proc.sh'
-        self.paths['price_distribution'] = self.paths['folder'] / \
-            'price_distribution.csv'
+        self.paths['random_variables'] = self.paths['folder'] / 'random_variables.csv'
         self.paths['results_json'] = self.paths['folder'] / 'results.json'
-
-    def process(self, process_locally: bool = True) -> None:
-        """
-        Processes the run and extracts results, saving them to a JSON file.
-        If process_locally is False, submits a job to process the run on the cluster.
-
-        Args:
-            process_locally (bool): If True, processes the run locally. If False, submits a job to the cluster.
-
-        Returns:
-            dict or None: The results dictionary if processed locally and successful, None otherwise.
-        """
-        if process_locally:
-            logger.info(f'Processing run {self.name} locally.')
-            try:
-                # Get variable values
-                variable_values = {var: var_dict['value']
-                                   for var, var_dict in self.variables.items()}
-
-                # Create a header for the results
-                header = {'run_name': self.name, **variable_values}
-
-                logger.debug("Getting price results for run %s", self.name)
-                # Get price results
-                price_results = self._get_price_results()
-
-                logger.debug("Saving price distribution for run %s", self.name)
-
-                # Get price distribution
-                price_distribution = self._intraweek_price_distribution()
-                # Save price distribution
-                price_distribution.to_csv(
-                    self.paths['price_distribution'], index=False)
-                logger.debug(
-                    "Getting production results for run %s", self.name)
-                # Get production results
-                production_results = self._get_production_results()
-
-                # Concatenate results
-                results = {**header, **price_results, **production_results}
-
-                # Convert numpy types to native Python types for JSON serialization
-                results = src.auxiliary.convert_numpy_types(results)
-                # Save results to JSON
-                with open(self.paths['results_json'], 'w') as file:
-                    json.dump(results, file, indent=4)
-
-                logger.info(
-                    f'Results for run {self.name} saved successfully.')
-
-                # Extract random varaibles
-                # random_variables_df = self.construct_random_variables_df()
-
-                # Load random variables
-                random_variables_df = self.load_random_variables_df()
-
-                # Process random variables
-                random_variables_df = process_random_variables_df(
-                    random_variables_df)
-
-                logger.info("Saving random variables df for run %s", self.name)
-                logger.debug("random variables df: %s",
-                             random_variables_df.head())
-                # Save to disk
-                random_variables_df.to_csv(
-                    self.paths['folder'] / 'random_variables.csv', index=False)
-
-            except Exception as e:
-                logger.error(
-                    f'Error processing results for run {self.name}: {e}')
-        else:
-            logger.info(
-                f'Submitting processing job for run {self.name} to the cluster.')
-            self.submit_processor_job()
-
-    def load_results(self):
-        """
-        Loads the results from the JSON file.
-        """
-        with open(self.paths['results_json'], 'r') as file:
-            results = json.load(file)
-        return results
 
     def marginal_cost_df(self) -> pd.DataFrame:
         """
@@ -361,92 +174,6 @@ class RunProcessor(Run):
             f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
         return marginal_cost_df
 
-    def _intraweek_price_distribution(self) -> pd.DataFrame:
-        """
-        Computes and returns the price distribution DataFrame.
-
-        Returns:
-            pd.DataFrame or None: The price distribution DataFrame, or None if computation fails.
-        """
-        price_df = self.marginal_cost_df()
-        # Compute average price across scenarios
-        price_df['price_avg'] = price_df[SCENARIOS].mean(axis=1)
-
-        # Add hour of the week
-        price_df['hour_of_week'] = price_df['datetime'].dt.dayofweek * \
-            24 + price_df['datetime'].dt.hour
-
-        # Bin hours into weekly bins
-        price_df['hour_of_week_bin'] = pd.cut(price_df['hour_of_week'],
-                                              bins=WEEK_HOURS_BIN, right=False)
-
-        # Compute average price per bin
-        price_distribution = price_df.groupby('hour_of_week_bin', as_index=False)[
-            'price_avg'].mean()
-
-        # Save price distribution
-        price_distribution.to_csv(
-            self.paths['price_distribution'], index=False)
-        logger.info(
-            f'Price distribution saved to {self.paths["price_distribution"]}')
-        return price_distribution
-
-    def _get_production_results(self) -> Dict[str, float]:
-        """
-        Extracts production results from the simulation data.
-
-        Returns:
-            dict: A dictionary containing total production by resource and new thermal production.
-        """
-        production_results: dict = {}
-
-        # Get total production by resource
-        production_by_resource = proc.total_production_by_resource(
-            self.paths['sim'])
-        production_results.update({
-            f'total_production_{resource}': production_by_resource.get(resource, 0.0)
-            for resource in production_by_resource
-        })
-
-        return production_results
-
-    def _get_price_results(self) -> Dict[str, float]:
-        """
-        Computes price results from marginal cost and demand data.
-
-        Returns:
-            dict or None: A dictionary containing price averages, or None if computation fails.
-        """
-        price_df = self.marginal_cost_df()
-        demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
-
-        # Compute simple average price
-        price_avg = price_df[SCENARIOS].mean().mean()
-
-        # Compute weighted average price
-        price_times_demand = price_df[SCENARIOS] * demand_df[SCENARIOS]
-        price_weighted_avg = price_times_demand.values.sum() / \
-            demand_df[SCENARIOS].values.sum()
-
-        return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
-
-    def submit_processor_job(self) -> Optional[str]:
-        """
-        Submits a job to process the run on a cluster.
-
-        Returns:
-            int or None: The job ID if submission is successful, None otherwise.
-        """
-        bash_script = self._create_bash_script()
-        job_id = src.auxiliary.submit_slurm_job(bash_script)
-        if job_id:
-            logger.info(
-                f'Processing job for run {self.name} submitted with job ID {job_id}')
-        else:
-            logger.error(
-                f'Failed to submit processing job for run {self.name}')
-        return job_id
-
     def get_profits(self) -> Dict[str, float]:
         """
         Computes profits for the specified endogenous variables.
@@ -457,130 +184,77 @@ class RunProcessor(Run):
         Returns:
             dict: A dictionary of profits.
         """
-        # Extract marginal cost
-        marginal_cost_df: pd.DataFrame = self.marginal_cost_df()
-
-        profits = {}
-        for participant in self.participants_dict.values():
-            if participant == 'salto':
-                continue
+        # Get random variables dataframe
+        random_variables_df: pd.DataFrame = self.get_random_variables_df()
+        
+        # Create a column with discount factor
+        reference_data = random_variables_df['datetime'].min()
+        days_diff = (random_variables_df['datetime'] - reference_data).dt.days
+        
+        random_variables_df['discount_factor'] = 1 / \
+                (1 + self.general_parameters['annual_interest_rate'])**(days_diff / 365)
+    
+        # HARDCODED
+        profits = {'wind': None, 'solar': None, 'thermal': None}
+        for participant in profits.keys():
             logger.debug(
-                f"Computing profits for {participant.key} participant.")
-            # Compute profit for the participant
-            profit: float = participant.profit(marginal_cost_df)
+                f"Computing profits for {participant} participant.")
+            
+            capacity = self.variables[participant]['value']
 
-            logger.debug('Profit for participant %s: %s',
-                         participant.key, profit)
+            # Get present value of revenues
+            revenues: float = (random_variables_df[f'revenues_{participant}']*random_variables_df['discount_factor']).mean()
+
+            if participant == 'thermal':
+                # Get present value of variable costs
+                variable_costs: float = (random_variables_df['variable_costs_thermal']*random_variables_df['discount_factor']).mean()
+            else:
+                variable_costs: float = 0
+
+            # Compute average hourly variable profit for the participant
+            variable_profits: float =  revenues - variable_costs
+
+            profit_per_hour_per_mw: float = variable_profits/capacity - HOURLY_FIXED_COSTS[participant]
+
+            # Normalize by the cost
+            profit_normalized = profit_per_hour_per_mw / (HOURLY_FIXED_COSTS[participant] + variable_costs/capacity)
 
             # Add profit to the dictionary
-            profits[participant.key] = profit
+            profits[participant] = profit_normalized
         return profits
 
     def processed_status(self):
-        if self.paths['results_json'].exists():
+        if self.paths['random_variables'].exists():
             return True
         return False
 
-    def _create_bash_script(self) -> Path:
-        """
-        Creates a bash script to process the run on a cluster.
-
-        Returns:
-            Path: The path to the created bash script.
-        """
-        script_path = self.paths['bash_script']
-        run_data = {
-            'folder': str(self.paths['folder']),
-            'general_parameters': self.general_parameters,
-            'variables': self.variables
-        }
-        run_data_json = json.dumps(run_data)
-
-        requested_time = '0:30:00'
-
-        script_content = f'''#!/bin/bash
-#SBATCH --account=b1048
-#SBATCH --partition=b1048
-#SBATCH --time={requested_time}
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --mem=12G
-#SBATCH --job-name=proc_{self.name}
-#SBATCH --output={self.paths['folder']}/{self.name}_proc.out
-#SBATCH --error={self.paths['folder']}/{self.name}_proc.err
-#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
-#SBATCH --mail-type=ALL
-#SBATCH --exclude=qhimem[0207-0208]
-
-module purge
-module load python-miniconda3/4.12.0
-
-python - <<END
-
-import sys
-import json
-from pathlib import Path
-sys.path.append('/projects/p32342/code')
-from run_processor_module import RunProcessor
-
-print('Processing run {self.name}...')
-sys.stdout.flush()
-sys.stderr.flush()
-
-# Load the run data
-run_data = {run_data_json}
-# Create RunProcessor object
-run_processor = RunProcessor(
-    run=Run(
-        folder=Path(run_data['folder']),
-        general_parameters=run_data['general_parameters'],
-        variables=run_data['variables']
-    )
-)
-# Process run
-results = run_processor.process_run(process_locally=True)
-
-# Extract price distribution
-price_distribution = run_processor._intraweek_price_distribution()
-price_distribution.to_csv(run_processor.paths['price_distribution'], index=False)
-
-sys.stdout.flush()
-sys.stderr.flush()
-END
-'''
-
-        # Write the bash script
-        with open(script_path, 'w') as f:
-            f.write(script_content)
-
-        logger.info(f'Bash script created at {script_path}')
-        return script_path
-
-
 def process_random_variables_df(random_variables_df):
-    def fill_daily_columns(df, daily_columns):
+    def fill_daily_columns(df, variables_to_upsample):
         """
         Fills daily frequency data to match hourly frequency for specified columns
-
         Parameters:
-            df (pd.DataFrame): DataFrame with datetime index and mixed frequency data
-            daily_columns (list): List of column names that are in daily frequency
+            df (pd.DataFrame): DataFrame with datetime and scenario columns and mixed frequency data
+            variables_to_upsample (list): List of column names that are in daily frequency
         """
-        # Ensure datetime is index
-        if 'datetime' in df.columns:
-            df = df.set_index('datetime')
-
-        # Forward fill each daily column to match hourly frequency
-        for column in daily_columns:
-            if column in df.columns:
-                # Resample to hourly frequency and forward fill
-                df[column] = df[column].resample('H').ffill()
-
-        # Reset index if it was originally a column
-        if 'datetime' not in df.columns:
-            df = df.reset_index()
-
-        return df
+        result_df = df.copy()
+        
+        # Process each scenario separately
+        for scenario in df['scenario'].unique():
+            # Get data for this scenario
+            mask = df['scenario'] == scenario
+            scenario_df = df[mask].copy()
+            
+            # Set datetime as index for this scenario's data
+            scenario_df = scenario_df.set_index('datetime')
+            
+            # Resample and fill for each column
+            for column in variables_to_upsample:
+                scenario_df[column] = scenario_df[column].resample('h').ffill()
+                
+                # Update the results in the original dataframe
+                result_df.loc[mask, column] = scenario_df[column].values
+        
+        return result_df
     random_variables_df['total_production'] = (random_variables_df['production_wind']
                                                + random_variables_df['production_solar']
                                                + random_variables_df['production_thermal']
@@ -588,9 +262,17 @@ def process_random_variables_df(random_variables_df):
     random_variables_df['lost_load'] = random_variables_df['demand'] - \
         random_variables_df['total_production']
 
-    # HARD CODED, TO FIX
-    random_variables_df['profits_thermal'] = random_variables_df['production_thermal'] * (
-        random_variables_df['marginal_cost'] - 193.02)
+    # Compute revenues
+    participants_to_revenues = ['wind', 'solar', 'thermal', 'salto']
+    for participant in participants_to_revenues:
+        random_variables_df[f'revenues_{participant}'] = random_variables_df[
+            f'production_{participant}'] * random_variables_df['marginal_cost']
+
+    # Compute variable costs for thermal participant, HARDCODED
+    random_variables_df['variable_costs_thermal'] = random_variables_df[
+        'production_thermal'] * 193.02
+    random_variables_df['profits_thermal'] = random_variables_df['revenues_thermal'] - \
+        random_variables_df['variable_costs_thermal']
 
     # Upsample variables
     variables_to_upsample = ['water_level_salto']

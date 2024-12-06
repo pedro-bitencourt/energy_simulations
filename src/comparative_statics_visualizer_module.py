@@ -1,80 +1,20 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, List, Union, Tuple, Optional
+from typing import Dict, List, Union, Optional
 from pathlib import Path
-from typing import Tuple
 import pandas as pd
 import numpy as np
 import logging
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 
-from src.run_module import Run
-from src.comparative_statics_module import ComparativeStatics
 from src.constants import HEATMAP_CONFIGS, ONE_D_PLOTS_CONFIGS
 
 logger = logging.getLogger(__name__)
 
 
-def visualize(comparative_statics: ComparativeStatics, grid_dimension: int,
-              check_convergence: bool = True):
-    visualizer = ComparativeStaticsVisualizer(comparative_statics,
-                                              check_convergence)
-    visualizer.visualize(grid_dimension)
+def visualize():
 
 
-class ComparativeStaticsVisualizer:
-    '''
-    '''
 
-    def __init__(self, comparative_statics: ComparativeStatics,
-                 check_convergence: bool):
-        self.name: str = comparative_statics.name
-        self.list_of_runs: list[Run] = comparative_statics.create_runs_from_investment_problems(
-            check_convergence)
-        self.exogenous_variables: dict = comparative_statics.exogenous_variable
-
-        # Initialize the paths
-        self.paths: dict[str, Path] = self._initialize_paths(
-            comparative_statics.paths)
-
-        # Create the directories if they don't exist
-        for _, path in self.paths.items():
-            path.mkdir(parents=True, exist_ok=True)
-
-        # Load the results dataframe
-        results_df: pd.DataFrame = pd.read_csv(
-            self.paths['results'] /
-            f"results_table.csv")
-
-        print(f"{results_df.head()=}")
-        if check_convergence:
-            list_run_names = [run.name for run in self.list_of_runs]
-            results_df = results_df[results_df['run_name'].isin(
-                list_run_names)]
-
-        self.results_df = results_df
-        self.results_runs: dict[str, dict] = self._initialize_results_runs()
-
-    def _initialize_paths(self, paths: dict[str, Path]) -> dict[str, Path]:
-        paths.update({
-            'heatmaps': paths['results'] / "heatmaps",
-            'price_distributions': paths['results'] / "price_distributions",
-            'one_d_plots': paths['results'] / "one_d_plots"
-        })
-        return paths
-
-    def _initialize_results_runs(self):
-        """
-        """
-        results_runs: dict = {}
-        for run in self.list_of_runs:
-            # Initialize the results_run dictionary
-            results_run: dict = {'price_distribution': run.load_price_distribution(),
-                                 'variables': run.variables,
-                                 }
-            results_runs[run.name] = results_run
-        return results_runs
 
     def visualize(self, grid_dimension: int):
         logger.info("Starting the visualize() function...")

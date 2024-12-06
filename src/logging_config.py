@@ -33,3 +33,5 @@ def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
     
     # Suppress matplotlib debug messages
     logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
+
+
