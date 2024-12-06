@@ -18,7 +18,6 @@ Required modules:
 import logging
 from pathlib import Path
 from typing import Optional, Dict
-import shutil
 import json
 import pandas as pd
 
@@ -129,7 +128,7 @@ class ComparativeStatics:
             run.tear_down()
             run.submit()
 
-    def copy_random_variables_df(self, lazy=True) -> pd.DataFrame:
+    def get_random_variables_df(self, lazy=True) -> pd.DataFrame:
         logger.info("Saving random variables DataFrame to results folder...")
         df_list: list[pd.DataFrame] = []
         for run in self.list_simulations:
@@ -139,17 +138,11 @@ class ComparativeStatics:
                 logger.error(f"Run {run.name} not successful, skipping it")
                 continue
 
-            run_random_variables_path = run_processor.paths['random_variables']
-
-            # Check if the run's random variables is already in the results folder
-            if run_random_variables_path.exists() and lazy:
-                logger.info(f"Run {run.name} already processed, skipping it")
-                continue
+            run_df = run_processor.get_random_variables_df(lazy)
 
             # Copy the random variables to the random_variables folder with the run name
-            shutil.copy(run_processor.paths['random_variables'],
-                        self.paths['random_variables'] / f"{run.name}.csv")
-
+            run_df.to_csv(run_processor.paths['random_variables'],
+                          self.paths['random_variables'] / f"{run.name}.csv")
 
     def _validate_input(self):
         # Check if all variables have a grid
@@ -267,7 +260,8 @@ END
         paths = {}
         paths['main'] = Path(f"{base_path}/comparative_statics/{self.name}")
         paths['results'] = Path(f"{base_path}/results/{self.name}")
-        paths['random_variables'] = Path(f"{base_path}/results/{self.name}/random_variables")
+        paths['random_variables'] = Path(
+            f"{base_path}/results/{self.name}/random_variables")
         paths['bash'] = Path(
             f"{base_path}/comparative_statics/{self.name}/process.sh")
         return paths
@@ -368,7 +362,7 @@ END
                 self.paths['results'] / 'investment_results.csv', index=False)
 
         # Save the random variables df to the random_variables folder
-        self.copy_random_variables_df(lazy)
+        self.get_random_variables_df(lazy)
 
         # Construct the new results dataframe
         conditional_means_df = construct_results(
@@ -462,13 +456,15 @@ END
 
 
 def construct_results(random_variables_folder: Path, results_function) -> pd.DataFrame:
-    runs_list = [run.stem for run in random_variables_folder.iterdir() if run.is_file()]
+    runs_list = [run.stem for run in random_variables_folder.iterdir()
+                 if run.is_file()]
     # Create a list to store rows
     rows = []
 
     for run in runs_list:
         # Get the random variables for the current run
-        run_random_variables = pd.read_csv(random_variables_folder / f'{run}.csv')
+        run_random_variables = pd.read_csv(
+            random_variables_folder / f'{run}.csv')
         # Get the results to extract for the current run
         results_dict = results_function(run_random_variables)
         # Add run identifier to the results
