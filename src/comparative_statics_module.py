@@ -63,6 +63,7 @@ class ComparativeStatics:
         - list_simulations: list containing the Run objects.
         - list_investment_problems: list containing the InvestmentProblem objects.
     """
+
     def __init__(self,
                  name: str,
                  variables: Dict[str, Dict],
@@ -86,15 +87,16 @@ class ComparativeStatics:
         self.endogenous_variables: dict[str,
                                         dict] = variables.get('endogenous', {})
 
-        self.exogenous_variable_grid: dict[str, np.ndarray] = {var_name: np.array(variable['grid'])
-                                                               for var_name, variable in self.exogenous_variable.items()}
+        self.exogenous_variable_grid: dict[str, list] = {var_name: variable['grid']
+                                                         for var_name, variable in self.exogenous_variable.items()}
 
         # Initialize relevant paths
         self.paths: dict = self._initialize_paths(base_path)
 
         # Create the folders if they do not exist
         for path in self.paths.values():
-            path.mkdir(parents=True, exist_ok=True)
+            if path.is_dir():
+                path.mkdir(parents=True, exist_ok=True)
 
         # Validate the input
         self._validate_input()
@@ -143,15 +145,13 @@ class ComparativeStatics:
             except ValueError:
                 logger.error(f"Run {run.name} not successful, skipping it")
                 continue
-            
+
             df = run_processor.get_random_variables_df()
             df['run'] = run.name
             df_list.append(df)
-        
+
         # Merge all DataFrames
         df_merged = pd.concat(df_list)
-        
-
 
         # Save the DataFrame to a .csv file
         df_merged.to_csv(random_variables_df_path)
@@ -210,30 +210,14 @@ class ComparativeStatics:
         return list_simulations
 
     def _create_bash(self):
-        # construct a temporary path for the data to pass it to the bash script
-        data_path = f"{self.paths['folder']}/{self.name}_data.json"
-
         # create the data dictionary
         comparative_statics_data = {
             'name': self.name,
             'variables': self.variables,
-            'exogenous_variable_grid': self.exogenous_variable_grid,
             'general_parameters': self.general_parameters
         }
-
-
-        # (find better fix) ensure data does not have np.int64 types
-        def convert_int64(obj):
-            if isinstance(obj, np.int64):
-                return int(obj)
-            elif isinstance(obj, dict):
-                return {k: convert_int64(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [convert_int64(v) for v in obj]
-            return obj
-
-        comparative_statics_data = convert_int64(comparative_statics_data)
-
+        comparative_statics_data = json.dumps(comparative_statics_data)
+        print(f"{comparative_statics_data=}")
 
         if self.general_parameters.get('email', None):
             email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
@@ -252,26 +236,22 @@ class ComparativeStatics:
 #SBATCH --job-name={self.name}_processing
 #SBATCH --output={self.paths['main']}/{self.name}_processing.out
 #SBATCH --error={self.paths['main']}/{self.name}_processing.err
-#SBATCH --mail-type=ANY
+#SBATCH --mail-type=ALL
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
 
 module purge
 module load python-miniconda3/4.12.0
 
-
 python - <<END
-
-
 import sys
 import json
 sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 
-comparative_statics_data = {json.dumps(comparative_statics_data)}
+comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
-comparative_statics.submit_processing()
-
+comparative_statics.process()
 END
 ''')
 
@@ -285,7 +265,6 @@ END
         logger.info(f"Submitting processing job for {self.name}")
         job_id = submit_slurm_job(bash_path)
         return job_id
-    
 
     def _grid_length(self):
         return len(next(iter(self.exogenous_variable_grid.values())))
@@ -294,6 +273,8 @@ END
         paths = {}
         paths['main'] = Path(f"{base_path}/comparative_statics/{self.name}")
         paths['results'] = Path(f"{base_path}/results/{self.name}")
+        paths['bash'] = Path(
+            f"{base_path}/comparative_statics/{self.name}/process.sh")
         return paths
 
     def _initialize_runs(self):
@@ -332,7 +313,6 @@ END
                 for variable, var_dict in self.endogenous_variables.items()
             }
 
-
             endogenous_variables_temp: dict = {
                 variable: {
                     'pattern': var_dict['pattern'],
@@ -340,7 +320,6 @@ END
                 }
                 for variable, var_dict in self.endogenous_variables.items()
             }
-
 
             # initialize the InvestmentProblem object
             investment_problem = InvestmentProblem(self.paths['main'],
@@ -397,10 +376,12 @@ END
         random_variables_df = self.get_random_variables_df(lazy)
 
         # Ensure datetime is in the correct format
-        random_variables_df['datetime'] = pd.to_datetime(random_variables_df['datetime'])
+        random_variables_df['datetime'] = pd.to_datetime(
+            random_variables_df['datetime'])
 
         # Construct the new results dataframe
-        conditional_means_df = construct_results(random_variables_df, results_function=conditional_means)
+        conditional_means_df = construct_results(
+            random_variables_df, results_function=conditional_means)
 
         # Save the results to a .csv file
         conditional_means_df.to_csv(
@@ -421,7 +402,6 @@ END
             self.paths['results'] / 'weekly_results.csv', index=False)
         yearly_results_df.to_csv(
             self.paths['results'] / 'yearly_results.csv', index=False)
-
 
     def _compile_random_variables(self):
         # Initialize a list to store the random variables over the simulations
@@ -451,7 +431,6 @@ END
         random_variables_df: pd.DataFrame = pd.DataFrame(random_variables_dict)
 
         return random_variables_df
-
 
     def _investment_results(self):
         rows: list = []
@@ -490,11 +469,12 @@ END
 
         return results_df
 
+
 def construct_results(random_variables_df: pd.DataFrame, results_function) -> pd.DataFrame:
     runs_list = list(random_variables_df['run'].unique())
     # Create a list to store rows
     rows = []
-    
+
     for run in runs_list:
         # Get the random variables for the current run
         run_random_variables: pd.DataFrame = random_variables_df[random_variables_df['run'] == run]
@@ -504,11 +484,12 @@ def construct_results(random_variables_df: pd.DataFrame, results_function) -> pd
         results_dict['run'] = run
         # Append the row to our list
         rows.append(results_dict)
-    
+
     # Create DataFrame from all rows at once
     results_df = pd.DataFrame(rows)
-    
+
     return results_df
+
 
 def conditional_means(run_df: pd.DataFrame) -> dict:
     variables = run_df.columns.tolist()
@@ -540,7 +521,6 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
         }
     }
 
-
     # Add cutoffs as columns to the dataframe
     for var, percentiles in cutoffs.items():
         for perc, value in percentiles.items():
@@ -570,8 +550,10 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
             query).shape[0] / run_df.shape[0]
         results_dict[f'{query_name}_frequency'] = query_frequency
         for variable in variables:
-            results_dict[f'{query_name}_{variable}'] = run_df.query(query)[variable].mean()
+            results_dict[f'{query_name}_{variable}'] = run_df.query(query)[
+                variable].mean()
     return results_dict
+
 
 def intra_daily_averages(run_df: pd.DataFrame) -> dict:
     variables = run_df.columns.tolist()
@@ -587,11 +569,13 @@ def intra_daily_averages(run_df: pd.DataFrame) -> dict:
     for hour in range(24):
         for variable in variables:
             run_df['hour'] = run_df['datetime'].dt.hour
-            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour'] == hour][variable].mean()
+            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour']
+                                                             == hour][variable].mean()
 
     return results_dict
 
-def intra_weekly_averages(run_df:pd.DataFrame) -> dict:
+
+def intra_weekly_averages(run_df: pd.DataFrame) -> dict:
     variables = run_df.columns.tolist()
     # Remove datetime and scenario columns
     variables.remove('datetime')
@@ -604,10 +588,13 @@ def intra_weekly_averages(run_df:pd.DataFrame) -> dict:
     # Take the mean of the variables for each hour of the week
     for hour in range(168):
         for variable in variables:
-            run_df['hour_of_the_week'] = run_df['datetime'].dt.hour + run_df['datetime'].dt.dayofweek * 24
-            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour_of_the_week'] == hour][variable].mean()
+            run_df['hour_of_the_week'] = run_df['datetime'].dt.hour + \
+                run_df['datetime'].dt.dayofweek * 24
+            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour_of_the_week']
+                                                             == hour][variable].mean()
 
     return results_dict
+
 
 def intra_year_averages(run_df: pd.DataFrame) -> dict:
     variables = run_df.columns.tolist()
@@ -623,6 +610,7 @@ def intra_year_averages(run_df: pd.DataFrame) -> dict:
     for day in range(365):
         for variable in variables:
             run_df['day_of_the_year'] = run_df['datetime'].dt.dayofyear
-            results_dict[f'{variable}_day_{day}'] = run_df[run_df['day_of_the_year'] == day][variable].mean()
+            results_dict[f'{variable}_day_{day}'] = run_df[run_df['day_of_the_year']
+                                                           == day][variable].mean()
 
     return results_dict
