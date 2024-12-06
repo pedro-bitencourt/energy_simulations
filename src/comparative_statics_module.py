@@ -219,7 +219,7 @@ class ComparativeStatics:
 #SBATCH --time={PROCESS_TIME}
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=2G
+#SBATCH --mem=20G
 #SBATCH --job-name={self.name}_processing
 #SBATCH --output={self.paths['main']}/{self.name}_processing.out
 #SBATCH --error={self.paths['main']}/{self.name}_processing.err
