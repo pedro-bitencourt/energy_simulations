@@ -74,7 +74,7 @@ class RunProcessor(Run):
                                                                            run.general_parameters)
                                                           for var in list_participants}
     def get_random_variables_df(self, lazy=True) -> pd.DataFrame:
-        if (self.paths['random_variables'] / 'random_variables.csv').exists() and lazy:
+        if self.paths['random_variables'].exists() and lazy:
             random_variables_df = self.load_random_variables_df()
         else:
             random_variables_df = self.construct_random_variables_df()
@@ -82,7 +82,7 @@ class RunProcessor(Run):
 
     def load_random_variables_df(self) -> pd.DataFrame:
         random_variables_df = pd.read_csv(
-            self.paths['random_variables'] / 'random_variables.csv')
+            self.paths['random_variables'] )
         return random_variables_df
 
     def construct_random_variables_df(self) -> pd.DataFrame:
