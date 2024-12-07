@@ -120,7 +120,7 @@ class Run:
                         continue
         return opt_sim_paths
 
-    def successful(self, log: bool = False):
+    def successful(self, log: bool = False, complete: bool = False):
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
@@ -136,8 +136,11 @@ class Run:
             files_to_check = [r'resumen*',
                               r'EOLO_eoloDeci/potencias*.xlt',
                               r'FOTOV_solarDeci/potencias*.xlt',
-                              r'DEM_demandaPrueba/potencias*.xlt',
-                              r'HID_salto/cota*.xlt']
+                              r'DEM_demandaPrueba/potencias*.xlt'
+                              ]
+            if complete:
+                files_to_check.append(r'HID_salto/cotas*.xlt')
+                files_to_check.append(r'HID_salto/potencias*.xlt')
 
             # Check if files exist
             for file in files_to_check:

@@ -22,7 +22,7 @@ COLUMNS_TO_CHECK = ['datetime'] + SCENARIOS
 
 
 PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/comparative_statics/salto_capacity_v3/salto_capacity_v3_investment_101.25')
-OUTPUT_FOLDER: Path = PARENT_FOLDER / 'output'
+OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/output')
 
 # Not necessary
 REQUESTED_TIME_RUN: float = 6.5
@@ -63,9 +63,10 @@ class TestRun(unittest.TestCase):
         self.mock_run_processor = RunProcessor(self.mock_run)
 
     def tearDown(self):
+        pass
         # delete all .csv files in output folder
-        for file in OUTPUT_FOLDER.glob('*.csv'):
-            file.unlink(missing_ok=True)
+        #for file in OUTPUT_FOLDER.glob('*.csv'):
+        #    file.unlink(missing_ok=True)
 
 
 #    def test__extract_marginal_cost(self):
@@ -98,6 +99,19 @@ class TestRun(unittest.TestCase):
         profits = self.mock_run_processor.get_profits()
         self.assertIsNotNone(profits)
 
+
+    def test_get_random_variables_df(self):
+        random_variables = self.mock_run_processor.get_random_variables_df(lazy=False, complete=True)
+        # Save to disk
+        random_variables.to_csv(OUTPUT_FOLDER / 'random_variables.csv', index=False)
+        self.assertIsNotNone(random_variables)
+        self.assertFalse(random_variables.isna().values.any(),
+                         "DataFrame contains NaN values")
+        parsed_dates = pd.to_datetime(
+            random_variables['datetime'], format=DATETIME_FORMAT, errors='coerce')
+        self.assertFalse(parsed_dates.isna().any(
+        ), "DataFrame contains invalid dates in the 'datetime' column")
+        self.assertEqual(random_variables.columns.tolist(), COLUMNS_TO_CHECK)
 
 if __name__ == '__main__':
     unittest.main()

@@ -133,7 +133,7 @@ class ComparativeStatics:
         df_list: list[pd.DataFrame] = []
         for run in self.list_simulations:
             try:
-                run_processor = RunProcessor(run)
+                run_processor = RunProcessor(run, complete=True)
             except ValueError:
                 logger.error(f"Run {run.name} not successful, skipping it")
                 continue
