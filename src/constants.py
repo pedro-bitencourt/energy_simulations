@@ -41,7 +41,8 @@ COSTS = {
 }
 
 HOURLY_FIXED_COSTS = {
-    participant: (COSTS[participant]['installation'] / COSTS[participant]['lifetime'] + COSTS[participant]['oem']) / 8760
+    participant: (COSTS[participant]['installation'] / COSTS[participant]
+                  ['lifetime'] + COSTS[participant]['oem']) / 8760
     for participant in COSTS.keys()
 }
 
@@ -51,7 +52,7 @@ ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
 
 # Optimization constants
 # Maximum number of iterations for the optimization algorithm
-MAX_ITER: int = 30
+MAX_ITER: int = 35
 # Delta is used to calculate the numerical derivatives of the profits
 DELTA: float = 10
 # Threshold for the profits to be considered converged, in percentage of the

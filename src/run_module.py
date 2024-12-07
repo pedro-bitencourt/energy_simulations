@@ -136,7 +136,8 @@ class Run:
             files_to_check = [r'resumen*',
                               r'EOLO_eoloDeci/potencias*.xlt',
                               r'FOTOV_solarDeci/potencias*.xlt',
-                              r'DEM_demandaPrueba/potencias*.xlt']
+                              r'DEM_demandaPrueba/potencias*.xlt',
+                              r'HID_salto/cota*.xlt']
 
             # Check if files exist
             for file in files_to_check:
@@ -144,16 +145,8 @@ class Run:
                 if not file_found:
                     logger.critical(
                         "%s does not contain file %s", sim_folder, file)
-                    logger.critical("Deleting sim folder.")
-                    try:
-                        shutil.rmtree(sim_folder)
-                        if log:
-                            logger.error(
-                                'No %s file found for run %s in folder %s. Deleting sim folder.', file, self.name, self.paths['subfolder'])
-                    except Exception as e:
-                        if log:
-                            logger.error(
-                                'Error deleting sim folder for run %s: %s', self.name, str(e))
+                    logger.critical("Deleting run %s folder", self.name)
+                    self.tear_down()
                     return False
 
             # Check if the resumen file exists
@@ -166,7 +159,8 @@ class Run:
             if resumen_file_found and production_file_found:
                 return True
 
-            logger.critical("%s does not contain either a resumen file or EOLO_eoloDeci/potencias*.xlt", sim_folder)
+            logger.critical(
+                "%s does not contain either a resumen file or EOLO_eoloDeci/potencias*.xlt", sim_folder)
 
             # If no resumen file found, delete the sim folder
             try:
@@ -183,8 +177,8 @@ class Run:
         else:
             if log:
                 logger.critical('No sim folder found for run %s in folder %s',
-                             self.name,
-                             self.paths['subfolder'])
+                                self.name,
+                                self.paths['subfolder'])
 
         return False
 
@@ -203,12 +197,12 @@ class Run:
         print(bash_path)
         subprocess.run(['bash', bash_path])
 
-    def submit(self):
+    def submit(self, force=False):
         """
         Submits a run to the cluster.
         """
         # Break if already successful
-        if self.successful():
+        if self.successful() and not force:
             logger.info(f"Run {self.name} already successful, skipping.")
             return None
 
@@ -333,7 +327,7 @@ class Run:
 #SBATCH --time={requested_time_run}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --mem=5G 
+#SBATCH --mem=10G 
 #SBATCH --job-name={job_name}
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err

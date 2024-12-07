@@ -106,7 +106,7 @@ class InvestmentProblem:
             # if not, initialize it with the first iteration
             optimization_trajectory: list[OptimizationPathEntry] = []
             logger.critical("Optimization trajectory not found at %s. Initializing a new one.",
-                        self.paths['optimization_trajectory'])
+                            self.paths['optimization_trajectory'])
 
             # initialize the first iteration
             iteration_0 = OptimizationPathEntry(
@@ -207,8 +207,10 @@ class InvestmentProblem:
         '''
         current_investment = current_iteration.current_investment
 
+        force = self.general_parameters.get('force', False)
+
         # check if the current iteration was successful
-        if current_iteration.profits is None or current_iteration.profits_derivatives is None:
+        if current_iteration.profits is None or current_iteration.profits_derivatives is None or force:
             logger.info('Preparing to compute profits for iteration with %s',
                         current_investment)
             # compute the profits and derivatives
@@ -242,6 +244,8 @@ class InvestmentProblem:
             investment[var] += DELTA
             runs_dict[var] = self.create_run(investment)
 
+        force = self.general_parameters.get('force', False)
+
         # Submit the runs, give up after 3 attempts
         max_attempts: int = 6
         attempts: int = 0
@@ -251,8 +255,8 @@ class InvestmentProblem:
                 # Check if the run was successful
                 successful: bool = run.successful()
                 # If not, submit it and append the job_id to the list
-                if not successful:
-                    job_id = run.submit()
+                if not successful or force:
+                    job_id = run.submit(force)
                     if job_id:
                         job_ids_list.append(job_id)
                 if attempts == 1:

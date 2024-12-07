@@ -141,8 +141,8 @@ class ComparativeStatics:
             run_df = run_processor.get_random_variables_df(lazy)
 
             # Copy the random variables to the random_variables folder with the run name
-            run_df.to_csv(run_processor.paths['random_variables'],
-                          self.paths['random_variables'] / f"{run.name}.csv")
+            run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
+                          index=False)
 
     def _validate_input(self):
         # Check if all variables have a grid
@@ -196,7 +196,7 @@ class ComparativeStatics:
             list_simulations.append(equilibrium_run)
         return list_simulations
 
-    def _create_bash(self):
+    def _create_bash(self, lazy):
         # create the data dictionary
         comparative_statics_data = {
             'name': self.name,
@@ -238,17 +238,17 @@ from src.comparative_statics_module import ComparativeStatics
 
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
-comparative_statics.process()
+comparative_statics.process({lazy})
 END
 ''')
 
         return self.paths['bash']
 
-    def submit_processing(self):
+    def submit_processing(self, lazy=True):
         """
         Submit the processing job to the cluster.
         """
-        bash_path = self._create_bash()
+        bash_path = self._create_bash(lazy)
         logger.info(f"Submitting processing job for {self.name}")
         job_id = submit_slurm_job(bash_path)
         return job_id
@@ -355,11 +355,13 @@ END
             self.list_simulations = self.create_runs_from_investment_problems()
 
             # Get the investment results
-            investment_results_df = self._investment_results()
+            investment_results_df = self._investment_results(lazy)
 
             # Save to disk
             investment_results_df.to_csv(
                 self.paths['results'] / 'investment_results.csv', index=False)
+
+        self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
 
         # Save the random variables df to the random_variables folder
         self.get_random_variables_df(lazy)
@@ -417,7 +419,7 @@ END
 
         return random_variables_df
 
-    def _investment_results(self):
+    def _investment_results(self, lazy=True):
         rows: list = []
         for investment_problem in self.list_investment_problems:
             # get the current iteration object
@@ -429,7 +431,13 @@ END
             exo_vars: dict = {key: entry['value']
                               for key, entry in investment_problem.exogenous_variable.items()}
 
-            profits_dict: Optional[dict] = last_iteration.profits
+            if lazy:
+                profits_dict: Optional[dict] = last_iteration.profits
+            else:
+                last_run = investment_problem.create_run(
+                    last_iteration.current_investment)
+                last_run_processor = RunProcessor(last_run)
+                profits_dict = last_run_processor.get_profits()
 
             if profits_dict is None:
                 logger.error("Unexpected: profits_dict is None for %s",
@@ -483,7 +491,6 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
     # Remove datetime and scenario columns
     variables.remove('datetime')
     variables.remove('scenario')
-    variables.remove('run')
 
     # Initialize results dictionary
     results_dict = {}
@@ -527,6 +534,7 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
         'drought_low_wind_10': f'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
         'blackout_95': f'lost_load > lost_load_cutoff_95',
         'blackout_99': f'lost_load > lost_load_cutoff_99',
+        'negative_lost_load': f'lost_load < 0.001',
         'blackout_positive': f'lost_load > 0.001',
         'profits_thermal_75': f'profits_thermal > profits_thermal_cutoff_75',
         'profits_thermal_95': f'profits_thermal > profits_thermal_cutoff_95',
@@ -547,10 +555,11 @@ def intra_daily_averages(run_df: pd.DataFrame) -> dict:
     # Remove datetime and scenario columns
     variables.remove('datetime')
     variables.remove('scenario')
-    variables.remove('run')
 
     # Initialize results dictionary
     results_dict = {}
+
+    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
 
     # Take the mean of the variables for each hour of the day
     for hour in range(24):
@@ -567,11 +576,11 @@ def intra_weekly_averages(run_df: pd.DataFrame) -> dict:
     # Remove datetime and scenario columns
     variables.remove('datetime')
     variables.remove('scenario')
-    variables.remove('run')
 
     # Initialize results dictionary
     results_dict = {}
 
+    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
     # Take the mean of the variables for each hour of the week
     for hour in range(168):
         for variable in variables:
@@ -588,10 +597,11 @@ def intra_year_averages(run_df: pd.DataFrame) -> dict:
     # Remove datetime and scenario columns
     variables.remove('datetime')
     variables.remove('scenario')
-    variables.remove('run')
 
     # Initialize results dictionary
     results_dict = {}
+
+    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
 
     # Take the mean of the variables for each day of the year
     for day in range(365):

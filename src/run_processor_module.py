@@ -73,6 +73,7 @@ class RunProcessor(Run):
                                                                            self.paths,
                                                                            run.general_parameters)
                                                           for var in list_participants}
+
     def get_random_variables_df(self, lazy=True) -> pd.DataFrame:
         if self.paths['random_variables'].exists() and lazy:
             random_variables_df = self.load_random_variables_df()
@@ -82,7 +83,7 @@ class RunProcessor(Run):
 
     def load_random_variables_df(self) -> pd.DataFrame:
         random_variables_df = pd.read_csv(
-            self.paths['random_variables'] )
+            self.paths['random_variables'])
         return random_variables_df
 
     def construct_random_variables_df(self) -> pd.DataFrame:
@@ -154,7 +155,8 @@ class RunProcessor(Run):
         """
         self.paths['marginal_cost'] = self.paths['folder'] / \
             'marginal_cost.csv'
-        self.paths['random_variables'] = self.paths['folder'] / 'random_variables.csv'
+        self.paths['random_variables'] = self.paths['folder'] / \
+            'random_variables.csv'
         self.paths['results_json'] = self.paths['folder'] / 'results.json'
 
     def marginal_cost_df(self) -> pd.DataFrame:
@@ -186,38 +188,45 @@ class RunProcessor(Run):
         """
         # Get random variables dataframe
         random_variables_df: pd.DataFrame = self.get_random_variables_df()
-        
+
+        random_variables_df["datetime"] = pd.to_datetime(
+            random_variables_df["datetime"], errors="coerce")
         # Create a column with discount factor
         reference_data = random_variables_df['datetime'].min()
         days_diff = (random_variables_df['datetime'] - reference_data).dt.days
-        
+
         random_variables_df['discount_factor'] = 1 / \
-                (1 + self.general_parameters['annual_interest_rate'])**(days_diff / 365)
-    
+            (1 +
+             self.general_parameters['annual_interest_rate'])**(days_diff / 365)
+
         # HARDCODED
         profits = {'wind': None, 'solar': None, 'thermal': None}
         for participant in profits.keys():
             logger.debug(
                 f"Computing profits for {participant} participant.")
-            
+
             capacity = self.variables[participant]['value']
 
             # Get present value of revenues
-            revenues: float = (random_variables_df[f'revenues_{participant}']*random_variables_df['discount_factor']).mean()
+            revenues: float = (
+                random_variables_df[f'revenues_{participant}']*random_variables_df['discount_factor']).mean()
 
             if participant == 'thermal':
                 # Get present value of variable costs
-                variable_costs: float = (random_variables_df['variable_costs_thermal']*random_variables_df['discount_factor']).mean()
+                variable_costs: float = (
+                    random_variables_df['variable_costs_thermal']*random_variables_df['discount_factor']).mean()
             else:
                 variable_costs: float = 0
 
             # Compute average hourly variable profit for the participant
-            variable_profits: float =  revenues - variable_costs
+            variable_profits: float = revenues - variable_costs
 
-            profit_per_hour_per_mw: float = variable_profits/capacity - HOURLY_FIXED_COSTS[participant]
+            profit_per_hour_per_mw: float = variable_profits / \
+                capacity - HOURLY_FIXED_COSTS[participant]
 
             # Normalize by the cost
-            profit_normalized = profit_per_hour_per_mw / (HOURLY_FIXED_COSTS[participant] + variable_costs/capacity)
+            profit_normalized = profit_per_hour_per_mw / \
+                (HOURLY_FIXED_COSTS[participant] + variable_costs/capacity)
 
             # Add profit to the dictionary
             profits[participant] = profit_normalized
@@ -228,6 +237,7 @@ class RunProcessor(Run):
             return True
         return False
 
+
 def process_random_variables_df(random_variables_df):
     def fill_daily_columns(df, variables_to_upsample):
         """
@@ -237,23 +247,23 @@ def process_random_variables_df(random_variables_df):
             variables_to_upsample (list): List of column names that are in daily frequency
         """
         result_df = df.copy()
-        
+
         # Process each scenario separately
         for scenario in df['scenario'].unique():
             # Get data for this scenario
             mask = df['scenario'] == scenario
             scenario_df = df[mask].copy()
-            
+
             # Set datetime as index for this scenario's data
             scenario_df = scenario_df.set_index('datetime')
-            
+
             # Resample and fill for each column
             for column in variables_to_upsample:
                 scenario_df[column] = scenario_df[column].resample('h').ffill()
-                
+
                 # Update the results in the original dataframe
                 result_df.loc[mask, column] = scenario_df[column].values
-        
+
         return result_df
     random_variables_df['total_production'] = (random_variables_df['production_wind']
                                                + random_variables_df['production_solar']
