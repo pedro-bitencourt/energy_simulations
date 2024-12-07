@@ -318,7 +318,7 @@ class InvestmentProblem:
     def print_optimization_trajectory(self):
         print_optimization_trajectory_function(self.optimization_trajectory)
 
-    def equilibrium_run(self):
+    def equilibrium_run(self, lazy=True):
         """
         Returns the equilibrium run if the last iteration converged
         """
@@ -337,14 +337,19 @@ class InvestmentProblem:
 
         return run, convergence
 
-    def check_convergence(self):
+    def check_convergence(self, lazy=True):
         # get the last successful iteration
         last_iteration: OptimizationPathEntry = get_last_successful_iteration(
             self.optimization_trajectory)
+        if not lazy:
+            run: Run = self.create_run(last_iteration.current_investment)
+            profits = RunProcessor(run).get_profits()
+            last_iteration.profits = profits
         return last_iteration.check_convergence()
 
     #########################################
     # Methods to submit the job to Quest
+
     def submit(self):
         """
         Submits the investment problem to Quest. 

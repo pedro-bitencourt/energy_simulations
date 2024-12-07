@@ -78,7 +78,8 @@ class RunProcessor(Run):
         if self.paths['random_variables'].exists() and lazy:
             random_variables_df = self.load_random_variables_df()
         else:
-            random_variables_df = self.construct_random_variables_df(complete=complete)
+            random_variables_df = self.construct_random_variables_df(
+                complete=complete)
         return random_variables_df
 
     def load_random_variables_df(self) -> pd.DataFrame:
@@ -128,7 +129,8 @@ class RunProcessor(Run):
                                                'datetime', 'scenario'], how='left')
 
         # Process random variables
-        random_variables_df = process_random_variables_df(random_variables_df, complete=complete)
+        random_variables_df = process_random_variables_df(
+            random_variables_df, complete=complete)
 
         # Save to disk
         random_variables_df.to_csv(self.paths['random_variables'], index=False)
@@ -193,7 +195,8 @@ class RunProcessor(Run):
             dict: A dictionary of profits.
         """
         # Get random variables dataframe
-        random_variables_df: pd.DataFrame = self.get_random_variables_df(complete=False)
+        random_variables_df: pd.DataFrame = self.get_random_variables_df(
+            complete=False)
 
         random_variables_df["datetime"] = pd.to_datetime(
             random_variables_df["datetime"], errors="coerce")
@@ -248,28 +251,28 @@ def process_random_variables_df(random_variables_df, complete=True):
     def fill_daily_columns(df, variables_to_upsample):
         """
         Fills daily frequency data to match hourly frequency for specified columns.
-        
+
         Parameters:
             df (pd.DataFrame): DataFrame with 'datetime' and 'scenario' columns and mixed frequency data.
             variables_to_upsample (list): List of column names that are in daily frequency.
-            
+
         Returns:
             pd.DataFrame: DataFrame with hourly frequency for specified columns.
         """
         # Ensure datetime is in the correct format
         if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
             df['datetime'] = pd.to_datetime(df['datetime'])
-        
+
         result_df = df.copy()
-    
+
         # Validate that all columns exist
         for column in variables_to_upsample:
             if column not in df.columns:
-                raise ValueError(f"Column '{column}' not found in the DataFrame")
-    
+                raise ValueError(
+                    f"Column '{column}' not found in the DataFrame")
+
         # Process each scenario separately
         for scenario in df['scenario'].unique():
-
 
             # Get data for this scenario
             mask = df['scenario'] == scenario
@@ -278,23 +281,24 @@ def process_random_variables_df(random_variables_df, complete=True):
             # Check if the scenario has valid rows
             if scenario_df.empty:
                 raise ValueError(f"No data found for scenario '{scenario}'")
-    
+
             # Set datetime as index for resampling
             scenario_df = scenario_df.set_index('datetime')
-    
+
             # Resample and forward-fill for each column
             for column in variables_to_upsample:
                 scenario_df[column] = (
                     scenario_df[column]
                     .resample('h')
                     .ffill()
-                    .fillna(method='bfill')  # Optional: fill backward if ffill fails
+                    # Optional: fill backward if ffill fails
+                    .fillna(method='bfill')
                 )
 
-            
             # Update the results in the original DataFrame
-            result_df.loc[mask, variables_to_upsample] = scenario_df[variables_to_upsample].reindex(result_df.loc[mask, "datetime"]).values
-    
+            result_df.loc[mask, variables_to_upsample] = scenario_df[variables_to_upsample].reindex(
+                result_df.loc[mask, "datetime"]).values
+
         return result_df
 
     if complete:

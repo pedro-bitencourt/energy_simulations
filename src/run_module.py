@@ -120,7 +120,7 @@ class Run:
                         continue
         return opt_sim_paths
 
-    def successful(self, log: bool = False, complete: bool = False):
+    def successful(self, complete: bool = False):
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
@@ -151,37 +151,10 @@ class Run:
                     logger.critical("Deleting run %s folder", self.name)
                     self.tear_down()
                     return False
-
-            # Check if the resumen file exists
-            resumen_file_found = try_get_file(sim_folder, r'resumen*')
-
-            # Check if there is a production file
-            production_file_found = try_get_file(
-                sim_folder, r'EOLO_eoloDeci/potencias*.xlt')
-
-            if resumen_file_found and production_file_found:
-                return True
-
-            logger.critical(
-                "%s does not contain either a resumen file or EOLO_eoloDeci/potencias*.xlt", sim_folder)
-
-            # If no resumen file found, delete the sim folder
-            try:
-                shutil.rmtree(sim_folder)
-                if log:
-                    logger.error('No resumen file found for run %s in folder %s. Deleting sim folder.',
-                                 self.name,
-                                 self.paths['subfolder'])
-            except Exception as e:
-                if log:
-                    logger.error('Error deleting sim folder for run %s: %s',
-                                 self.name,
-                                 str(e))
         else:
-            if log:
-                logger.critical('No sim folder found for run %s in folder %s',
-                                self.name,
-                                self.paths['subfolder'])
+            logger.critical('No sim folder found for run %s in folder %s',
+                            self.name,
+                            self.paths['subfolder'])
 
         return False
 
@@ -330,7 +303,7 @@ class Run:
 #SBATCH --time={requested_time_run}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --mem=10G 
+#SBATCH --mem=12G 
 #SBATCH --job-name={job_name}
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err

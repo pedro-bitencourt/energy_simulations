@@ -21,7 +21,7 @@ from typing import Optional, Dict
 import json
 import pandas as pd
 
-from src.auxiliary import submit_slurm_job
+from src.auxiliary import submit_slurm_job, wait_for_jobs
 
 from .investment_module import InvestmentProblem
 from .run_module import Run
@@ -162,38 +162,23 @@ class ComparativeStatics:
             raise ValueError(
                 "General parameters do not contain the expected keys.")
 
-    def create_runs_from_investment_problems(self, check_convergence:
-                                             bool = False):
+    def create_runs_from_investment_problems(self, lazy: bool = True,
+                                             complete: bool = False):
         """
         Recover the last iteration of each investment problem and create a Run object from it.
         """
         list_simulations = []
         for investment_problem in self.list_investment_problems:
-            # Load the last iteration as the Run
-            last_iteration = get_last_successful_iteration(
-                investment_problem.optimization_trajectory)
-            if last_iteration is None:
-                logging.warning(
-                    f"No successful iteration found for investment problem {investment_problem.name}")
-                continue
-            if check_convergence and not last_iteration.check_convergence():
-                logging.error(
-                    f"Investment problem {investment_problem.name} did not converge, skipping")
-                continue
-            else:
-                logging.info(
-                    f"Investment problem {investment_problem.name} converged")
-
             # Create a Run object from the last iteration
-            equilibrium_run = investment_problem.create_run(
-                last_iteration.current_investment)
-
-            if last_iteration.profits is not None:
-                # Clear the folder for the other runs
-                logger.info("Deleting run folders for investment problem %s with equilibrium run %s",
-                            investment_problem.name, equilibrium_run.name)
-                investment_problem._clear_runs_folders(equilibrium_run.name)
-            list_simulations.append(equilibrium_run)
+            equilibrium_run, convergence = investment_problem.equilibrium_run(
+                lazy=lazy)
+            if complete:
+                if equilibrium_run.successful(complete=complete):
+                    list_simulations.append(equilibrium_run)
+                else:
+                    logger.error("Run %s not successful", equilibrium_run.name)
+            else:
+                list_simulations.append(equilibrium_run)
         return list_simulations
 
     def _create_bash(self, lazy):
@@ -352,10 +337,11 @@ END
         # a list of Run objects
         if self.endogenous_variables:
             # Create runs from investment problems
-            self.list_simulations = self.create_runs_from_investment_problems()
+            self.list_simulations = self.create_runs_from_investment_problems(
+                lazy=lazy)
 
             # Get the investment results
-            investment_results_df = self._investment_results(lazy)
+            investment_results_df = self._investment_results(lazy=lazy)
 
             # Save to disk
             investment_results_df.to_csv(
@@ -364,7 +350,7 @@ END
         self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
 
         # Save the random variables df to the random_variables folder
-        self.get_random_variables_df(lazy)
+        self.get_random_variables_df(lazy=lazy)
 
         # Construct the new results dataframe
         conditional_means_df = construct_results(
@@ -436,7 +422,14 @@ END
             else:
                 last_run = investment_problem.create_run(
                     last_iteration.current_investment)
-                last_run_processor = RunProcessor(last_run)
+                try:
+                    last_run_processor = RunProcessor(last_run)
+                except ValueError:
+                    logger.critical("Run %s not successful, resubmitting it")
+                    job_id = last_run.submit()
+                    wait_for_jobs([job_id])
+                    last_run_processor = RunProcessor(last_run)
+
                 profits_dict = last_run_processor.get_profits()
 
             if profits_dict is None:
