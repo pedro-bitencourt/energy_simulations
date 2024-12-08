@@ -56,7 +56,7 @@ class RunProcessor(Run):
             variables=run.variables
         )
 
-        if not self.successful(log=True, complete=complete):
+        if not self.successful(complete=complete):
             logger.error(f'Run {self.name} was not successful.')
             raise ValueError(f'Run {self.name} was not successful.')
 
@@ -96,12 +96,12 @@ class RunProcessor(Run):
         if complete:
             dataframes_to_extract: dict = {'water_level': ['salto'],
                                            'production': ['wind', 'solar', 'thermal', 'salto'],
-                                           # 'variable_costs': ['thermal'],
+                                           'variable_costs': ['thermal'],
                                            }
         else:
             dataframes_to_extract: dict = {'water_level': [],
                                            'production': ['wind', 'solar', 'thermal'],
-                                           # 'variable_costs': ['thermal'],
+                                           'variable_costs': ['thermal'],
                                            }
         logging.info('Extracting random variables dataframes...')
 
@@ -114,7 +114,7 @@ class RunProcessor(Run):
         method_map = {
             'water_level': lambda p: self.water_level_participant(p),
             'production': lambda p: self.production_participant(p),
-            # 'variable_costs': lambda p: self.variable_costs_participant(p),
+            'variable_costs': lambda p: self.variable_costs_participant(p),
             'marginal_cost': lambda _: self.marginal_cost_df()
         }
 
@@ -194,9 +194,11 @@ class RunProcessor(Run):
         Returns:
             dict: A dictionary of profits.
         """
+        force = self.general_parameters.get('force', False)
+        lazy = not force
         # Get random variables dataframe
         random_variables_df: pd.DataFrame = self.get_random_variables_df(
-            complete=False)
+            complete=False, lazy=lazy)
 
         random_variables_df["datetime"] = pd.to_datetime(
             random_variables_df["datetime"], errors="coerce")
@@ -266,7 +268,7 @@ def process_random_variables_df(random_variables_df, complete=True):
         result_df = df.copy()
 
         # Validate that all columns exist
-        for column in variables_to_upsample:
+        for column in variables_to_upsample.keys():
             if column not in df.columns:
                 raise ValueError(
                     f"Column '{column}' not found in the DataFrame")
@@ -286,18 +288,23 @@ def process_random_variables_df(random_variables_df, complete=True):
             scenario_df = scenario_df.set_index('datetime')
 
             # Resample and forward-fill for each column
-            for column in variables_to_upsample:
-                scenario_df[column] = (
-                    scenario_df[column]
-                    .resample('h')
-                    .ffill()
-                    # Optional: fill backward if ffill fails
-                    .fillna(method='bfill')
-                )
+            # Resample and apply the selected upsampling method for each column
+            for column, upsampling_method in variables_to_upsample.items():
+                if upsampling_method == "ffill":
+                    scenario_df[column] = (
+                        scenario_df[column]
+                        .resample('h')
+                        .ffill()
+                        # Optional: backward fill if ffill fails
+                        .fillna(method='bfill')
+                    )
+                elif upsampling_method == "mean":
+                    scenario_df[column] = scenario_df[column].resample(
+                        'h').mean()
 
             # Update the results in the original DataFrame
-            result_df.loc[mask, variables_to_upsample] = scenario_df[variables_to_upsample].reindex(
-                result_df.loc[mask, "datetime"]).values
+            result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys(
+            )].reindex(result_df.loc[mask, "datetime"]).values
 
         return result_df
 
@@ -309,14 +316,13 @@ def process_random_variables_df(random_variables_df, complete=True):
         random_variables_df['lost_load'] = random_variables_df['demand'] - \
             random_variables_df['total_production']
 
-        variables_to_upsample = ['water_level_salto']
+        variables_to_upsample = {'water_level_salto': 'ffill',
+                                 'variable_costs_thermal': 'mean', }
         participants_to_revenues = ['wind', 'solar', 'thermal', 'salto']
     else:
         participants_to_revenues = ['wind', 'solar', 'thermal']
-        variables_to_upsample = []
+        variables_to_upsample = {'variable_costs_thermal': 'mean', }
 
-    # Upsample variables
-    variables_to_upsample = ['water_level_salto']
     logger.info("Upsampling variables observed at the daily level: %s",
                 variables_to_upsample)
     random_variables_df = fill_daily_columns(random_variables_df, variables_to_upsample
@@ -326,9 +332,6 @@ def process_random_variables_df(random_variables_df, complete=True):
         random_variables_df[f'revenues_{participant}'] = random_variables_df[
             f'production_{participant}'] * random_variables_df['marginal_cost']
 
-    # Compute variable costs for thermal participant, HARDCODED
-    random_variables_df['variable_costs_thermal'] = random_variables_df[
-        'production_thermal'] * 193.02
     random_variables_df['profits_thermal'] = random_variables_df['revenues_thermal'] - \
         random_variables_df['variable_costs_thermal']
 

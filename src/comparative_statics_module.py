@@ -361,20 +361,20 @@ END
             self.paths['results'] / 'conditional_means.csv', index=False)
 
         # Get daily, weekly, and yearly averages
-        daily_results_df = construct_results(self.paths['random_variables'],
-                                             results_function=intra_daily_averages)
-        weekly_results_df = construct_results(self.paths['random_variables'],
-                                              results_function=intra_weekly_averages)
-        yearly_results_df = construct_results(self.paths['random_variables'],
-                                              results_function=intra_year_averages)
+        # daily_results_df = construct_results(self.paths['random_variables'],
+        #                                     results_function=intra_daily_averages)
+        # weekly_results_df = construct_results(self.paths['random_variables'],
+        #                                      results_function=intra_weekly_averages)
+        # yearly_results_df = construct_results(self.paths['random_variables'],
+        #                                      results_function=intra_year_averages)
 
         # Save to disk
-        daily_results_df.to_csv(
-            self.paths['results'] / 'daily_results.csv', index=False)
-        weekly_results_df.to_csv(
-            self.paths['results'] / 'weekly_results.csv', index=False)
-        yearly_results_df.to_csv(
-            self.paths['results'] / 'yearly_results.csv', index=False)
+        # daily_results_df.to_csv(
+        #    self.paths['results'] / 'daily_results.csv', index=False)
+        # weekly_results_df.to_csv(
+        #    self.paths['results'] / 'weekly_results.csv', index=False)
+        # yearly_results_df.to_csv(
+        #    self.paths['results'] / 'yearly_results.csv', index=False)
 
     def _compile_random_variables(self):
         # Initialize a list to store the random variables over the simulations
