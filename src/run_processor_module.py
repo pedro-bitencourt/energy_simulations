@@ -56,7 +56,7 @@ class RunProcessor(Run):
             variables=run.variables
         )
 
-        if not self.successful(log=True, complete=complete):
+        if not self.successful(complete=complete):
             logger.error(f'Run {self.name} was not successful.')
             raise ValueError(f'Run {self.name} was not successful.')
 
@@ -194,9 +194,11 @@ class RunProcessor(Run):
         Returns:
             dict: A dictionary of profits.
         """
+        force = self.general_parameters.get('force', False)
+        lazy = not force
         # Get random variables dataframe
         random_variables_df: pd.DataFrame = self.get_random_variables_df(
-            complete=False)
+            complete=False, lazy=lazy)
 
         random_variables_df["datetime"] = pd.to_datetime(
             random_variables_df["datetime"], errors="coerce")
@@ -266,7 +268,7 @@ def process_random_variables_df(random_variables_df, complete=True):
         result_df = df.copy()
 
         # Validate that all columns exist
-        for column in variables_to_upsample:
+        for column in variables_to_upsample.keys():
             if column not in df.columns:
                 raise ValueError(
                     f"Column '{column}' not found in the DataFrame")
@@ -292,15 +294,13 @@ def process_random_variables_df(random_variables_df, complete=True):
                     scenario_df[column] = (
                         scenario_df[column]
                         .resample('h')
-                        .ffill()
-                        .fillna(method='bfill')  # Optional: backward fill if ffill fails
-                    )
+                        .ffill())
                 elif upsampling_method == "mean":
                     scenario_df[column] = scenario_df[column].resample('h').mean()
 
             # Update the results in the original DataFrame
-            result_df.loc[mask, variables_to_upsample] = scenario_df[variables_to_upsample].reindex(
-                result_df.loc[mask, "datetime"]).values
+            result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys(
+            )].reindex(result_df.loc[mask, "datetime"]).values
 
         return result_df
 

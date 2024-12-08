@@ -287,7 +287,7 @@ class InvestmentProblem:
         # compute derivatives from the profits
         derivatives = derivatives_from_profits(
             profits_perturb, DELTA, list(self.endogenous_variables.keys()))
-        return profits_perturb['current'], derivatives, runs_dict['current']
+        return profits_perturb['current'], derivatives
 
     def create_run(self, current_investment: dict) -> Run:
         """

@@ -135,28 +135,33 @@ class Run:
         if sim_folder:
             files_to_check = [r'resumen*',
                               r'EOLO_eoloDeci/potencias*.xlt',
-                              r'FOTOV_solarDeci/potencias*.xlt',
-                              r'DEM_demandaPrueba/potencias*.xlt'
+                              # r'FOTOV_solarDeci/potencias*.xlt',
+                              # r'DEM_demandaPrueba/potencias*.xlt'
                               ]
             if complete:
-                files_to_check.append(r'HID_salto/cotas*.xlt')
+                files_to_check.append(r'HID_salto/cota*.xlt')
                 files_to_check.append(r'HID_salto/potencias*.xlt')
 
+            print(f"Checking if files exist for run {self.name}")
+
             # Check if files exist
-            for file in files_to_check:
-                file_found = try_get_file(sim_folder, file)
+            for file_name in files_to_check:
+                file_found = try_get_file(sim_folder, file_name)
                 if not file_found:
+                    print(f'CRITICAL: {file_name} not found for {self.name}')
                     logger.critical(
-                        "%s does not contain file %s", sim_folder, file)
-                    logger.critical("Deleting run %s folder", self.name)
-                    self.tear_down()
+                        "%s does not contain file %s", sim_folder, file_name)
+                    # logger.critical("Deleting run %s folder", self.name)
+                    # self.tear_down()
                     return False
         else:
+            print(
+                f"No sim folder found for run {self.name} in folder {self.paths['subfolder']}")
             logger.critical('No sim folder found for run %s in folder %s',
                             self.name,
                             self.paths['subfolder'])
-
-        return False
+            return False
+        return True
 
     def prototype(self):
         # Create the directory
