@@ -290,6 +290,8 @@ def process_random_variables_df(random_variables_df, complete=True):
             # Resample and forward-fill for each column
             # Resample and apply the selected upsampling method for each column
             for column, upsampling_method in variables_to_upsample.items():
+                logger.debug("Upsampling %s", column)
+                logger.debug(f"Pre upsampling: {scenario_df[column]=}")
                 if upsampling_method == "ffill":
                     scenario_df[column] = (
                         scenario_df[column]
@@ -298,6 +300,7 @@ def process_random_variables_df(random_variables_df, complete=True):
                 elif upsampling_method == "mean":
                     scenario_df[column] = scenario_df[column].resample('h').mean()
 
+                logger.debug(f"Post upsampling: {scenario_df[column]=}")
             # Update the results in the original DataFrame
             result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys(
             )].reindex(result_df.loc[mask, "datetime"]).values
@@ -323,6 +326,9 @@ def process_random_variables_df(random_variables_df, complete=True):
                 variables_to_upsample)
     random_variables_df = fill_daily_columns(random_variables_df, variables_to_upsample
                                              )
+
+    for variable in variables_to_upsample.keys():
+        logger.debug(f"{random_variables_df[variable].head()=}")
     # Compute revenues
     for participant in participants_to_revenues:
         random_variables_df[f'revenues_{participant}'] = random_variables_df[
