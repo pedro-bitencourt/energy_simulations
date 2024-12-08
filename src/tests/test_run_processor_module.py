@@ -43,7 +43,8 @@ class TestRun(unittest.TestCase):
                             'annual_interest_rate': 0.0,
                             'years_run': 6.61,
                             'requested_time_run': REQUESTED_TIME_RUN,
-                            'requested_time_solver': REQUESTED_TIME_SOLVER}
+                            'requested_time_solver': REQUESTED_TIME_SOLVER,
+                            'force': True}
 
         variables = {'hydro_factor': {'pattern': 'HYDRO_FACTOR',
                                       'label': 'Hydro Factor',

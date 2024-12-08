@@ -267,12 +267,6 @@ def process_random_variables_df(random_variables_df, complete=True):
 
         result_df = df.copy()
 
-        # Validate that all columns exist
-        for column in variables_to_upsample.keys():
-            if column not in df.columns:
-                raise ValueError(
-                    f"Column '{column}' not found in the DataFrame")
-
         # Process each scenario separately
         for scenario in df['scenario'].unique():
 
@@ -280,32 +274,55 @@ def process_random_variables_df(random_variables_df, complete=True):
             mask = df['scenario'] == scenario
             scenario_df = df[mask].copy()
 
-            # Check if the scenario has valid rows
-            if scenario_df.empty:
-                raise ValueError(f"No data found for scenario '{scenario}'")
-
             # Set datetime as index for resampling
             scenario_df = scenario_df.set_index('datetime')
+            print(scenario_df.index.is_monotonic_increasing)  # Should be True
+            print(scenario_df.index.freq)                    # Should be None or hourly ('H')
 
-            # Resample and forward-fill for each column
-            # Resample and apply the selected upsampling method for each column
+            # Iterate over each column and apply the specified upsampling method
             for column, upsampling_method in variables_to_upsample.items():
                 logger.debug("Upsampling %s", column)
-                logger.debug(f"Pre upsampling: {scenario_df[column]=}")
+                logger.debug(f"Pre upsampling: scenario_df[{column}]={scenario_df[column]}")
+            
                 if upsampling_method == "ffill":
+                    # For forward-fill:
+                    # 1. Resample the column to hourly frequency.
+                    # 2. Forward-fill to propagate the last valid observation forward.
+                    # 3. Backward-fill to ensure even the initial periods are filled.
                     scenario_df[column] = (
                         scenario_df[column]
-                        .resample('h')
-                        .ffill())
+                        .resample('H')
+                        .ffill()
+                        .bfill()
+                    )
+            
                 elif upsampling_method == "mean":
-                    scenario_df[column] = scenario_df[column].resample('h').mean()
-
-                logger.debug(f"Post upsampling: {scenario_df[column]=}")
-            # Update the results in the original DataFrame
-            result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys(
-            )].reindex(result_df.loc[mask, "datetime"]).values
-
+                    # For the "mean" method, we assume the given daily value at midnight 
+                    # should be spread evenly across the 24 hours.
+                    
+                    # 1. Extract daily data (using 'first' to get the midnight value).
+                    daily_df = scenario_df[column].resample('D').first()
+                    
+                    # 2. Upsample to hourly, forward-fill the daily value to all 24 hours,
+                    #    and then divide by 24 to distribute the daily total evenly.
+                    hourly_df = daily_df.resample('H').ffill() / 24.0
+            
+                    logger.debug(f"Daily: daily_df[{column}]={daily_df}")
+                    logger.debug(f"Hourly: hourly_df[{column}]={hourly_df}")
+            
+                    # 3. Align the hourly data back to the scenario_df's index
+                    scenario_df[column] = hourly_df.reindex(scenario_df.index).values
+            
+                logger.debug(f"Post upsampling: scenario_df[{column}]={scenario_df[column]}")
+            
+            # Finally, write the updated results back into the original DataFrame.
+            # Reindexing to ensure that the order of the timestamps matches that of result_df.
+            result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys()].reindex(
+                result_df.loc[mask, "datetime"]
+            ).values
+            
         return result_df
+
 
     if complete:
         random_variables_df['total_production'] = (random_variables_df['production_wind']
@@ -327,8 +344,6 @@ def process_random_variables_df(random_variables_df, complete=True):
     random_variables_df = fill_daily_columns(random_variables_df, variables_to_upsample
                                              )
 
-    for variable in variables_to_upsample.keys():
-        logger.debug(f"{random_variables_df[variable].head()=}")
     # Compute revenues
     for participant in participants_to_revenues:
         random_variables_df[f'revenues_{participant}'] = random_variables_df[
