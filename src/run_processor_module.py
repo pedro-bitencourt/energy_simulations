@@ -277,13 +277,15 @@ def process_random_variables_df(random_variables_df, complete=True):
             # Set datetime as index for resampling
             scenario_df = scenario_df.set_index('datetime')
             print(scenario_df.index.is_monotonic_increasing)  # Should be True
-            print(scenario_df.index.freq)                    # Should be None or hourly ('H')
+            # Should be None or hourly ('H')
+            print(scenario_df.index.freq)
 
             # Iterate over each column and apply the specified upsampling method
             for column, upsampling_method in variables_to_upsample.items():
                 logger.debug("Upsampling %s", column)
-                logger.debug(f"Pre upsampling: scenario_df[{column}]={scenario_df[column]}")
-            
+                logger.debug(
+                    f"Pre upsampling: scenario_df[{column}]={scenario_df[column]}")
+
                 if upsampling_method == "ffill":
                     # For forward-fill:
                     # 1. Resample the column to hourly frequency.
@@ -295,34 +297,35 @@ def process_random_variables_df(random_variables_df, complete=True):
                         .ffill()
                         .bfill()
                     )
-            
+
                 elif upsampling_method == "mean":
-                    # For the "mean" method, we assume the given daily value at midnight 
+                    # For the "mean" method, we assume the given daily value at midnight
                     # should be spread evenly across the 24 hours.
-                    
+
                     # 1. Extract daily data (using 'first' to get the midnight value).
                     daily_df = scenario_df[column].resample('D').first()
-                    
+
                     # 2. Upsample to hourly, forward-fill the daily value to all 24 hours,
                     #    and then divide by 24 to distribute the daily total evenly.
                     hourly_df = daily_df.resample('H').ffill() / 24.0
-            
+
                     logger.debug(f"Daily: daily_df[{column}]={daily_df}")
                     logger.debug(f"Hourly: hourly_df[{column}]={hourly_df}")
-            
+
                     # 3. Align the hourly data back to the scenario_df's index
-                    scenario_df[column] = hourly_df.reindex(scenario_df.index).values
-            
-                logger.debug(f"Post upsampling: scenario_df[{column}]={scenario_df[column]}")
-            
+                    scenario_df[column] = hourly_df.reindex(
+                        scenario_df.index).values
+
+                logger.debug(
+                    f"Post upsampling: scenario_df[{column}]={scenario_df[column]}")
+
             # Finally, write the updated results back into the original DataFrame.
             # Reindexing to ensure that the order of the timestamps matches that of result_df.
             result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys()].reindex(
                 result_df.loc[mask, "datetime"]
             ).values
-            
-        return result_df
 
+        return result_df
 
     if complete:
         random_variables_df['total_production'] = (random_variables_df['production_wind']
@@ -333,11 +336,11 @@ def process_random_variables_df(random_variables_df, complete=True):
             random_variables_df['total_production']
 
         variables_to_upsample = {'water_level_salto': 'ffill',
-                             'variable_costs_thermal': 'mean',}
+                                 'variable_costs_thermal': 'mean', }
         participants_to_revenues = ['wind', 'solar', 'thermal', 'salto']
     else:
         participants_to_revenues = ['wind', 'solar', 'thermal']
-        variables_to_upsample = {'variable_costs_thermal': 'mean',}
+        variables_to_upsample = {'variable_costs_thermal': 'mean', }
 
     logger.info("Upsampling variables observed at the daily level: %s",
                 variables_to_upsample)
@@ -352,5 +355,16 @@ def process_random_variables_df(random_variables_df, complete=True):
     # Compute variable costs for thermal participant, HARDCODED
     random_variables_df['profits_thermal'] = random_variables_df['revenues_thermal'] - \
         random_variables_df['variable_costs_thermal']
+
+    initial_row_count = len(random_variables_df)
+    random_variables_df = random_variables_df.dropna()  # Drop rows with NaN entries
+    rows_dropped = initial_row_count - len(random_variables_df)
+
+    # Log the results
+    logger.warning(
+        f"Number of rows dropped due to NaN entries: {rows_dropped}")
+    if rows_dropped > 3000:
+        logger.critical(
+            f"CRITICAL: More than 3000 rows were excluded! Total: {rows_dropped}")
 
     return random_variables_df
