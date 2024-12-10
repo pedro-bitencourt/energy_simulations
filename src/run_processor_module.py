@@ -24,8 +24,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-WEEK_HOURS_BIN = list(range(0, 169))  # Adjusted to include 168
-
 
 class RunProcessor(Run):
     """
@@ -58,7 +56,7 @@ class RunProcessor(Run):
 
         if not self.successful(complete=complete):
             logger.error(f'Run {self.name} was not successful.')
-            raise ValueError(f'Run {self.name} was not successful.')
+            raise FileNotFoundError(f'Run {self.name} was not successful.')
 
         self._update_paths()
         # Create dict of participants

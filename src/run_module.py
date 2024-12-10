@@ -301,6 +301,8 @@ class Run:
         else:
             email_line = ""
 
+        MEMORY_REQUESTED = '12G'
+
         with open(bash_path, 'w') as file:
             file.write(f'''#!/bin/bash
 #SBATCH --account=b1048
@@ -308,7 +310,7 @@ class Run:
 #SBATCH --time={requested_time_run}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --mem=12G 
+#SBATCH --mem={MEMORY_REQUESTED}
 #SBATCH --job-name={job_name}
 #SBATCH --output={self.paths['folder']}/{self.name}.out
 #SBATCH --error={self.paths['folder']}/{self.name}.err
@@ -316,12 +318,13 @@ class Run:
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
 
-echo "Starting {job_name} at: $(date +'%H:%M:%S')"
+echo "Starting {self.name} at: $(date +'%H:%M:%S')"
 export WINEPREFIX=/projects/p32342/software/.wine
+mkdir -p /projects/p32342/comparative_statics/{self.paths['folder']}/{self.name}/temp
 module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3
-sleep $((RANDOM%60 + 10)) 
+sleep $((RANDOM%60 + 10))
 wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G -jar MOP_Mingo.JAR "Z:{xml_path}"
 ''')
         return bash_path

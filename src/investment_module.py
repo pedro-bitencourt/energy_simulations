@@ -148,10 +148,6 @@ class InvestmentProblem:
         while current_iteration.iteration < MAX_ITER:
             logger.info('Current iteration: %s', current_iteration)
 
-            # force output
-            sys.stdout.flush()
-            sys.stderr.flush()
-
             # compute the profits and derivatives
             current_iteration = self._update_current_iteration(
                 current_iteration)
@@ -162,6 +158,11 @@ class InvestmentProblem:
             # save the optimization trajectory
             self._save_optimization_trajectory()
 
+            if self.general_parameters.get('force', False):
+                run: Run = self.create_run(
+                    current_iteration.current_investment)
+                profits = RunProcessor(run).get_profits()
+                current_iteration.profits = profits
             # check for convergence
             if current_iteration.check_convergence():
                 logger.info(
@@ -343,7 +344,14 @@ class InvestmentProblem:
             self.optimization_trajectory)
         if not lazy:
             run: Run = self.create_run(last_iteration.current_investment)
-            profits = RunProcessor(run).get_profits()
+            try:
+                profits = RunProcessor(run).get_profits()
+            except FileNotFoundError:
+                logger.error("Run %s not successful, resubmitting", run.name)
+                job_id = run.submit(force=True)
+                wait_for_jobs([job_id])
+                profits = RunProcessor(run).get_profits()
+
             last_iteration.profits = profits
         return last_iteration.check_convergence()
 
@@ -406,7 +414,7 @@ class InvestmentProblem:
 #SBATCH --time={requested_time}
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=2G
+#SBATCH --mem=10G
 #SBATCH --job-name={self.name}
 #SBATCH --output={self.paths['parent_folder']}/{self.name}.out
 #SBATCH --error={self.paths['parent_folder']}/{self.name}.err

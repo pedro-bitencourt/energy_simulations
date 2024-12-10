@@ -313,14 +313,15 @@ END
         if self.endogenous_variables:
             # Submit investment problems
             for inv_prob in self.list_investment_problems:
-                if inv_prob.check_convergence():
-                    logging.info("Investment problem %s reached convergence",
-                                 inv_prob.name)
-                    continue
-                else:
-                    inv_prob.submit()
-                    logging.info(
-                        f'Submitted job for investment problem %s', inv_prob.name)
+                # lazy = not self.general_parameters.get('force', False)
+                # if inv_prob.check_convergence(lazy=lazy):
+                #    logging.info("Investment problem %s reached convergence",
+                #                 inv_prob.name)
+                #    continue
+                # else:
+                inv_prob.submit()
+                logging.info(
+                    f'Submitted job for investment problem %s', inv_prob.name)
         else:
             # Submit runs directly
             for run in self.list_simulations:
@@ -330,7 +331,7 @@ END
                 else:
                     logging.info("Submitted job for run %s",  run.name)
 
-    def process(self, lazy=True):
+    def process(self, lazy=True, complete=True):
         """
         """
         # If there are endogenous_variables, first process investment problems and create
@@ -350,7 +351,7 @@ END
         self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
 
         # Save the random variables df to the random_variables folder
-        self.get_random_variables_df(lazy=lazy)
+        self.get_random_variables_df(lazy=lazy, complete=complete)
 
         # Construct the new results dataframe
         conditional_means_df = construct_results(
@@ -424,11 +425,9 @@ END
                     last_iteration.current_investment)
                 try:
                     last_run_processor = RunProcessor(last_run)
-                except ValueError:
+                except FileNotFoundError:
                     logger.critical("Run %s not successful, resubmitting it")
                     job_id = last_run.submit()
-                    wait_for_jobs([job_id])
-                    last_run_processor = RunProcessor(last_run)
 
                 profits_dict = last_run_processor.get_profits()
 
@@ -511,7 +510,11 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
     # Add cutoffs as columns to the dataframe
     for var, percentiles in cutoffs.items():
         for perc, value in percentiles.items():
-            run_df[f'{var}_cutoff_{perc}'] = value
+            try:
+                run_df[f'{var}_cutoff_{perc}'] = value
+            except KeyError:
+                logger.error('Variable %s not found', var)
+                continue
 
     queries_dict = {
         'unconditional': 'index==index',
@@ -534,12 +537,16 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
     }
 
     for query_name, query in queries_dict.items():
-        query_frequency = run_df.query(
-            query).shape[0] / run_df.shape[0]
-        results_dict[f'{query_name}_frequency'] = query_frequency
-        for variable in variables:
-            results_dict[f'{query_name}_{variable}'] = run_df.query(query)[
-                variable].mean()
+        try:
+            query_frequency = run_df.query(
+                query).shape[0] / run_df.shape[0]
+            results_dict[f'{query_name}_frequency'] = query_frequency
+            for variable in variables:
+                results_dict[f'{query_name}_{variable}'] = run_df.query(query)[
+                    variable].mean()
+        except KeyError:
+            logger.error('Query %s not successful', query_name)
+            continue
     return results_dict
 
 
