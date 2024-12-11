@@ -165,6 +165,7 @@ class Run:
 
         logger.info(f"""Preparing to submit run {self.name}""")
 
+        logger.warning("Warning: this will overwrite the folder %s",)
         # Tear down the folder
         self.tear_down()
 

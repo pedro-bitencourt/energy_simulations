@@ -203,8 +203,10 @@ class InvestmentProblem:
         """
         for directory in self.paths['folder'].iterdir():
             if directory.is_dir() and directory.name != last_run_name:
+                logger.info("Deleting directory %s", directory)
                 try:
                     shutil.rmtree(directory)
+                    logger.info("Successfully deleted directory %s", directory)
                 except OSError:
                     logger.critical("Could not delete directory %s",
                                     directory)

@@ -121,9 +121,7 @@ class ComparativeStatics:
         """
         for run in self.list_runs:
             logger.info("Redoing equilibrium run %s", run.name)
-            logger.warning("Deleting results of run %s", run.name)
-            run.tear_down()
-            run.submit()
+            run.submit(force=True)
 
     def extract_random_variables(self, complete: bool = True) -> None:
         logger.info("Saving random variables DataFrame to results folder...")
