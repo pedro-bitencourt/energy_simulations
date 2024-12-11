@@ -307,6 +307,6 @@ module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3
 sleep $((RANDOM%60 + 10))
-wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{MEMORY_REQUESTED} -jar MOP_Mingo.JAR "Z:{xml_path}""
+wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{MEMORY_REQUESTED} -jar MOP_Mingo.JAR "Z:{xml_path}"
 ''')
         return bash_path
