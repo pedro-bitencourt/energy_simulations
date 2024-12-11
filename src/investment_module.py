@@ -57,7 +57,7 @@ class InvestmentProblem:
         self.endogenous_variables: dict = endogenous_variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = self._create_name(parent_folder)
+        self.name: str = create_investment_name(exogenous_variable)
         logger.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
@@ -66,7 +66,6 @@ class InvestmentProblem:
 
         # initialize the optimization trajectory
         self.optimization_trajectory: list = self._initialize_optimization_trajectory()
-
 
     def _initialize_optimization_trajectory(self):
         # Check if the optimization trajectory file exists
@@ -233,7 +232,7 @@ class InvestmentProblem:
             profits_derivatives=profits_derivatives
         )
 
-    def submit_and_wait(self, runs_dict: dict[str, Run], 
+    def submit_and_wait(self, runs_dict: dict[str, Run],
                         max_attempts: int = 6) -> None:
         '''
         Submits the runs in the runs_dict and waits for them to finish
@@ -258,7 +257,6 @@ class InvestmentProblem:
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1
-
 
     def profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
         '''
@@ -323,8 +321,7 @@ class InvestmentProblem:
     def print_optimization_trajectory(self):
         print_optimization_trajectory_function(self.optimization_trajectory)
 
-
-    def investment_results(self, lazy: bool =True, resubmit: bool = False) -> dict:
+    def investment_results(self, lazy: bool = True, resubmit: bool = False) -> dict:
         """
         Returns the results of the investment problem for the last iteration.
 
@@ -361,7 +358,8 @@ class InvestmentProblem:
             try:
                 last_run_processor = RunProcessor(last_run)
             except FileNotFoundError:
-                logger.critical("Run %s not successful, resubmitting and returning empty dict",)
+                logger.critical(
+                    "Run %s not successful, resubmitting and returning empty dict",)
                 if resubmit:
                     last_run.submit(force=True)
                 return {}
@@ -411,22 +409,21 @@ class InvestmentProblem:
             "endogenous_variables": self.endogenous_variables,
             "general_parameters": self.general_parameters
         }
-    
+
         investment_data_str = json.dumps(investment_data)
-    
+
         requested_time: float = self.general_parameters['requested_time_solver']
         hours = int(requested_time)
         minutes = int((requested_time - hours) * 60)
         seconds = int(((requested_time - hours) * 60 - minutes) * 60)
 
         requested_time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-    
+
         if self.general_parameters.get('email', None):
             email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
         else:
             email_line = ""
 
-    
         # Write the bash script without a separate data file
         with open(self.paths['bash'], 'w') as f:
             f.write(f"""#!/bin/bash
@@ -464,5 +461,5 @@ print('Successfully loaded the investment problem data')
 investment_problem.solve_investment()
 END
 """)
-    
+
         return self.paths['bash']

@@ -29,6 +29,7 @@ logging.basicConfig(
 # Ensure root logger uses the rich handler
 logging.getLogger().handlers = [rich_handler]
 
+
 def get_logger(name):
     return logging.getLogger(name)
 
@@ -66,15 +67,18 @@ THRESHOLD_PROFITS: float = 0.01  # Default threshold for convergence
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
+
+
 def create_run_name(variables: dict):
     var_values: list[float] = [variable['value'] for variable in
-                                        variables.values()]
+                               variables.values()]
     name: str = make_name(var_values)
     return name
 
+
 def create_investment_name(exogenous_variables: dict):
     exog_var_values: list[float] = [variable['value'] for variable in
-                                    exogenous_variable.values()]
+                                    exogenous_variables.values()]
     name: str = make_name(exog_var_values)
     return name
 
@@ -84,6 +88,7 @@ def create_investment_name(exogenous_variables: dict):
 ################################################################################################
 BASE_PATH: Path = Path('/projects/p32342')
 POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
+
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths = {}
@@ -97,7 +102,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['bash'] = Path(
         f"{base_path}/comparative_statics/{name}/process.sh")
     paths['investment_results'] = paths['results'] / 'investment_results.csv'
-    paths['conditional_means'] = paths['results']/ 'conditional_means.csv'
+    paths['conditional_means'] = paths['results'] / 'conditional_means.csv'
     return paths
 
 
@@ -115,6 +120,7 @@ def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
     # create the directory
     paths['folder'].mkdir(parents=True, exist_ok=True)
     return paths
+
 
 def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict:
     """
@@ -142,9 +148,8 @@ def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict
 
     # Add paths for results and price distribution files
     paths['random_variables'] = paths['folder'] / \
-            'random_variables.csv'
+        'random_variables.csv'
     return paths
-
 
 
 ################################################################################################
