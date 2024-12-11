@@ -12,6 +12,7 @@ Public methods:
 import logging
 from typing import Dict
 import pandas as pd
+import json
 
 import src.processing_module as proc
 from src.participant_module import get_production_df, get_variable_costs_df, get_water_level_df
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 PARTICIPANTS_COMPLETE: list = ['wind', 'solar', 'thermal', 'salto']
 PARTICIPANTS: list = ['wind', 'solar', 'thermal']
+
 
 class RunProcessor(Run):
     """
@@ -57,7 +59,6 @@ class RunProcessor(Run):
 
             logger.error(f'Run {self.name} was not successful.')
             raise FileNotFoundError(f'Run {self.name} was not successful.')
-
 
     def construct_random_variables_df(self, complete=True) -> pd.DataFrame:
         def melt_df(df: pd.DataFrame, name: str) -> pd.DataFrame:
@@ -127,13 +128,14 @@ class RunProcessor(Run):
     def profits_data_dict(self, complete: bool = False) -> Dict:
         """
         Computes profits for the specified endogenous variables.
-    
+
         Returns:
             dict: A dictionary of profits.
         """
         # Get random variables dataframe
-        run_df: pd.DataFrame = self.construct_random_variables_df(complete=False)
-    
+        run_df: pd.DataFrame = self.construct_random_variables_df(
+            complete=False)
+
         if complete:
             participants: list = PARTICIPANTS_COMPLETE
         else:
@@ -143,21 +145,23 @@ class RunProcessor(Run):
             f'{participant}_capacity': self.variables[participant]['value']
             for participant in participants
         }
-    
+
         # Update the results dictionary with metrics for each participant
         for participant in participants:
             capacity: float = self.variables[participant]['value']
-            results_dict.update(compute_participant_metrics(run_df, participant, capacity))
+            results_dict.update(compute_participant_metrics(
+                run_df, participant, capacity))
 
         if complete:
-            system_total_cost: float = sum([results_dict[f'{participant}_total_cost'] for participant in PARTICIPANTS_COMPLETE])
-            system_fixed_cost: float = sum([results_dict[f'{participant}_fixed_cost'] for participant in PARTICIPANTS_COMPLETE])
+            system_total_cost: float = sum(
+                [results_dict[f'{participant}_total_cost'] for participant in PARTICIPANTS_COMPLETE])
+            system_fixed_cost: float = sum(
+                [results_dict[f'{participant}_fixed_cost'] for participant in PARTICIPANTS_COMPLETE])
             results_dict.update({
                 'system_total_cost': system_total_cost,
                 'system_fixed_cost': system_fixed_cost,
             })
 
-    
         return results_dict
 
     def get_profits(self):
@@ -168,6 +172,12 @@ class RunProcessor(Run):
             dict: A dictionary of profits.
         """
         profits_data: dict = self.profits_data_dict(complete=False)
+        json_path = self.paths['folder'] / 'profits_data.json'
+        with open(json_path, "w") as f:
+            json.dump(profits_data, f)
+
+        logger.debug("profits_data for %s:", self.name)
+        print(profits_data)
         profits_dict: dict = {participant: profits_data[f'{participant}_normalized_profits']
                               for participant in PARTICIPANTS}
         return profits_dict

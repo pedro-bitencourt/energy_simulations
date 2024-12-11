@@ -168,11 +168,8 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
         f'{participant}_variable_costs_mw_hour': variable_costs / capacity_mw,
         f'{participant}_fixed_costs_mw_hour': fixed_costs,
         f'{participant}_total_costs_mw_hour': (fixed_costs + variable_costs / capacity_mw),
-        f'{participant}_profits_mw_hw': (revenue - fixed_costs - variable_costs),
-        f'{participant}_normalized_profits': (
-            (revenue - fixed_costs - variable_costs)
-            / (fixed_costs + variable_costs)
-        )
+        f'{participant}_profits_mw_hw': (revenue - variable_costs)/capacity_mw - fixed_costs,
+        f'{participant}_normalized_profits': ((revenue - variable_costs)/capacity_mw - fixed_costs) / (fixed_costs + variable_costs / capacity_mw)
     }
 
 
@@ -213,7 +210,6 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
             except KeyError:
                 logger.error('Variable %s not found', var)
                 continue
-
 
     queries_dict = {
         'unconditional': 'index==index',
@@ -282,8 +278,8 @@ def intra_weekly_averages(run_df: pd.DataFrame) -> dict:
     # Take the mean of the variables for each hour of the week
     for hour in range(168):
         for variable in variables:
-            run_df['hour_of_the_week'] = run_df['datetime'].dt.hour + \
-                run_df['datetime'].dt.dayofweek * 24
+            run_df['hour_of_the_week'] = (run_df['datetime'].dt.hour +
+                                          run_df['datetime'].dt.dayofweek * 24)
             results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour_of_the_week']
                                                              == hour][variable].mean()
     return results_dict

@@ -57,7 +57,8 @@ class InvestmentProblem:
         self.general_parameters: dict = general_parameters
 
         parent_name: str = parent_folder.name
-        self.name: str = create_investment_name(parent_name, exogenous_variable)
+        self.name: str = create_investment_name(
+            parent_name, exogenous_variable)
         logger.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
@@ -361,6 +362,9 @@ class InvestmentProblem:
                     last_run.submit(force=True)
                 return {}
             profits_dict: dict = last_run_processor.profits_data_dict()
+
+            logger.debug("profits_dict for %s", self.name)
+            pprint(profits_dict)
 
             # Update the profits in the last iteration
             last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profit']
