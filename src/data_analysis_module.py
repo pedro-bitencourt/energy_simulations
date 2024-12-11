@@ -26,7 +26,7 @@ def process_run_df(run_df: pd.DataFrame, complete=True):
         result_df = df.copy()
 
         logger.debug("Upsampling variables observed at the daily level: %s",
-                        variables_to_upsample)
+                     variables_to_upsample)
         logger.debug("Pre processing: %s", result_df.head())
 
         # Process each scenario separately
@@ -73,9 +73,9 @@ def process_run_df(run_df: pd.DataFrame, complete=True):
 
     if complete:
         run_df['total_production'] = (run_df['production_wind']
-                                                   + run_df['production_solar']
-                                                   + run_df['production_thermal']
-                                                   + run_df['production_salto'])
+                                      + run_df['production_solar']
+                                      + run_df['production_thermal']
+                                      + run_df['production_salto'])
         run_df['lost_load'] = run_df['demand'] - \
             run_df['total_production']
 
@@ -89,7 +89,7 @@ def process_run_df(run_df: pd.DataFrame, complete=True):
     logger.info("Upsampling variables observed at the daily level: %s",
                 variables_to_upsample)
     run_df = fill_daily_columns(run_df, variables_to_upsample
-                                             )
+                                )
 
     # Compute revenues
     for participant in participants_to_revenues:
@@ -113,13 +113,15 @@ def process_run_df(run_df: pd.DataFrame, complete=True):
 
     return run_df
 
+
 def pollution_cost_hour(run_df: pd.DataFrame, participant: str) -> float:
     if participant != 'thermal':
         return 0
     # Get present value of production
     production: float = (
         run_df[f'production_{participant}']).mean()
-    )
+
+    # In USD per MWh
     POLLUTION_COST = 100
     pollution_cost: float = production * POLLUTION_COST
     return pollution_cost
@@ -139,7 +141,7 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
         # Get present value of revenues
         revenues: float = (run_df[f'revenues_{participant}']).mean()
         return revenues
-    
+
     def variable_costs_hour(run_df: pd.DataFrame, participant: str) -> float:
         if participant != 'thermal':
             return 0
@@ -155,8 +157,10 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
     # Check if all are floats
     if not all(isinstance(x, (int, float)) for x in [revenue, variable_costs, fixed_costs, capacity_mw]):
         logger.error('One of the values is not a float')
-        logger.error(f'{revenue=}, {variable_costs=}, {fixed_costs=}, {capacity_mw=}')
-        logger.error(f'{type(revenue)=}, {type(variable_costs)=}, {type(fixed_costs)=}, {type(capacity_mw)=}')
+        logger.error(
+            f'{revenue=}, {variable_costs=}, {fixed_costs=}, {capacity_mw=}')
+        logger.error(
+            f'{type(revenue)=}, {type(variable_costs)=}, {type(fixed_costs)=}, {type(capacity_mw)=}')
         raise ValueError('One of the values is not a float')
 
     return {
@@ -210,7 +214,6 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
                 logger.error('Variable %s not found', var)
                 continue
 
-    
     queries_dict = {
         'unconditional': 'index==index',
         'water_level_34': f'water_level_salto < 34',

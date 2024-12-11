@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5G'
 
+
 class Run:
     """
     Represents a run and implements some general purpose methods for it.
@@ -110,8 +111,8 @@ class Run:
                 return False
         else:
             logger.debug('No sim folder found for run %s in folder %s',
-                            self.name,
-                            self.paths['subfolder'])
+                         self.name,
+                         self.paths['subfolder'])
             return False
         return True
 
@@ -154,7 +155,7 @@ class Run:
         print(bash_path)
         subprocess.run(['bash', bash_path])
 
-    def submit(self, force: bool=False):
+    def submit(self, force: bool = False):
         """
         Submits a run to the cluster.
         """
@@ -220,47 +221,45 @@ class Run:
 
     def _substitute_variables(self, content):
         """
-        Substitutes patterns in the content with variable values.
+        Substitutes patterns in the content with the variable values.
         """
-        import re
-    
         DEGREES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
-    
-        def substitute(content, pattern, value):
+
+        def substitute_pattern(content, pattern, value):
             """
-            Substitutes a pattern in the content with a given value, considering optional multipliers.
+            Substitutes a pattern in the content with a given value.
             """
-            def replace_with_multiplier(match):
-                multiplier = float(match.group(2)) if match.group(2) else 1
-                return str(float(value * multiplier))
-    
-            # Substitute pattern with multipliers (e.g., pattern*2)
+            def replace_func(match):
+                if '*' in match.group():
+                    # Get the captured multiplier
+                    multiplier = float(match.group(2))
+                    # Changed from int() to float()
+                    new_value = float(value * multiplier)
+                    return str(new_value)
+                return str(value)
+
+            # First try to match pattern with multiplier
             content = re.sub(
-                fr'{pattern}\*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)',
-                replace_with_multiplier,
-                content
-            )
-    
-            # Substitute pattern without multipliers (e.g., pattern<)
+                f'({pattern})(?:\*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?))', replace_func, content)
+
+            # Then match pattern without multiplier
             content = re.sub(
-                fr'{pattern}<',
-                lambda match: str(value),
-                content
-            )
-    
+                f'({pattern})<', replace_func, content)
+
             return content
-    
-        # Loop through variables and substitute patterns
+
         for variable in self.variables.values():
-            if variable['type'] == 'polynominal':
-                for degree in DEGREES:
-                    pattern = f"{variable['pattern']}_{degree}"
-                    value = variable['value'] ** degree if variable['value'] > 0 else 0
-                    content = substitute(content, pattern, value)
-    
-            # Substitute for regular variables
-            content = substitute(content, variable['pattern'], variable['value'])
-    
+            for degree in DEGREES:
+                pattern = variable['pattern'] + f"_{degree}"
+                if variable['value'] > 0:
+                    value = variable['value']**degree
+                else:
+                    logger.info("Inputting 0 for %s at degree %s due to value  %s",
+                                variable['pattern'], degree, variable['value'])
+                    value = 0
+                content = substitute_pattern(content, pattern, value)
+            content = substitute_pattern(
+                content, variable['pattern'], variable['value'])
         return content
 
     def _create_bash(self, xml_path: Path):
