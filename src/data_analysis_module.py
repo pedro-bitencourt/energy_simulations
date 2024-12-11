@@ -164,6 +164,7 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
         raise ValueError('One of the values is not a float')
 
     return {
+        f'{participant}_capacity_mw': capacity_mw,
         f'{participant}_revenue_mw_hour': revenue / capacity_mw,
         f'{participant}_variable_costs_mw_hour': variable_costs / capacity_mw,
         f'{participant}_fixed_costs_mw_hour': fixed_costs,

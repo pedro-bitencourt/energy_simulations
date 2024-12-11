@@ -141,10 +141,7 @@ class RunProcessor(Run):
         else:
             participants: list = PARTICIPANTS
 
-        results_dict: dict = {
-            f'{participant}_capacity': self.variables[participant]['value']
-            for participant in participants
-        }
+        results_dict: dict = {}
 
         # Update the results dictionary with metrics for each participant
         for participant in participants:
