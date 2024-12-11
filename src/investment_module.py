@@ -415,9 +415,9 @@ class InvestmentProblem:
         investment_data_str = json.dumps(investment_data)
     
         requested_time: float = self.general_parameters['requested_time_solver']
-        hours = int(requested_time / 3600)
-        minutes = int((requested_time - hours * 3600) / 60)
-        seconds = int((requested_time - hours * 3600) % 60)
+        hours = int(requested_time)
+        minutes = int((requested_time - hours) * 60)
+        seconds = int(((requested_time - hours) * 60 - minutes) * 60)
 
         requested_time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
     
