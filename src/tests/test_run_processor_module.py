@@ -11,6 +11,7 @@ import sys
 import unittest
 from pathlib import Path
 import pandas as pd
+import json
 from time import sleep
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -104,8 +105,13 @@ class TestRun(unittest.TestCase):
         sleep(5)
 
     def test_get_profits(self):
-        profits = self.mock_run_processor.get_profits()
+        profits: dict = self.mock_run_processor.get_profits()
         self.assertIsNotNone(profits)
+        # Save to disk using json
+        with open(OUTPUT_FOLDER / 'profits.json', 'w') as f:
+            json.dump(profits, f)
+        
+
 
 
     def test_construct_random_variables_df(self):

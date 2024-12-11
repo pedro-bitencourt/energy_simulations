@@ -165,6 +165,8 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
 
     return {
         f'{participant}_capacity_mw': capacity_mw,
+        f'{participant}_revenue_hour': revenue,
+        f'{participant}_variable_costs_hour': variable_costs,
         f'{participant}_revenue_mw_hour': revenue / capacity_mw,
         f'{participant}_variable_costs_mw_hour': variable_costs / capacity_mw,
         f'{participant}_fixed_costs_mw_hour': fixed_costs,
