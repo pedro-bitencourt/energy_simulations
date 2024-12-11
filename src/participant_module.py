@@ -1,13 +1,12 @@
 """
 File name: participant_module.py
 Author: Pedro Bitencourt
-Description: This file implements the Participant class and related methods.
+Description: This file has been refactored to use pure functions instead of a Participant class.
 """
-
 import copy
 import logging
 from typing import Any, Dict
-
+from pathlib import Path
 import pandas as pd
 
 from src import processing_module as proc
@@ -16,11 +15,6 @@ from src.constants import (
     SALTO_WATER_LEVEL_DF,
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 # Participant configuration mapping
@@ -33,96 +27,85 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
 }
 
 
-class Participant:
+def _initialize_df_configuration(key_participant: str, sim_folder: Path) -> Dict[str, Any]:
     """
-    Represents a participant in the energy market, such as a wind farm,
-    solar plant, or thermal plant.
+    Initializes the dataframe configuration for data extraction for the given participant.
     """
-
-    def __init__(
-        self,
-        key_participant: str,
-        capacity: float,
-        paths: Dict[str, str],
-        general_parameters: Dict[str, Any],
-    ):
-        self.key = key_participant
-        self.capacity = capacity
-        self.paths = paths
-        # Collecting parameters into a dictionary
-        self.general_parameters = general_parameters
-        self.type_participant = PARTICIPANTS[key_participant]["type"]
-
-        participant_folder = PARTICIPANTS[key_participant]["folder"]
-        self.dataframe_configuration = self._initialize_df_configuration(
-            key_participant, paths["sim"], participant_folder
-        )
-
-    def __repr__(self):
-        return f"Participant(key={self.key}, capacity={self.capacity})"
-
-    def production_df(self) -> pd.DataFrame:
-        """
-        Extracts and processes the production data for the participant.
-        """
-        dataframe = proc.open_dataframe(self.dataframe_configuration, self.paths["sim"],
-                                        daily=self.general_parameters.get("daily", False))
-        logger.info(
-            f"Successfully extracted and processed {self.key} production data.")
-        return dataframe
-
-    def variable_costs_df(self) -> pd.DataFrame:
-        """
-        Extracts and processes the variable costs data for the participant.
-        """
-        if self.type_participant != "thermal":
-            logger.error(
-                "Variable costs are only available for thermal participants.")
-            raise ValueError(
-                "Variable costs are only available for thermal participants.")
-
-        dataframe = proc.open_dataframe(VARIABLE_COSTS_THERMAL_DF, self.paths["sim"],
-                                        self.general_parameters.get("daily", False))
-        logger.info(
-            f"Successfully extracted and processed {self.key} variable costs data.")
-        return dataframe
-
-    def water_level_df(self) -> pd.DataFrame:
-        """
-        Extracts and processes the water level data for the participant.
-        """
-        if self.type_participant != "hydro":
-            logger.error(
-                "Water level data is only available for hydro participants.")
-            raise ValueError(
-                "Water level data is only available for hydro participants.")
-
-        dataframe = proc.open_dataframe(SALTO_WATER_LEVEL_DF, self.paths["sim"],
-                                        self.general_parameters.get("daily", False))
-        logger.info(
-            f"Successfully extracted and processed {self.key} water level data.")
-        return dataframe
-
-
-    def _initialize_df_configuration(
-        self, key_participant: str, sim_folder: str, folder_participant: str
-    ) -> Dict[str, Any]:
-        """
-        Initializes the dataframe configuration for data extraction.
-        """
-        dataframe_template = {
-            "table_pattern": {"start": "CANT_POSTE", "end": None},
-            "columns_options": {
-                "drop_columns": ["PROMEDIO_ESC"],
-                "rename_columns": {**{f"ESC{i}": f"{i}" for i in range(0, 114)}, "": "paso_start"},
-                "numeric_columns": [f"{i}" for i in range(0, 114)],
+    participant_folder = PARTICIPANTS[key_participant]["folder"]
+    dataframe_template = {
+        "table_pattern": {"start": "CANT_POSTE", "end": None},
+        "columns_options": {
+            "drop_columns": ["PROMEDIO_ESC"],
+            "rename_columns": {
+                **{f"ESC{i}": f"{i}" for i in range(0, 114)},
+                "": "paso_start"
             },
-            "delete_first_row": True,
-        }
-        dataframe_configuration = copy.deepcopy(dataframe_template)
-        dataframe_configuration["name"] = f"{key_participant}_production"
-        dataframe_configuration["filename"] = f"{sim_folder}/{folder_participant}/potencias*.xlt"
-        return dataframe_configuration
+            "numeric_columns": [f"{i}" for i in range(0, 114)],
+        },
+        "delete_first_row": True,
+    }
+    dataframe_configuration = copy.deepcopy(dataframe_template)
+    dataframe_configuration["name"] = f"{key_participant}_production"
+    dataframe_configuration["filename"] = f"{sim_folder}/{participant_folder}/potencias*.xlt"
+    return dataframe_configuration
+
+def get_production_df(key_participant: str,
+                      sim_path: Path,
+                      daily: bool = True) -> pd.DataFrame:
+    """
+    Extracts and processes the production data for the participant.
+    """
+    df_config = _initialize_df_configuration(key_participant, sim_path)
+    dataframe = proc.open_dataframe(
+        df_config,
+        sim_path,
+        daily=daily)
+    logger.debug(
+        f"Successfully extracted and processed {key_participant} production data."
+    )
+    return dataframe
+
+def get_variable_costs_df(key_participant: str,
+                          sim_path: Path,
+                          daily: bool = True) -> pd.DataFrame:
+    """
+    Extracts and processes the variable costs data for the participant.
+    This is only available for thermal participants.
+    """
+    participant_type = PARTICIPANTS[key_participant]["type"]
+    if participant_type != "thermal":
+        logger.error("Variable costs are only available for thermal participants.")
+        raise ValueError("Variable costs are only available for thermal participants.")
+
+    dataframe = proc.open_dataframe(
+        VARIABLE_COSTS_THERMAL_DF,
+        sim_path,
+        daily=daily
+    )
+    logger.debug(
+        f"Successfully extracted and processed {key_participant} variable costs data."
+    )
+    return dataframe
 
 
+def get_water_level_df(key_participant: str,
+                       sim_path: Path,
+                       daily: bool = True) -> pd.DataFrame:
+    """
+    Extracts and processes the water level data for the participant.
+    This is only available for hydro participants.
+    """
+    participant_type = PARTICIPANTS[key_participant]["type"]
+    if participant_type != "hydro":
+        logger.error("Water level data is only available for hydro participants.")
+        raise ValueError("Water level data is only available for hydro participants.")
 
+    dataframe = proc.open_dataframe(
+        SALTO_WATER_LEVEL_DF,
+        sim_path,
+        daily=daily
+    )
+    logger.debug(
+        f"Successfully extracted and processed {key_participant} water level data."
+    )
+    return dataframe

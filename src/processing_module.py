@@ -198,9 +198,8 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
     data = read_xlt(file_path=file_path, options=option)
     if data is None:
         logger.error(f'Could not read DataFrame from {file_path}.')
+        logger.debug(f'{data=}')
         raise ValueError(f'Could not read DataFrame from {file_path}.')
-
-    logger.debug(f'{data[0:2]=}')
 
     # Process the DataFrame columns
     dataframe = process_dataframe(data, option['columns_options'])
@@ -238,8 +237,6 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
         raise ValueError(
             f'DataFrame {option["name"]} does not contain a datetime column.')
 
-    logger.debug(f'{dataframe.head()=}')
-
     if dataframe is None:
         logger.error(f'Could not process DataFrame from {file_path}.')
         raise ValueError(
@@ -255,8 +252,6 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
             'Marginal cost DataFrame contains NaN values.')
 
     return dataframe
-
-
 
 
 def convert_from_poste_to_datetime(participant_df: pd.DataFrame,

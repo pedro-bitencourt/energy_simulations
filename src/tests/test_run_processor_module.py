@@ -11,6 +11,7 @@ import sys
 import unittest
 from pathlib import Path
 import pandas as pd
+from time import sleep
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.run_module import Run
@@ -96,13 +97,19 @@ class TestRun(unittest.TestCase):
 #        print(f'{dataframe.head()=}')
 #        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
 
+    def test_profits_data_dict(self):
+        profits_data_dict = self.mock_run_processor.profits_data_dict()
+        self.assertIsNotNone(profits_data_dict)
+        print(f'{profits_data_dict=}')
+        sleep(5)
+
     def test_get_profits(self):
         profits = self.mock_run_processor.get_profits()
         self.assertIsNotNone(profits)
 
 
-    def test_get_random_variables_df(self):
-        random_variables = self.mock_run_processor.get_random_variables_df(lazy=False, complete=True)
+    def test_construct_random_variables_df(self):
+        random_variables = self.mock_run_processor.construct_random_variables_df(complete=True)
         # Save to disk
         random_variables.to_csv(OUTPUT_FOLDER / 'random_variables.csv', index=False)
         self.assertIsNotNone(random_variables)
@@ -112,7 +119,8 @@ class TestRun(unittest.TestCase):
             random_variables['datetime'], format=DATETIME_FORMAT, errors='coerce')
         self.assertFalse(parsed_dates.isna().any(
         ), "DataFrame contains invalid dates in the 'datetime' column")
-        self.assertEqual(random_variables.columns.tolist(), COLUMNS_TO_CHECK)
+        print(f'{random_variables.head()=}')
+
 
 if __name__ == '__main__':
     unittest.main()

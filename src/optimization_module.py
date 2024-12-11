@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 class OptimizationPathEntry:
     iteration: int
     current_investment: dict[str, float]
-    endogenous_variables: list[str]
     successful: bool
     profits: Optional[dict[str, float]] = None
     profits_derivatives: Optional[dict[str, dict[str, float]]] = None
@@ -27,7 +26,6 @@ class OptimizationPathEntry:
         return {
             'iteration': self.iteration,
             'current_investment': self.current_investment,
-            'endogenous_variables': self.endogenous_variables,
             'successful': self.successful,
             'profits': self.profits,
             'profits_derivatives': self.profits_derivatives
@@ -38,26 +36,26 @@ class OptimizationPathEntry:
         return cls(**data)
 
     def current_investment_array(self) -> np.ndarray:
-        return np.array([self.current_investment[var] for var in self.endogenous_variables])
+        return np.array([self.current_investment[var] for var in self.current_investment.keys()])
 
     def profits_array(self) -> Optional[np.ndarray]:
         if self.profits is None:
             return None
-        return np.array([self.profits[var] for var in self.endogenous_variables])
+        return np.array([self.profits[var] for var in self.current_investment.keys()])
 
     def profits_derivatives_array(self) -> Optional[np.ndarray]:
         if self.profits_derivatives is None:
             return None
         return np.array([
             [self.profits_derivatives[row_var][col_var]
-                for col_var in self.endogenous_variables]
-            for row_var in self.endogenous_variables
+                for col_var in self.current_investment.keys()]
+            for row_var in self.current_investment.keys()
         ])
 
     def check_convergence(self) -> bool:
         if self.profits is None:
             return False
-        for var in self.endogenous_variables:
+        for var in self.current_investment.keys():
             profit = self.profits[var]
             if self.current_investment[var] == 1:
                 profit = np.maximum(profit, 0)
@@ -95,14 +93,13 @@ class OptimizationPathEntry:
 
         # Transform the new investment into a dictionary
         new_investment_dict: dict[str, float] = {
-            var: float(new_investment_array[i]) for i, var in enumerate(self.endogenous_variables)
+            var: float(new_investment_array[i]) for i, var in enumerate(self.current_investment.keys())
         }
 
         # Create and return a new OptimizationPathEntry
         return OptimizationPathEntry(
             iteration=self.iteration + 1,
             current_investment=new_investment_dict,
-            endogenous_variables=self.endogenous_variables,
             successful=False,  # This will be set to True after profits are computed
             profits=None,
             profits_derivatives=None

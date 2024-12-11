@@ -14,16 +14,15 @@ from typing import Dict
 import pandas as pd
 
 import src.processing_module as proc
-from src.participant_module import Participant
+from src.participant_module import get_production_df, get_variable_costs_df, get_water_level_df
 from src.run_module import Run
-from src.constants import MARGINAL_COST_DF, DEMAND_DF, HOURLY_FIXED_COSTS
+from src.constants import MARGINAL_COST_DF, DEMAND_DF
+from src.data_analysis_module import process_run_df, compute_participant_metrics
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
+PARTICIPANTS_COMPLETE: list = ['wind', 'solar', 'thermal', 'salto']
+PARTICIPANTS: list = ['wind', 'solar', 'thermal']
 
 class RunProcessor(Run):
     """
@@ -46,7 +45,7 @@ class RunProcessor(Run):
             run (Run): An existing Run instance to process
 
         Raises:
-            ValueError: If the run was not successful
+            FileNotFoundError: If the run was not successful
         """
         super().__init__(
             parent_folder=run.paths['parent_folder'],
@@ -55,35 +54,10 @@ class RunProcessor(Run):
         )
 
         if not self.successful(complete=complete):
+
             logger.error(f'Run {self.name} was not successful.')
             raise FileNotFoundError(f'Run {self.name} was not successful.')
 
-        self._update_paths()
-        # Create dict of participants
-        list_participants = ['wind', 'solar', 'thermal', 'salto']
-        capacities = {var: variable['value'] for var, variable in
-                      self.variables.items()}
-        # WRONG AND HARDCODED, TO FIX
-        capacities['salto'] = 2215
-
-        self.participants_dict: dict[str, Participant] = {var: Participant(var,
-                                                                           capacities[var],
-                                                                           self.paths,
-                                                                           run.general_parameters)
-                                                          for var in list_participants}
-
-    def get_random_variables_df(self, lazy=True, complete=True) -> pd.DataFrame:
-        if self.paths['random_variables'].exists() and lazy:
-            random_variables_df = self.load_random_variables_df()
-        else:
-            random_variables_df = self.construct_random_variables_df(
-                complete=complete)
-        return random_variables_df
-
-    def load_random_variables_df(self) -> pd.DataFrame:
-        random_variables_df = pd.read_csv(
-            self.paths['random_variables'])
-        return random_variables_df
 
     def construct_random_variables_df(self, complete=True) -> pd.DataFrame:
         def melt_df(df: pd.DataFrame, name: str) -> pd.DataFrame:
@@ -110,10 +84,9 @@ class RunProcessor(Run):
                                        'datetime', 'scenario'], how='left')
 
         method_map = {
-            'water_level': lambda p: self.water_level_participant(p),
-            'production': lambda p: self.production_participant(p),
-            'variable_costs': lambda p: self.variable_costs_participant(p),
-            'marginal_cost': lambda _: self.marginal_cost_df()
+            'water_level': lambda p: get_water_level_df(p, self.paths['sim']),
+            'production': lambda p: get_production_df(p, self.paths['sim']),
+            'variable_costs': lambda p: get_variable_costs_df(p, self.paths['sim']),
         }
 
         for data_type, participants in dataframes_to_extract.items():
@@ -127,7 +100,7 @@ class RunProcessor(Run):
                                                'datetime', 'scenario'], how='left')
 
         # Process random variables
-        random_variables_df = process_random_variables_df(
+        random_variables_df = process_run_df(
             random_variables_df, complete=complete)
 
         # Save to disk
@@ -135,35 +108,9 @@ class RunProcessor(Run):
 
         return random_variables_df
 
-    def production_participant(self, participant_key: str) -> pd.DataFrame:
-        production_df: pd.DataFrame = self.participants_dict[participant_key].production_df(
-        )
-        return production_df
-
-    def variable_costs_participant(self, participant_key: str) -> pd.DataFrame:
-        costs_df: pd.DataFrame = self.participants_dict[participant_key].variable_costs_df(
-        )
-        return costs_df
-
-    def water_level_participant(self, participant_key: str) -> pd.DataFrame:
-        participant = self.participants_dict[participant_key]
-        water_level_df: pd.DataFrame = participant.water_level_df(
-        )
-        return water_level_df
-
     def demand_df(self):
         demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
         return demand_df
-
-    def _update_paths(self) -> None:
-        """
-        Updates the paths dictionary with additional paths needed for processing.
-        """
-        self.paths['marginal_cost'] = self.paths['folder'] / \
-            'marginal_cost.csv'
-        self.paths['random_variables'] = self.paths['folder'] / \
-            'random_variables.csv'
-        self.paths['results_json'] = self.paths['folder'] / 'results.json'
 
     def marginal_cost_df(self) -> pd.DataFrame:
         """
@@ -175,194 +122,52 @@ class RunProcessor(Run):
         # Extract marginal cost DataFrame
         marginal_cost_df = proc.open_dataframe(
             MARGINAL_COST_DF, self.paths['sim'])
-
-        # Save marginal cost DataFrame
-        marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
-        logger.info(
-            f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
         return marginal_cost_df
 
-    def get_profits(self) -> Dict[str, float]:
+    def profits_data_dict(self, complete: bool = False) -> Dict:
         """
         Computes profits for the specified endogenous variables.
+    
+        Returns:
+            dict: A dictionary of profits.
+        """
+        # Get random variables dataframe
+        run_df: pd.DataFrame = self.construct_random_variables_df(complete=False)
+    
+        if complete:
+            participants: list = PARTICIPANTS_COMPLETE
+        else:
+            participants: list = PARTICIPANTS
 
-        Args:
-            endogenous_variables_names (list): List of endogenous variable names.
+        results_dict: dict = {
+            f'{participant}_capacity': self.variables[participant]['value']
+            for participant in participants
+        }
+    
+        # Update the results dictionary with metrics for each participant
+        for participant in participants:
+            capacity: float = self.variables[participant]['value']
+            results_dict.update(compute_participant_metrics(run_df, participant, capacity))
+
+        if complete:
+            system_total_cost: float = sum([results_dict[f'{participant}_total_cost'] for participant in PARTICIPANTS_COMPLETE])
+            system_fixed_cost: float = sum([results_dict[f'{participant}_fixed_cost'] for participant in PARTICIPANTS_COMPLETE])
+            results_dict.update({
+                'system_total_cost': system_total_cost,
+                'system_fixed_cost': system_fixed_cost,
+            })
+
+    
+        return results_dict
+
+    def get_profits(self):
+        """
+        Computes profits for the specified endogenous variables.
 
         Returns:
             dict: A dictionary of profits.
         """
-        force = self.general_parameters.get('force', False)
-        lazy = not force
-        # Get random variables dataframe
-        random_variables_df: pd.DataFrame = self.get_random_variables_df(
-            complete=False, lazy=lazy)
-
-        random_variables_df["datetime"] = pd.to_datetime(
-            random_variables_df["datetime"], errors="coerce")
-        # Create a column with discount factor
-        reference_data = random_variables_df['datetime'].min()
-        days_diff = (random_variables_df['datetime'] - reference_data).dt.days
-
-        random_variables_df['discount_factor'] = 1 / \
-            (1 +
-             self.general_parameters['annual_interest_rate'])**(days_diff / 365)
-
-        # HARDCODED
-        profits = {'wind': None, 'solar': None, 'thermal': None}
-        for participant in profits.keys():
-            logger.debug(
-                f"Computing profits for {participant} participant.")
-
-            capacity = self.variables[participant]['value']
-
-            # Get present value of revenues
-            revenues: float = (
-                random_variables_df[f'revenues_{participant}']*random_variables_df['discount_factor']).mean()
-
-            if participant == 'thermal':
-                # Get present value of variable costs
-                variable_costs: float = (
-                    random_variables_df['variable_costs_thermal']*random_variables_df['discount_factor']).mean()
-            else:
-                variable_costs: float = 0
-
-            # Compute average hourly variable profit for the participant
-            variable_profits: float = revenues - variable_costs
-
-            profit_per_hour_per_mw: float = variable_profits / \
-                capacity - HOURLY_FIXED_COSTS[participant]
-
-            # Normalize by the cost
-            profit_normalized = profit_per_hour_per_mw / \
-                (HOURLY_FIXED_COSTS[participant] + variable_costs/capacity)
-
-            # Add profit to the dictionary
-            profits[participant] = profit_normalized
-        return profits
-
-    def processed_status(self):
-        if self.paths['random_variables'].exists():
-            return True
-        return False
-
-
-def process_random_variables_df(random_variables_df, complete=True):
-    def fill_daily_columns(df, variables_to_upsample):
-        """
-        Fills daily frequency data to match hourly frequency for specified columns.
-
-        Parameters:
-            df (pd.DataFrame): DataFrame with 'datetime' and 'scenario' columns and mixed frequency data.
-            variables_to_upsample (list): List of column names that are in daily frequency.
-
-        Returns:
-            pd.DataFrame: DataFrame with hourly frequency for specified columns.
-        """
-        # Ensure datetime is in the correct format
-        if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
-            df['datetime'] = pd.to_datetime(df['datetime'])
-
-        result_df = df.copy()
-
-        # Process each scenario separately
-        for scenario in df['scenario'].unique():
-
-            # Get data for this scenario
-            mask = df['scenario'] == scenario
-            scenario_df = df[mask].copy()
-
-            # Set datetime as index for resampling
-            scenario_df = scenario_df.set_index('datetime')
-            print(scenario_df.index.is_monotonic_increasing)  # Should be True
-            # Should be None or hourly ('H')
-            print(scenario_df.index.freq)
-
-            # Iterate over each column and apply the specified upsampling method
-            for column, upsampling_method in variables_to_upsample.items():
-                logger.debug("Upsampling %s", column)
-                logger.debug(
-                    f"Pre upsampling: scenario_df[{column}]={scenario_df[column]}")
-
-                if upsampling_method == "ffill":
-                    # For forward-fill:
-                    # 1. Resample the column to hourly frequency.
-                    # 2. Forward-fill to propagate the last valid observation forward.
-                    # 3. Backward-fill to ensure even the initial periods are filled.
-                    scenario_df[column] = (
-                        scenario_df[column]
-                        .resample('H')
-                        .ffill()
-                        .bfill()
-                    )
-
-                elif upsampling_method == "mean":
-                    # For the "mean" method, we assume the given daily value at midnight
-                    # should be spread evenly across the 24 hours.
-
-                    # 1. Extract daily data (using 'first' to get the midnight value).
-                    daily_df = scenario_df[column].resample('D').first()
-
-                    # 2. Upsample to hourly, forward-fill the daily value to all 24 hours,
-                    #    and then divide by 24 to distribute the daily total evenly.
-                    hourly_df = daily_df.resample('H').ffill() / 24.0
-
-                    logger.debug(f"Daily: daily_df[{column}]={daily_df}")
-                    logger.debug(f"Hourly: hourly_df[{column}]={hourly_df}")
-
-                    # 3. Align the hourly data back to the scenario_df's index
-                    scenario_df[column] = hourly_df.reindex(
-                        scenario_df.index).values
-
-                logger.debug(
-                    f"Post upsampling: scenario_df[{column}]={scenario_df[column]}")
-
-            # Finally, write the updated results back into the original DataFrame.
-            # Reindexing to ensure that the order of the timestamps matches that of result_df.
-            result_df.loc[mask, variables_to_upsample.keys()] = scenario_df[variables_to_upsample.keys()].reindex(
-                result_df.loc[mask, "datetime"]
-            ).values
-
-        return result_df
-
-    if complete:
-        random_variables_df['total_production'] = (random_variables_df['production_wind']
-                                                   + random_variables_df['production_solar']
-                                                   + random_variables_df['production_thermal']
-                                                   + random_variables_df['production_salto'])
-        random_variables_df['lost_load'] = random_variables_df['demand'] - \
-            random_variables_df['total_production']
-
-        variables_to_upsample = {'water_level_salto': 'ffill',
-                                 'variable_costs_thermal': 'mean', }
-        participants_to_revenues = ['wind', 'solar', 'thermal', 'salto']
-    else:
-        participants_to_revenues = ['wind', 'solar', 'thermal']
-        variables_to_upsample = {'variable_costs_thermal': 'mean', }
-
-    logger.info("Upsampling variables observed at the daily level: %s",
-                variables_to_upsample)
-    random_variables_df = fill_daily_columns(random_variables_df, variables_to_upsample
-                                             )
-
-    # Compute revenues
-    for participant in participants_to_revenues:
-        random_variables_df[f'revenues_{participant}'] = random_variables_df[
-            f'production_{participant}'] * random_variables_df['marginal_cost']
-
-    # Compute variable costs for thermal participant, HARDCODED
-    random_variables_df['profits_thermal'] = random_variables_df['revenues_thermal'] - \
-        random_variables_df['variable_costs_thermal']
-
-    initial_row_count = len(random_variables_df)
-    random_variables_df = random_variables_df.dropna()  # Drop rows with NaN entries
-    rows_dropped = initial_row_count - len(random_variables_df)
-
-    # Log the results
-    logger.warning(
-        f"Number of rows dropped due to NaN entries: {rows_dropped}")
-    if rows_dropped > 3000:
-        logger.critical(
-            f"CRITICAL: More than 3000 rows were excluded! Total: {rows_dropped}")
-
-    return random_variables_df
+        profits_data: dict = self.profits_data_dict(complete=False)
+        profits_dict: dict = {f"{participant}_profits": profits_data[f'{participant}_normalized_profits']
+                              for participant in PARTICIPANTS}
+        return profits_dict

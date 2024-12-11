@@ -13,9 +13,11 @@ import logging
 import subprocess
 
 from src.auxiliary import make_name, try_get_file, submit_slurm_job
+from .constants import initialize_paths_run
 
 logger = logging.getLogger(__name__)
 
+MEMORY_REQUESTED = '5G'
 
 class Run:
     """
@@ -48,8 +50,8 @@ class Run:
         self.parent_name: str = parent_folder.parts[-1]
 
         # Initialize relevant paths
-        self.paths: dict = self._initialize_paths(
-            parent_folder, general_parameters)
+        self.paths: dict = initialize_paths_run(
+            parent_folder, self.name, self.general_parameters['name_subfolder'])
 
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
@@ -59,6 +61,7 @@ class Run:
         Deletes the folder and its contents.
         """
         if self.paths['folder'].exists():
+            logger.info("Deleting folder %s...", self.paths['folder'])
             shutil.rmtree(self.paths['folder'])
             logger.info("Deleted folder %s", self.paths['folder'])
 
@@ -67,38 +70,6 @@ class Run:
                                         self.variables.values()]
         name: str = make_name(exog_var_values)
         return name
-
-    def _initialize_paths(self, parent_folder: Path, general_parameters: dict):
-        """
-        Initialize a dictionary with relevant paths for the run.
-        """
-        def format_windows_path(path_str):
-            path_str = str(path_str)
-            # Replace forward slashes with backslashes
-            windows_path = path_str.replace('/', '\\')
-            # Add Z: at the start of the path
-            windows_path = 'Z:' + windows_path
-            # If the path doesn't end with a backslash, add one
-            if not windows_path.endswith('\\'):
-                windows_path += '\\'
-            return windows_path
-
-        paths = {}
-        paths['parent_folder'] = parent_folder
-        folder = parent_folder / self.name
-        paths['folder'] = folder
-        # Convert the output path to a Windows path, for use in the .xml file
-        paths['folder_windows'] = format_windows_path(paths['folder'])
-
-        # Subfolder is PRUEBA or CAD-2024
-        subfolder = general_parameters.get('name_subfolder', '')
-        paths['subfolder'] = folder / subfolder
-
-        # Add paths for results and price distribution files
-        paths['results_json'] = folder / 'results.json'
-        paths['price_distribution'] = folder / 'price_distribution.csv'
-
-        return paths
 
     def _get_opt_and_sim_folders(self):
         '''
@@ -124,8 +95,6 @@ class Run:
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
-
-        If it was not successful, deletes the folder.
         """
         # Get opt and sim folders
         self.paths.update(self._get_opt_and_sim_folders())
@@ -133,35 +102,42 @@ class Run:
         # Check if SIM folder exists
         sim_folder = self.paths.get('sim', False)
         if sim_folder:
-            files_to_check = [r'resumen*',
-                              r'EOLO_eoloDeci/potencias*.xlt',
-                              # r'FOTOV_solarDeci/potencias*.xlt',
-                              # r'DEM_demandaPrueba/potencias*.xlt'
-                              ]
-            if complete:
-                files_to_check.append(r'HID_salto/cota*.xlt')
-                files_to_check.append(r'HID_salto/potencias*.xlt')
-
-            print(f"Checking if files exist for run {self.name}")
-
             # Check if files exist
-            for file_name in files_to_check:
-                file_found = try_get_file(sim_folder, file_name)
-                if not file_found:
-                    print(f'CRITICAL: {file_name} not found for {self.name}')
-                    logger.critical(
-                        "%s does not contain file %s", sim_folder, file_name)
-                    # logger.critical("Deleting run %s folder", self.name)
-                    # self.tear_down()
-                    return False
+            missing_files = self.missing_files(complete)
+            if missing_files:
+                logger.debug(
+                    "Run %s is missing files: %s", self.name, missing_files)
+                return False
         else:
-            print(
-                f"No sim folder found for run {self.name} in folder {self.paths['subfolder']}")
-            logger.critical('No sim folder found for run %s in folder %s',
+            logger.debug('No sim folder found for run %s in folder %s',
                             self.name,
                             self.paths['subfolder'])
             return False
         return True
+
+    def missing_files(self, complete: bool = False):
+        """
+        Check if the run is missing files.
+        """
+        files_to_check = [r'resumen*',
+                          r'EOLO_eoloDeci/potencias*.xlt',
+                          # r'FOTOV_solarDeci/potencias*.xlt',
+                          # r'DEM_demandaPrueba/potencias*.xlt'
+                          ]
+        # Add hydro files if complete
+        if complete:
+            files_to_check.append(r'HID_salto/cota*.xlt')
+            files_to_check.append(r'HID_salto/potencias*.xlt')
+
+        missing_files: list[str] = []
+        # Check if files exist
+        for file_name in files_to_check:
+            file_found = try_get_file(self.paths['sim'], file_name)
+            if not file_found:
+                missing_files.append(file_name)
+                logger.debug("%s does not contain file %s",
+                             self.paths['sim'], file_name)
+        return missing_files
 
     def prototype(self):
         # Create the directory
@@ -178,7 +154,7 @@ class Run:
         print(bash_path)
         subprocess.run(['bash', bash_path])
 
-    def submit(self, force=False):
+    def submit(self, force: bool=False):
         """
         Submits a run to the cluster.
         """
@@ -243,45 +219,47 @@ class Run:
 
     def _substitute_variables(self, content):
         """
-        Substitutes patterns in the content with the variable values.
+        Substitutes patterns in the content with variable values.
         """
+        import re
+    
         DEGREES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
-
-        def substitute_pattern(content, pattern, value):
+    
+        def substitute(content, pattern, value):
             """
-            Substitutes a pattern in the content with a given value.
+            Substitutes a pattern in the content with a given value, considering optional multipliers.
             """
-            def replace_func(match):
-                if '*' in match.group():
-                    # Get the captured multiplier
-                    multiplier = float(match.group(2))
-                    # Changed from int() to float()
-                    new_value = float(value * multiplier)
-                    return str(new_value)
-                return str(value)
-
-            # First try to match pattern with multiplier
+            def replace_with_multiplier(match):
+                multiplier = float(match.group(2)) if match.group(2) else 1
+                return str(float(value * multiplier))
+    
+            # Substitute pattern with multipliers (e.g., pattern*2)
             content = re.sub(
-                f'({pattern})(?:\*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?))', replace_func, content)
-
-            # Then match pattern without multiplier
+                fr'{pattern}\*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)',
+                replace_with_multiplier,
+                content
+            )
+    
+            # Substitute pattern without multipliers (e.g., pattern<)
             content = re.sub(
-                f'({pattern})<', replace_func, content)
-
+                fr'{pattern}<',
+                lambda match: str(value),
+                content
+            )
+    
             return content
-
+    
+        # Loop through variables and substitute patterns
         for variable in self.variables.values():
-            for degree in DEGREES:
-                pattern = variable['pattern'] + f"_{degree}"
-                if variable['value'] > 0:
-                    value = variable['value']**degree
-                else:
-                    logger.info("Inputting 0 for %s at degree %s due to value  %s",
-                                variable['pattern'], degree, variable['value'])
-                    value = 0
-                content = substitute_pattern(content, pattern, value)
-            content = substitute_pattern(
-                content, variable['pattern'], variable['value'])
+            if variable['type'] == 'polynominal':
+                for degree in DEGREES:
+                    pattern = f"{variable['pattern']}_{degree}"
+                    value = variable['value'] ** degree if variable['value'] > 0 else 0
+                    content = substitute(content, pattern, value)
+    
+            # Substitute for regular variables
+            content = substitute(content, variable['pattern'], variable['value'])
+    
         return content
 
     def _create_bash(self, xml_path: Path):
@@ -293,15 +271,19 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        hours = self.general_parameters['requested_time_run']
-        requested_time_run = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
+        requested_time: float = self.general_parameters['requested_time_run']
+        hours: int = int(requested_time)
+        minutes: int = int((requested_time * 60) % 60)
+        seconds: int = int((requested_time * 3600) % 60)
+        requested_time_run: str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
         if self.general_parameters.get('email', None):
             email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
         else:
             email_line = ""
 
-        MEMORY_REQUESTED = '12G'
+        temp_folder_path = f"{self.paths['folder']}/temp"
+        temp_folder_path_windows = temp_folder_path.replace('/', '\\')
 
         with open(bash_path, 'w') as file:
             file.write(f'''#!/bin/bash
@@ -320,11 +302,11 @@ class Run:
 
 echo "Starting {self.name} at: $(date +'%H:%M:%S')"
 export WINEPREFIX=/projects/p32342/software/.wine
-mkdir -p /projects/p32342/comparative_statics/{self.paths['folder']}/{self.name}/temp
+mkdir -p {temp_folder_path}
 module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3
 sleep $((RANDOM%60 + 10))
-wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G -jar MOP_Mingo.JAR "Z:{xml_path}"
+wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{MEMORY_REQUESTED} -jar MOP_Mingo.JAR "Z:{xml_path}""
 ''')
         return bash_path

@@ -21,15 +21,12 @@ from typing import Optional, Dict
 import json
 import pandas as pd
 
-from src.auxiliary import submit_slurm_job, wait_for_jobs
-
+from .auxiliary import submit_slurm_job
 from .investment_module import InvestmentProblem
 from .run_module import Run
 from .run_processor_module import RunProcessor
-from .optimization_module import OptimizationPathEntry, get_last_successful_iteration
-from .auxiliary import submit_slurm_job
-
-from src.constants import BASE_PATH
+from .data_analysis_module import conditional_means
+from .constants import BASE_PATH, initialize_paths_comparative_statics
 
 # Get logger for current module
 logger = logging.getLogger(__name__)
@@ -59,7 +56,7 @@ class ComparativeStatics:
         - endogenous_variables: dictionary containing the endogenous variables.
         - exogenous_variable_grid: dictionary containing the grids for the exogenous variables.
         - paths: dictionary containing the paths for the input, output, and result folders.
-        - list_simulations: list containing the Run objects.
+        - list_runs: list containing the Run objects.
         - list_investment_problems: list containing the InvestmentProblem objects.
     """
 
@@ -90,7 +87,7 @@ class ComparativeStatics:
                                                          for var_name, variable in self.exogenous_variable.items()}
 
         # Initialize relevant paths
-        self.paths: dict = self._initialize_paths(base_path)
+        self.paths: dict = initialize_paths_comparative_statics(base_path, name)
 
         # Create the folders if they do not exist
         for path in self.paths.values():
@@ -100,51 +97,50 @@ class ComparativeStatics:
         # Validate the input
         self._validate_input()
 
-        # Initialize the list of simulations
-        self.list_simulations: list[Run] = []
-
         # If there are endogenous variables, we need to handle investment problems first
         if self.endogenous_variables:
             # Create investment problems
             self.list_investment_problems: list[InvestmentProblem] = self._initialize_investment_problems(
             )
             # The runs will be obtained from the investment problems after optimization
-            self.list_simulations = self.create_runs_from_investment_problems()
+            self.list_runs = self.create_runs_from_investment_problems()
         else:
             # Create runs directly
-            self.list_simulations = self._initialize_runs()
+            self.list_runs = self._initialize_runs()
 
     def prototype(self):
         # Get first investment problem
         investment_problem_0: InvestmentProblem = self.list_investment_problems[0]
         investment_problem_0.prototype()
 
-    def redo_equilibrium_runs(self):
+    def redo_runs(self):
         """
         Deletes and runs again the equilibrium runs.
+
+        WARNING: This method will delete the results of the runs.
         """
-        for run in self.list_simulations:
+        for run in self.list_runs:
             logger.info("Redoing equilibrium run %s", run.name)
+            logger.warning("Deleting results of run %s", run.name)
             run.tear_down()
             run.submit()
 
-    def get_random_variables_df(self, lazy=True) -> pd.DataFrame:
+    def extract_random_variables(self, complete: bool = True) -> None:
         logger.info("Saving random variables DataFrame to results folder...")
-        df_list: list[pd.DataFrame] = []
-        for run in self.list_simulations:
+        for run in self.list_runs:
             try:
-                run_processor = RunProcessor(run, complete=True)
+                run_processor = RunProcessor(run, complete=complete)
             except ValueError:
                 logger.error(f"Run {run.name} not successful, skipping it")
                 continue
 
-            run_df = run_processor.get_random_variables_df(lazy)
+            run_df = run_processor.construct_random_variables_df(complete=complete)
 
             # Copy the random variables to the random_variables folder with the run name
             run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
                           index=False)
 
-    def _validate_input(self):
+    def _validate_input(self) -> None:
         # Check if all variables have a grid
         for variable in self.exogenous_variable:
             if variable not in self.exogenous_variable_grid:
@@ -162,24 +158,19 @@ class ComparativeStatics:
             raise ValueError(
                 "General parameters do not contain the expected keys.")
 
-    def create_runs_from_investment_problems(self, lazy: bool = True,
-                                             complete: bool = False):
+    def create_runs_from_investment_problems(self, complete: bool = False):
         """
         Recover the last iteration of each investment problem and create a Run object from it.
         """
-        list_simulations = []
+        list_runs = []
         for investment_problem in self.list_investment_problems:
             # Create a Run object from the last iteration
-            equilibrium_run, convergence = investment_problem.equilibrium_run(
-                lazy=lazy)
-            if complete:
-                if equilibrium_run.successful(complete=complete):
-                    list_simulations.append(equilibrium_run)
-                else:
-                    logger.error("Run %s not successful", equilibrium_run.name)
+            last_run = investment_problem.last_run()
+            if last_run.successful(complete=complete):
+                list_runs.append(last_run)
             else:
-                list_simulations.append(equilibrium_run)
-        return list_simulations
+                logger.error("Run %s not successful", last_run.name)
+        return list_runs
 
     def _create_bash(self, lazy):
         # create the data dictionary
@@ -241,19 +232,9 @@ END
     def _grid_length(self):
         return len(next(iter(self.exogenous_variable_grid.values())))
 
-    def _initialize_paths(self, base_path: str) -> dict:
-        paths = {}
-        paths['main'] = Path(f"{base_path}/comparative_statics/{self.name}")
-        paths['results'] = Path(f"{base_path}/results/{self.name}")
-        paths['random_variables'] = Path(
-            f"{base_path}/results/{self.name}/random_variables")
-        paths['bash'] = Path(
-            f"{base_path}/comparative_statics/{self.name}/process.sh")
-        return paths
-
     def _initialize_runs(self):
         # iterate over the grid
-        list_simulations: list[Run] = []
+        list_runs: list[Run] = []
         for i in range(self._grid_length()):
             variables = {
                 key: {"pattern": self.exogenous_variable[key]["pattern"],
@@ -261,12 +242,12 @@ END
                 for key in self.exogenous_variable
             }
             # create a run
-            list_simulations.append(
+            list_runs.append(
                 Run(self.paths['main'],
                     self.general_parameters,
                     variables)
             )
-        return list_simulations
+        return list_runs
 
     def _initialize_investment_problems(self):
         # create a list of InvestmentProblem objects
@@ -312,19 +293,13 @@ END
         """
         if self.endogenous_variables:
             # Submit investment problems
-            for inv_prob in self.list_investment_problems:
-                # lazy = not self.general_parameters.get('force', False)
-                # if inv_prob.check_convergence(lazy=lazy):
-                #    logging.info("Investment problem %s reached convergence",
-                #                 inv_prob.name)
-                #    continue
-                # else:
-                inv_prob.submit()
+            for investment_problem in self.list_investment_problems:
+                investment_problem.submit()
                 logging.info(
-                    f'Submitted job for investment problem %s', inv_prob.name)
+                    f'Submitted job for investment problem %s', investment_problem.name)
         else:
             # Submit runs directly
-            for run in self.list_simulations:
+            for run in self.list_runs:
                 job_id = run.submit()
                 if job_id is None:
                     logging.error("Failed to submit run %s", run.name)
@@ -338,20 +313,18 @@ END
         # a list of Run objects
         if self.endogenous_variables:
             # Create runs from investment problems
-            self.list_simulations = self.create_runs_from_investment_problems(
-                lazy=lazy)
+            self.list_runs = self.create_runs_from_investment_problems()
 
             # Get the investment results
             investment_results_df = self._investment_results(lazy=lazy)
 
             # Save to disk
-            investment_results_df.to_csv(
-                self.paths['results'] / 'investment_results.csv', index=False)
+            investment_results_df.to_csv(self.paths['investment_results'], index=False)
 
         self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
 
         # Save the random variables df to the random_variables folder
-        self.get_random_variables_df(lazy=lazy, complete=complete)
+        self.extract_random_variables(complete=complete)
 
         # Construct the new results dataframe
         conditional_means_df = construct_results(
@@ -359,7 +332,7 @@ END
 
         # Save the results to a .csv file
         conditional_means_df.to_csv(
-            self.paths['results'] / 'conditional_means.csv', index=False)
+            self.paths['conditional_means'], index=False)
 
         # Get daily, weekly, and yearly averages
         # daily_results_df = construct_results(self.paths['random_variables'],
@@ -377,83 +350,12 @@ END
         # yearly_results_df.to_csv(
         #    self.paths['results'] / 'yearly_results.csv', index=False)
 
-    def _compile_random_variables(self):
-        # Initialize a list to store the random variables over the simulations
-        random_variables_dict: list[dict] = []
-
-        # Iterate over the simulations
-        for run in self.list_simulations:
-            # Check if the run was successful
-            if not run.successful():
-                logging.error("Run %s was not successful", run.name)
-                continue
-
-            # Create RunProcessor object
-            run_processor = RunProcessor(run)
-
-            # Check if the run was processed
-            if not run_processor.processed_status():
-                logging.error("Run %s was not processed", run.name)
-                continue
-
-            # Load random variables from the json results file
-            random_variables: dict = run_processor.load_random_variables_df()
-
-            random_variables_dict.append(random_variables)
-
-        # Transform random variables into a pandas dataframe
-        random_variables_df: pd.DataFrame = pd.DataFrame(random_variables_dict)
-
-        return random_variables_df
-
     def _investment_results(self, lazy=True):
         rows: list = []
         for investment_problem in self.list_investment_problems:
-            # get the current iteration object
-            last_iteration: OptimizationPathEntry = get_last_successful_iteration(
-                investment_problem.optimization_trajectory)
-
-            convergence_reached: bool = last_iteration.check_convergence()
-            iteration_number: int = last_iteration.iteration
-            exo_vars: dict = {key: entry['value']
-                              for key, entry in investment_problem.exogenous_variable.items()}
-
-            if lazy:
-                profits_dict: Optional[dict] = last_iteration.profits
-            else:
-                last_run = investment_problem.create_run(
-                    last_iteration.current_investment)
-                try:
-                    last_run_processor = RunProcessor(last_run)
-                except FileNotFoundError:
-                    logger.critical("Run %s not successful, resubmitting it")
-                    job_id = last_run.submit()
-
-                profits_dict = last_run_processor.get_profits()
-
-            if profits_dict is None:
-                logger.error("Unexpected: profits_dict is None for %s",
-                             investment_problem.name)
-                continue
-
-            profits_with_suffix = {key + '_profit': value for key, value in
-                                   profits_dict.items()}
-
-            row: dict = {
-                **exo_vars,
-                **last_iteration.current_investment,
-                'convergence_reached': convergence_reached,
-                'iteration': iteration_number,
-                **profits_with_suffix
-            }
-
-            # Append the new row to results_df
-            rows.append(row)
-
+            rows.append(investment_problem.investment_results(lazy=lazy))
         results_df: pd.DataFrame = pd.DataFrame(rows)
-
         return results_df
-
 
 def construct_results(random_variables_folder: Path, results_function) -> pd.DataFrame:
     runs_list = [run.stem for run in random_variables_folder.iterdir()
@@ -476,138 +378,3 @@ def construct_results(random_variables_folder: Path, results_function) -> pd.Dat
     results_df = pd.DataFrame(rows)
 
     return results_df
-
-
-def conditional_means(run_df: pd.DataFrame) -> dict:
-    variables = run_df.columns.tolist()
-    # Remove datetime and scenario columns
-    variables.remove('datetime')
-    variables.remove('scenario')
-
-    # Initialize results dictionary
-    results_dict = {}
-
-    # Create cutoffs dictionary
-    cutoffs = {
-        'water_level_salto': {
-            '25': run_df['water_level_salto'].quantile(0.25),
-            '10': run_df['water_level_salto'].quantile(0.10)
-        },
-        'production_wind': {
-            '25': run_df['production_wind'].quantile(0.25),
-            '10': run_df['production_wind'].quantile(0.10)
-        },
-        'lost_load': {
-            '95': run_df['lost_load'].quantile(0.95),
-            '99': run_df['lost_load'].quantile(0.99)
-        },
-        'profits_thermal': {
-            '75': run_df['profits_thermal'].quantile(0.75),
-            '95': run_df['profits_thermal'].quantile(0.95)
-        }
-    }
-
-    # Add cutoffs as columns to the dataframe
-    for var, percentiles in cutoffs.items():
-        for perc, value in percentiles.items():
-            try:
-                run_df[f'{var}_cutoff_{perc}'] = value
-            except KeyError:
-                logger.error('Variable %s not found', var)
-                continue
-
-    queries_dict = {
-        'unconditional': 'index==index',
-        'water_level_34': f'water_level_salto < 34',
-        'water_level_33': f'water_level_salto < 33',
-        'water_level_32': f'water_level_salto < 32',
-        'water_level_31': f'water_level_salto < 31',
-        'drought_25': f'water_level_salto < water_level_salto_cutoff_25',
-        'drought_10': f'water_level_salto < water_level_salto_cutoff_10',
-        'low_wind_25': f'production_wind < production_wind_cutoff_25',
-        'low_wind_10': f'production_wind < production_wind_cutoff_10',
-        'drought_low_wind_25': f'water_level_salto < water_level_salto_cutoff_25 and production_wind < production_wind_cutoff_25',
-        'drought_low_wind_10': f'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
-        'blackout_95': f'lost_load > lost_load_cutoff_95',
-        'blackout_99': f'lost_load > lost_load_cutoff_99',
-        'negative_lost_load': f'lost_load < 0.001',
-        'blackout_positive': f'lost_load > 0.001',
-        'profits_thermal_75': f'profits_thermal > profits_thermal_cutoff_75',
-        'profits_thermal_95': f'profits_thermal > profits_thermal_cutoff_95',
-    }
-
-    for query_name, query in queries_dict.items():
-        try:
-            query_frequency = run_df.query(
-                query).shape[0] / run_df.shape[0]
-            results_dict[f'{query_name}_frequency'] = query_frequency
-            for variable in variables:
-                results_dict[f'{query_name}_{variable}'] = run_df.query(query)[
-                    variable].mean()
-        except KeyError:
-            logger.error('Query %s not successful', query_name)
-            continue
-    return results_dict
-
-
-def intra_daily_averages(run_df: pd.DataFrame) -> dict:
-    variables = run_df.columns.tolist()
-    # Remove datetime and scenario columns
-    variables.remove('datetime')
-    variables.remove('scenario')
-
-    # Initialize results dictionary
-    results_dict = {}
-
-    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
-
-    # Take the mean of the variables for each hour of the day
-    for hour in range(24):
-        for variable in variables:
-            run_df['hour'] = run_df['datetime'].dt.hour
-            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour']
-                                                             == hour][variable].mean()
-
-    return results_dict
-
-
-def intra_weekly_averages(run_df: pd.DataFrame) -> dict:
-    variables = run_df.columns.tolist()
-    # Remove datetime and scenario columns
-    variables.remove('datetime')
-    variables.remove('scenario')
-
-    # Initialize results dictionary
-    results_dict = {}
-
-    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
-    # Take the mean of the variables for each hour of the week
-    for hour in range(168):
-        for variable in variables:
-            run_df['hour_of_the_week'] = run_df['datetime'].dt.hour + \
-                run_df['datetime'].dt.dayofweek * 24
-            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour_of_the_week']
-                                                             == hour][variable].mean()
-
-    return results_dict
-
-
-def intra_year_averages(run_df: pd.DataFrame) -> dict:
-    variables = run_df.columns.tolist()
-    # Remove datetime and scenario columns
-    variables.remove('datetime')
-    variables.remove('scenario')
-
-    # Initialize results dictionary
-    results_dict = {}
-
-    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
-
-    # Take the mean of the variables for each day of the year
-    for day in range(365):
-        for variable in variables:
-            run_df['day_of_the_year'] = run_df['datetime'].dt.dayofyear
-            results_dict[f'{variable}_day_{day}'] = run_df[run_df['day_of_the_year']
-                                                           == day][variable].mean()
-
-    return results_dict

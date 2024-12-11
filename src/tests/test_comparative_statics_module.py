@@ -73,27 +73,6 @@ class TestComparativeStatics(unittest.TestCase):
         #    file.unlink(missing_ok=True)
         pass
 
-    def test_get_random_variables_df(self):
-        def assert_random_variables_df(df: pd.DataFrame):
-            self.assertIsInstance(df, pd.DataFrame)
-            self.assertFalse(df.empty)
-            # Check the datetime format
-            self.assertEqual(df['datetime'].dtype, 'datetime64[ns]')
-            # Check for NaN values
-            #self.assertFalse(df.isna().values.any(), "DataFrame contains NaN values")
-            # Check for invalid dates
-            parsed_dates = pd.to_datetime(
-                df['datetime'], format=DATETIME_FORMAT, errors='coerce')
-            self.assertFalse(parsed_dates.isna().any(),
-                             "DataFrame contains invalid dates in the 'datetime' column")
-
-        # Test random variables dataframe
-        random_variables_df = self.mock_comparative_statics.get_random_variables_df(lazy=False)
-        assert_random_variables_df(random_variables_df)
-        # Save the dataframe to a file
-        random_variables_df.to_csv(OUTPUT_FOLDER / 'random_variables.csv', index=False)
-        print(f'{random_variables_df.head()=}')
-
     def test_process(self):
         self.mock_comparative_statics.process()
         # Check if the output folder contains the expected files

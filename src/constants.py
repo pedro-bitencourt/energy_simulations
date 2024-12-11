@@ -4,6 +4,9 @@ from pathlib import Path
 from rich.logging import RichHandler
 import logging
 
+################################################################################################
+# LOGGING CONFIGURATION
+################################################################################################
 # Configure the handler with pretty printing enabled
 rich_handler = RichHandler(
     rich_tracebacks=True,
@@ -24,15 +27,13 @@ logging.basicConfig(
 # Ensure root logger uses the rich handler
 logging.getLogger().handlers = [rich_handler]
 
-
 def get_logger(name):
     return logging.getLogger(name)
 
 
-# constants for parsing the results
-DATETIME_FORMAT = '%m/%d/%y %H:%M'
-SCENARIOS = [f'{i}' for i in range(0, 114)]
-
+################################################################################################
+# ECONOMIC PARAMETERS
+################################################################################################
 # costs are in USD per MW for installation and USD per MW per year for O&M
 COSTS = {
     'wind': {'oem': 20_000, 'installation': 1_300_000, 'lifetime': 25},
@@ -40,17 +41,18 @@ COSTS = {
     'thermal': {'oem': 12_000, 'installation': 975_000, 'lifetime': 20}
 }
 
+# Fixed costs per hour, in USD per MW per hour
 HOURLY_FIXED_COSTS = {
     participant: (COSTS[participant]['installation'] / COSTS[participant]
                   ['lifetime'] + COSTS[participant]['oem']) / 8760
     for participant in COSTS.keys()
 }
 
-# Error codes
-UNSUCCESSFUL_RUN: int = 2
-ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
 
-# Optimization constants
+################################################################################################
+# OPTIMIZATION CONSTANTS
+################################################################################################
+
 # Maximum number of iterations for the optimization algorithm
 MAX_ITER: int = 35
 # Delta is used to calculate the numerical derivatives of the profits
@@ -59,63 +61,79 @@ DELTA: float = 10
 # installation cost
 THRESHOLD_PROFITS: float = 0.01  # Default threshold for convergence
 
-# Relevant paths
+
+################################################################################################
+# PATHS
+################################################################################################
 BASE_PATH: Path = Path('/projects/p32342')
 POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
 
-# Plotting configurations
-HEATMAP_CONFIGS = [
-    {'variables': {'x': {'key': 'hydro_factor', 'label': 'Hydro Factor'},
-                   'y': {'key': 'thermal_capacity', 'label': 'Thermal Capacity'},
-                   'z': {'key': 'price_avg', 'label': 'Profit'}},
-     'filename': 'price_avg_heatmap.png',
-     'title': 'Price Heatmap'}
-]
+def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
+    paths = {}
+    # Folders
+    paths['main'] = Path(f"{base_path}/comparative_statics/{name}")
+    paths['results'] = Path(f"{base_path}/results/{name}")
+    paths['random_variables'] = Path(
+        f"{base_path}/results/{name}/random_variables")
 
-ONE_D_PLOTS_CONFIGS = [
-    # Optimal capacities of wind and solar
-    {
-        'y_variables': [
-            {'key': 'wind', 'label': 'Optimal Wind Capacity'},
-            {'key': 'solar', 'label': 'Optimal Solar Capacity'},
-            {'key': 'thermal', 'label': 'Optimal Thermal Capacity'}
-        ],
-        'axis_labels': {'y': 'Capacity (MW)'},
-        'title': 'Optimal Wind and Solar Capacities',
-        'filename': 'optimal_capacities.png'
-    },
-    # Total production by resources
-    {
-        'y_variables': [
-            {'key': 'total_production_hydros', 'label': 'Hydro'},
-            {'key': 'total_production_thermals', 'label': 'Thermal'},
-            {'key': 'total_production_combined_cycle',
-                'label': 'Combined Cycle'},
-            {'key': 'total_production_wind', 'label': 'Wind'},
-            {'key': 'total_production_solar', 'label': 'Solar'},
-            {'key': 'total_production_import_export',
-                'label': 'Import/Export'},
-            {'key': 'total_production_demand', 'label': 'Demand'},
-            {'key': 'total_production_blackout', 'label': 'Blackout'},
-
-        ],
-        'axis_labels': {'y': 'Total Production (GWh)'},
-        'title': 'Total Production by Resources',
-        'filename': 'total_production.png'
-    },
-    # Average price
-    {
-        'y_variables': [
-            {'key': 'price_avg', 'label': 'Average Price'}
-        ],
-        'axis_labels': {'y': 'Price ($/MWh)'},
-        'title': 'Average Price',
-        'filename': 'average_price.png'
-    }
-]
+    # Files
+    paths['bash'] = Path(
+        f"{base_path}/comparative_statics/{name}/process.sh")
+    paths['investment_results'] = paths['results'] / 'investment_results.csv'
+    paths['conditional_means'] = paths['results']/ 'conditional_means.csv'
+    return paths
 
 
-# extraction configurations
+def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
+    paths: dict[str, Path] = {}
+    # Folders
+    paths['parent_folder'] = folder
+    paths['folder'] = folder / name
+
+    # Files
+    paths['optimization_trajectory'] = folder / name /\
+        f'{name}_trajectory.json'
+    paths['bash'] = folder / name / f'{name}.sh'
+
+    # create the directory
+    paths['folder'].mkdir(parents=True, exist_ok=True)
+    return paths
+
+def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict:
+    """
+    Initialize a dictionary with relevant paths for the run.
+    """
+    def format_windows_path(path_str):
+        path_str = str(path_str)
+        # Replace forward slashes with backslashes
+        windows_path = path_str.replace('/', '\\')
+        # Add Z: at the start of the path
+        windows_path = 'Z:' + windows_path
+        # If the path doesn't end with a backslash, add one
+        if not windows_path.endswith('\\'):
+            windows_path += '\\'
+        return windows_path
+
+    paths = {}
+    paths['parent_folder'] = parent_folder
+    folder = parent_folder / name
+    paths['folder'] = folder
+    # Convert the output path to a Windows path, for use in the .xml file
+    paths['folder_windows'] = format_windows_path(paths['folder'])
+
+    paths['subfolder'] = folder / subfolder
+
+    # Add paths for results and price distribution files
+    paths['random_variables'] = paths['folder'] / \
+            'random_variables.csv'
+    return paths
+
+
+
+################################################################################################
+# PARSING CONFIGURATIONS
+################################################################################################
+# Extraction configurations
 PATTERNS_LIST = [
     {
         'pattern': r'TOTAL OPTIMIZAR es de: (\d+) seg',
@@ -226,179 +244,11 @@ SALTO_WATER_LEVEL_DF = {
     'delete_first_row': True,
     'convert_poste': False
 }
-################################################################################################
 
-BASIC_RES_OPTION = {
-    'folder_key': 'sim',
-    'delete_first_row': True,
-}
+# constants for parsing the results
+DATETIME_FORMAT = '%m/%d/%y %H:%M'
+SCENARIOS = [f'{i}' for i in range(0, 114)]
 
-PRODUCTION_BY_PLANT_TABLE = {
-    'filename': r'resUnico*.xlt',
-    'table_pattern': {
-        'start': 'ENERGIAS ESPERADAS POR RECURSO EN GWh ',
-        'end': 'IMPACTO'
-    },
-    **BASIC_RES_OPTION,
-    'variables': {
-        'bonete': 'HID-bonete',
-        'baygorria': 'HID-baygorria',
-        'palmar': 'HID-palmar',
-        'salto': 'HID-salto',
-        'ptigre_a': 'TER-PTigreA',
-        'ctr': 'TER-CTR',
-        'apr': 'TER-APR',
-        'engines': 'TER-motores',
-        'bio_disp': 'TER-Bio_desp',
-        'bio_nodisp': 'TER-Bio_nodesp',
-        'new_thermal': 'TER-new_thermal',
-        'ptigre_b': 'CC-PTigreB',
-        'wind': 'EOLO-eoloDeci',
-        'solar': 'FOTOV-solarDeci',
-        'failure_0': 'FALLA-demandaPrueba_EscFalla0',
-        'failure_1': 'FALLA-demandaPrueba_EscFalla1',
-        'failure_2': 'FALLA-demandaPrueba_EscFalla2',
-        'failure_3': 'FALLA-demandaPrueba_EscFalla3',
-        'demand': 'DEM-demandaPrueba'
-    }
-}
-
-PRODUCTION_BY_RESOURCE_TABLE = {
-    'filename': r'resUnico*.xlt',
-    'table_pattern': {
-        'start': 'ENERGIAS ESPERADAS POR TIPO DE RECURSO EN GWh',
-        'end': 'IMPACTO'
-    },
-    **BASIC_RES_OPTION,
-    'variables': {
-        'hydros': 'HID',
-        'thermals': 'TER',
-        'combined_cycle': 'CC',
-        'wind': 'EOLO',
-        'solar': 'FOTOV',
-        'import_export': 'IMPOEXPO',
-        'demand': 'DEM',
-        'blackout': 'FALLA'}
-}
-
-COSTS_BY_PARTICIPANT_TABLE = {
-    'key': 'costs',
-    'filename': r'resUnico*.xlt',
-    'table_pattern': {
-        'start': 'COSTOS ESPERADOS EN MUSD ',
-        'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
-    },
-    **BASIC_RES_OPTION,
-    'variables': {
-        'thermal': 'new_thermal'
-    }
-}
-# RESUMEN MODULE
-# REVENUES_BY_RESOURCE_TABLE = {
-#    'key': 'revenues_discounted',
-#    'filename': r'resUnico*.xlt',
-#    'table_pattern': {
-#        'start':  'VALOR MEDIO AL COSTO MARGINAL SIN TOPE(USD/MWh)',
-#        'end': 'RESUMEN DE HORAS DE FALLA',
-#    },
-#    **BASIC_RES_OPTION,
-#    'variables': {
-#        'hydros': ['bonete', 'baygorria', 'palmar', 'salto'],
-#        'thermals': ['PTigreA', 'CTR', 'APR', 'motores',
-#                     'Bio_desp', 'Bio_nodesp', 'thermal_new', 'PTigreB'],
-#        'wind': 'eoloDeci',
-#        'solar': 'solarDeci',
-#        'demand': 'demandaPrueba',
-#        'import_export': ['impoEstacArg', 'impoBraRiv', 'impoBrMelo',
-#                          'excedentes', 'sumidero', 'expLago'],
-#        'blackout': ['demandaPrueba_EscFalla0', 'demandaPrueba_EscFalla1',
-#                     'demandaPrueba_EscFalla2', 'demandaPrueba_EscFalla3'],
-#        'bonete': 'bonete',
-#        'baygorria': 'baygorria',
-#        'palmar': 'palmar',
-#        'salto': 'salto',
-#        'PTigreA': 'PTigreA',
-#        'CTR': 'CTR',
-#        'APR': 'APR',
-#        'motores': 'motores',
-#        'Bio_desp': 'Bio_desp',
-#        'Bio_nodesp': 'Bio_nodesp',
-#        'thermal_new': 'thermal_new',
-#        'PTigreB': 'PTigreB',
-#        'impoEstacArg': 'impoEstacArg',
-#        'impoBraRiv': 'impoBraRiv',
-#        'impoBrMelo': 'impoBrMelo',
-#        'excedentes': 'excedentes',
-#        'sumidero': 'sumidero',
-#        'expLago': 'expLago',
-#        'demandaPrueba_EscFalla0': 'demandaPrueba_EscFalla0',
-#        'demandaPrueba_EscFalla1': 'demandaPrueba_EscFalla1',
-#        'demandaPrueba_EscFalla2': 'demandaPrueba_EscFalla2',
-#        'demandaPrueba_EscFalla3': 'demandaPrueba_EscFalla3',
-#    }
-# }
-#
-# COSTS_BY_PARTICIPANT_TABLE = {
-#   'key': 'costs',
-#   'filename': r'resUnico*.xlt',
-#   'table_pattern': {
-#       'start': 'COSTOS ESPERADOS EN MUSD ',
-#       'end': 'COSTO DE IMPACTOS Y DE CONTRATOS DE ENERGIA'
-#   },
-#   **BASIC_RES_OPTION,
-#   'variables': {
-#       'thermal': ['PTigreA', 'CTR', 'APR', 'motores', 'Bio_desp',
-#                   'Bio_nodesp', 'thermal_new', 'PTigreB'],
-#       'PTigreA': 'PTigreA',
-#       'CTR': 'CTR',
-#       'APR': 'APR',
-#       'motores': 'motores',
-#       'Bio_desp': 'Bio_desp',
-#       'Bio_nodesp': 'Bio_nodesp',
-#       'thermal_new': 'thermal_new',
-#       'PTigreB': 'PTigreB',
-#      'impoEstacArg': 'impoEstacArg',
-#       'impoBraRiv': 'impoBraRiv',
-#       'impoBrMelo': 'impoBrMelo',
-#       'excedentes': 'excedentes',
-#       'sumidero': 'sumidero',
-#       'expLago': 'expLago',
-#       'demandaPrueba_EscFalla0': 'demandaPrueba_EscFalla0',
-#       'demandaPrueba_EscFalla1': 'demandaPrueba_EscFalla1',
-#       'demandaPrueba_EscFalla2': 'demandaPrueba_EscFalla2',
-#       'demandaPrueba_EscFalla3': 'demandaPrueba_EscFalla3'
-#   }
-# }
-#
-# CAPACITIES = {
-#    'key': 'capacities',
-#    'filename': r'resUnico*.xlt',
-#    'table_pattern': {
-#        'start': 'POTENCIA TOTAL DE GENERADORES(MW)',
-#        'end': 'ENERGIAS ESPERADAS POR TIPO DE RECURSO EN GWh'
-#    },
-#    **BASIC_RES_OPTION,
-#    'variables': {
-#        'bonete': 'bonete',
-#        'baygorria': 'baygorria',
-#        'palmar': 'palmar',
-#        'salto': 'salto',
-#        'hydros': ['bonete', 'baygorria', 'palmar', 'salto'],
-#        'PTigreA': 'PTigreA',
-#        'CTR': 'CTR',
-#        'APR': 'APR',
-#        'motores': 'motores',
-#        'Bio_desp': 'Bio_desp',
-#        'Bio_nodesp': 'Bio_nodesp',
-#        'thermal_new': 'thermal_new',
-#        'PTigreB': 'PTigreB',
-#        'thermals': ['PTigreA', 'CTR', 'APR', 'motores',
-#                     'Bio_desp', 'Bio_nodesp', 'thermal_new', 'PTigreB'],
-#        'wind': 'eoloDeci',
-#        'solar': 'solarDeci'
-#    },
-#    'current_value': True
-# }
-#
-# RES_FILES_RESULTS = [PRODUCTION_BY_RESOURCE_TABLE, REVENUES_BY_RESOURCE_TABLE,
-#                     COSTS_BY_PARTICIPANT_TABLE, CAPACITIES]
+# Error codes
+UNSUCCESSFUL_RUN: int = 2
+ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
