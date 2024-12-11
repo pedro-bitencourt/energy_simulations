@@ -20,11 +20,10 @@ from typing import Optional
 import shutil
 from pprint import pprint
 
-from src.run_module import MEMORY_REQUESTED, Run
+from src.run_module import Run
 from src.run_processor_module import RunProcessor
 from src.optimization_module import (OptimizationPathEntry,
                                      derivatives_from_profits,
-                                     print_optimization_trajectory_function,
                                      get_last_successful_iteration)
 from src.auxiliary import submit_slurm_job, wait_for_jobs
 from src.constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN, initialize_paths_investment_problem, create_investment_name
@@ -57,7 +56,8 @@ class InvestmentProblem:
         self.endogenous_variables: dict = endogenous_variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = create_investment_name(exogenous_variable)
+        parent_name: str = parent_folder.name
+        self.name: str = create_investment_name(parent_name, exogenous_variable)
         logger.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
@@ -249,10 +249,10 @@ class InvestmentProblem:
                     job_id = run.submit()
                     if job_id:
                         job_ids_list.append(job_id)
-                if attempts == 1:
+                if attempts == 0:
                     logger.info("First attempt for %s", run.name)
                 else:
-                    logger.critical("RETRYING %s, attempts = %s", run.name,
+                    logger.critical("RETRYING %s, previous attempts = %s", run.name,
                                     attempts)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
@@ -317,9 +317,6 @@ class InvestmentProblem:
                        variables)
 
         return run
-
-    def print_optimization_trajectory(self):
-        print_optimization_trajectory_function(self.optimization_trajectory)
 
     def investment_results(self, lazy: bool = True, resubmit: bool = False) -> dict:
         """

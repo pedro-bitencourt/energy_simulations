@@ -214,24 +214,25 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
                 logger.error('Variable %s not found', var)
                 continue
 
+
     queries_dict = {
         'unconditional': 'index==index',
-        'water_level_34': f'water_level_salto < 34',
-        'water_level_33': f'water_level_salto < 33',
-        'water_level_32': f'water_level_salto < 32',
-        'water_level_31': f'water_level_salto < 31',
-        'drought_25': f'water_level_salto < water_level_salto_cutoff_25',
-        'drought_10': f'water_level_salto < water_level_salto_cutoff_10',
-        'low_wind_25': f'production_wind < production_wind_cutoff_25',
-        'low_wind_10': f'production_wind < production_wind_cutoff_10',
-        'drought_low_wind_25': f'water_level_salto < water_level_salto_cutoff_25 and production_wind < production_wind_cutoff_25',
-        'drought_low_wind_10': f'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
-        'blackout_95': f'lost_load > lost_load_cutoff_95',
-        'blackout_99': f'lost_load > lost_load_cutoff_99',
-        'negative_lost_load': f'lost_load < 0.001',
-        'blackout_positive': f'lost_load > 0.001',
-        'profits_thermal_75': f'profits_thermal > profits_thermal_cutoff_75',
-        'profits_thermal_95': f'profits_thermal > profits_thermal_cutoff_95',
+        'water_level_34': 'water_level_salto < 34',
+        'water_level_33': 'water_level_salto < 33',
+        'water_level_32': 'water_level_salto < 32',
+        'water_level_31': 'water_level_salto < 31',
+        'drought_25': 'water_level_salto < water_level_salto_cutoff_25',
+        'drought_10': 'water_level_salto < water_level_salto_cutoff_10',
+        'low_wind_25': 'production_wind < production_wind_cutoff_25',
+        'low_wind_10': 'production_wind < production_wind_cutoff_10',
+        'drought_low_wind_25': 'water_level_salto < water_level_salto_cutoff_25 and production_wind < production_wind_cutoff_25',
+        'drought_low_wind_10': 'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
+        'blackout_95': 'lost_load > lost_load_cutoff_95',
+        'blackout_99': 'lost_load > lost_load_cutoff_99',
+        'negative_lost_load': 'lost_load < 0.001',
+        'blackout_positive': 'lost_load > 0.001',
+        'profits_thermal_75': 'profits_thermal > profits_thermal_cutoff_75',
+        'profits_thermal_95': 'profits_thermal > profits_thermal_cutoff_95',
     }
 
     for query_name, query in queries_dict.items():
@@ -265,7 +266,6 @@ def intra_daily_averages(run_df: pd.DataFrame) -> dict:
             run_df['hour'] = run_df['datetime'].dt.hour
             results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour']
                                                              == hour][variable].mean()
-
     return results_dict
 
 
@@ -286,7 +286,6 @@ def intra_weekly_averages(run_df: pd.DataFrame) -> dict:
                 run_df['datetime'].dt.dayofweek * 24
             results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour_of_the_week']
                                                              == hour][variable].mean()
-
     return results_dict
 
 

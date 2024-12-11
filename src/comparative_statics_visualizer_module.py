@@ -9,8 +9,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+RESULT_FILES = []
 
-def visualize():
+def visualize(results_folder: Path):
+    # Check if results folder contains all the files
+    for file in RESULT_FILES:
+        if not (results_folder / file).exists():
+            logger.error(f"File {file} not found in results folder.")
+
+    # 
+
     pass
 
 

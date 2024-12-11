@@ -168,6 +168,6 @@ class RunProcessor(Run):
             dict: A dictionary of profits.
         """
         profits_data: dict = self.profits_data_dict(complete=False)
-        profits_dict: dict = {f"{participant}_profits": profits_data[f'{participant}_normalized_profits']
+        profits_dict: dict = {participant: profits_data[f'{participant}_normalized_profits']
                               for participant in PARTICIPANTS}
         return profits_dict

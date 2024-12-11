@@ -76,10 +76,11 @@ def create_run_name(variables: dict):
     return name
 
 
-def create_investment_name(exogenous_variables: dict):
+def create_investment_name(parent_name: str, exogenous_variables: dict):
     exog_var_values: list[float] = [variable['value'] for variable in
                                     exogenous_variables.values()]
     name: str = make_name(exog_var_values)
+    name = f'{parent_name}_{name}'
     return name
 
 
@@ -272,5 +273,5 @@ DATETIME_FORMAT = '%m/%d/%y %H:%M'
 SCENARIOS = [f'{i}' for i in range(0, 114)]
 
 # Error codes
-UNSUCCESSFUL_RUN: int = 2
-ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 3
+UNSUCCESSFUL_RUN: int = 13
+ERROR_CODE_UNSUCCESSFUL_ITERATION: int = 14
