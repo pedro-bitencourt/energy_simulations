@@ -26,8 +26,8 @@ from src.optimization_module import (OptimizationPathEntry,
                                      derivatives_from_profits,
                                      print_optimization_trajectory_function,
                                      get_last_successful_iteration)
-from src.auxiliary import submit_slurm_job, wait_for_jobs, make_name
-from src.constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN, initialize_paths_investment_problem
+from src.auxiliary import submit_slurm_job, wait_for_jobs
+from src.constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN, initialize_paths_investment_problem, create_investment_name
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +67,6 @@ class InvestmentProblem:
         # initialize the optimization trajectory
         self.optimization_trajectory: list = self._initialize_optimization_trajectory()
 
-    def _create_name(self, parent_folder: Path):
-        exog_var_values: list[float] = [variable['value'] for variable in
-                                        self.exogenous_variable.values()]
-        parent_name: str = parent_folder.name
-        name: str = f"{parent_name}_{make_name(exog_var_values)}"
-        return name
 
     def _initialize_optimization_trajectory(self):
         # Check if the optimization trajectory file exists

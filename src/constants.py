@@ -1,8 +1,10 @@
 # Description: This file contains the constants used in the project.
 from pathlib import Path
-
 from rich.logging import RichHandler
 import logging
+
+from src.auxiliary import make_name
+
 
 ################################################################################################
 # LOGGING CONFIGURATION
@@ -60,6 +62,21 @@ DELTA: float = 10
 # Threshold for the profits to be considered converged, in percentage of the
 # installation cost
 THRESHOLD_PROFITS: float = 0.01  # Default threshold for convergence
+
+################################################################################################
+# NAME FUNCTIONS
+################################################################################################
+def create_run_name(variables: dict):
+    var_values: list[float] = [variable['value'] for variable in
+                                        variables.values()]
+    name: str = make_name(var_values)
+    return name
+
+def create_investment_name(exogenous_variables: dict):
+    exog_var_values: list[float] = [variable['value'] for variable in
+                                    exogenous_variable.values()]
+    name: str = make_name(exog_var_values)
+    return name
 
 
 ################################################################################################

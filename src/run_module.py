@@ -12,8 +12,8 @@ from pathlib import Path
 import logging
 import subprocess
 
-from src.auxiliary import make_name, try_get_file, submit_slurm_job
-from .constants import initialize_paths_run
+from src.auxiliary import try_get_file, submit_slurm_job
+from .constants import initialize_paths_run, create_run_name
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class Run:
         self.variables: dict[str, dict] = variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = self._create_name()
+        self.name: str = create_run_name(variables)
         self.parent_name: str = parent_folder.parts[-1]
 
         # Initialize relevant paths
@@ -65,11 +65,6 @@ class Run:
             shutil.rmtree(self.paths['folder'])
             logger.info("Deleted folder %s", self.paths['folder'])
 
-    def _create_name(self):
-        exog_var_values: list[float] = [variable['value'] for variable in
-                                        self.variables.values()]
-        name: str = make_name(exog_var_values)
-        return name
 
     def _get_opt_and_sim_folders(self):
         '''
@@ -222,8 +217,6 @@ class Run:
         """
         Substitutes patterns in the content with variable values.
         """
-        import re
-    
         DEGREES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
     
         def substitute(content, pattern, value):
@@ -257,6 +250,14 @@ class Run:
                     pattern = f"{variable['pattern']}_{degree}"
                     value = variable['value'] ** degree if variable['value'] > 0 else 0
                     content = substitute(content, pattern, value)
+            if variable['type'] == 'quotient':
+                quotient = variable['value'] // variable['divisor']
+                remainder = variable['value'] % variable['divisor']
+                pattern_quotient = f"{variable['pattern']}_QUOTIENT"
+                pattern_remainder = f"{variable['pattern']}_REMAINDER"
+                content = substitute(content, pattern_quotient, quotient)
+                content = substitute(content, pattern_remainder, remainder)
+
     
             # Substitute for regular variables
             content = substitute(content, variable['pattern'], variable['value'])
