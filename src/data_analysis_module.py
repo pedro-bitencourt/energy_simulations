@@ -224,14 +224,14 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
         'drought_10': 'water_level_salto < water_level_salto_cutoff_10',
         'low_wind_25': 'production_wind < production_wind_cutoff_25',
         'low_wind_10': 'production_wind < production_wind_cutoff_10',
-        'drought_low_wind_25': 'water_level_salto < water_level_salto_cutoff_25 and production_wind < production_wind_cutoff_25',
-        'drought_low_wind_10': 'water_level_salto < water_level_salto_cutoff_10 and production_wind < production_wind_cutoff_10',
         'blackout_95': 'lost_load > lost_load_cutoff_95',
         'blackout_99': 'lost_load > lost_load_cutoff_99',
         'negative_lost_load': 'lost_load < 0.001',
         'blackout_positive': 'lost_load > 0.001',
         'profits_thermal_75': 'profits_thermal > profits_thermal_cutoff_75',
         'profits_thermal_95': 'profits_thermal > profits_thermal_cutoff_95',
+        'thermal_production_positive': 'production_thermal > 0.001',
+        'hydro_production_positive': 'production_salto > 0.001',
     }
 
     for query_name, query in queries_dict.items():
