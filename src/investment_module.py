@@ -382,7 +382,7 @@ class InvestmentProblem:
             pprint(profits_dict)
 
             # Update the profits in the last iteration
-            last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profit']
+            last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profits']
                                       for participant in participants}
 
         convergence_reached: bool = last_iteration.check_convergence()

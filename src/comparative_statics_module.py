@@ -87,7 +87,8 @@ class ComparativeStatics:
                                                          for var_name, variable in self.exogenous_variable.items()}
 
         # Initialize relevant paths
-        self.paths: dict = initialize_paths_comparative_statics(base_path, name)
+        self.paths: dict = initialize_paths_comparative_statics(
+            base_path, name)
 
         # Create the folders if they do not exist
         for path in self.paths.values():
@@ -132,7 +133,8 @@ class ComparativeStatics:
                 logger.error(f"Run {run.name} not successful, skipping it")
                 continue
 
-            run_df = run_processor.construct_random_variables_df(complete=complete)
+            run_df = run_processor.construct_random_variables_df(
+                complete=complete)
 
             # Copy the random variables to the random_variables folder with the run name
             run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
@@ -307,6 +309,10 @@ END
     def process(self, lazy=True, complete=True):
         """
         """
+
+        self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
+        self.paths['investment_results'].parent.mkdir(parents=True,
+                                                      exist_ok=True)
         # If there are endogenous_variables, first process investment problems and create
         # a list of Run objects
         if self.endogenous_variables:
@@ -317,9 +323,8 @@ END
             investment_results_df = self._investment_results(lazy=lazy)
 
             # Save to disk
-            investment_results_df.to_csv(self.paths['investment_results'], index=False)
-
-        self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
+            investment_results_df.to_csv(
+                self.paths['investment_results'], index=False)
 
         # Save the random variables df to the random_variables folder
         self.extract_random_variables(complete=complete)
@@ -355,9 +360,10 @@ END
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
 
-    def clear_folders(self, force: bool = False):
-        for investment_problem in self.list_investment_problems:
-            investment_problem.clear_runs_folders()
+#    def clear_folders(self):
+#        for investment_problem in self.list_investment_problems:
+#            last_run = investment_problem.last_run()
+#            investment_problem.clear_runs_folders(last_run.name)
 
 
 def construct_results(random_variables_folder: Path, results_function) -> pd.DataFrame:

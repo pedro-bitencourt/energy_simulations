@@ -150,8 +150,27 @@ def visualize(results_folder: Path):
     formatted_df = format_conditional_means(events_data)
     # Save to disk
     formatted_df.to_csv(paths['graphics'] / 'formatted_conditional_means.csv', index=False)
+
+    # Load the investment results_folder
+    investment_results = pd.read_csv(paths['investment_results'])
+    # Plot optimal capacities
+    plot_optimal_capacities(investment_results, paths['graphics'])
     
     pass
+
+def plot_optimal_capacities(investment_results: pd.DataFrame, folder_path: Path):
+    events_data = {'none': investment_results}
+    events = [{'name': 'none', 'label': ''}]
+    y_variables = [{'name': 'wind_capacity_mw', 'label': 'Wind'},
+                   {'name': 'solar_capacity_mw', 'label': 'Solar'},
+                   {'name': 'thermal_capacity_mw', 'label': 'Thermal'}]
+    y_variable_axis = 'Capacity (MW)'
+    title = 'Optimal Capacities (MW)'
+    output_path = folder_path / 'optimal_capacities.png'
+    line_plot(events_data, events, y_variables, y_variable_axis, X_VARIABLE, output_path, title)
+
+
+
 
 def all_line_plots(events_data: dict[str, pd.DataFrame], folder_path: Path):
     for comparison_name, set_events in COMPARISON_EVENTS.items():
