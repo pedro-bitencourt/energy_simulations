@@ -99,6 +99,9 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['random_variables'] = Path(
         f"{base_path}/results/{name}/random_variables")
 
+    for path in paths.values():
+        path.mkdir(parents=True, exist_ok=True)
+
     # Files
     paths['bash'] = Path(
         f"{base_path}/comparative_statics/{name}/process.sh")

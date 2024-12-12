@@ -183,7 +183,7 @@ class InvestmentProblem:
             # Clear the runs folders, except for the current run
             current_run: Run = self.create_run(
                 current_iteration.current_investment)
-            #self.clear_runs_folders(current_run.name)
+            # self.clear_runs_folders(current_run.name)
 
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
@@ -367,7 +367,7 @@ class InvestmentProblem:
             pprint(profits_dict)
 
             # Update the profits in the last iteration
-            last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profit']
+            last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profits']
                                       for participant in participants}
 
         convergence_reached: bool = last_iteration.check_convergence()

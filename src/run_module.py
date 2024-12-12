@@ -63,9 +63,11 @@ class Run:
         """
         if self.paths['folder'].exists():
             logger.info("Deleting folder %s...", self.paths['folder'])
-            shutil.rmtree(self.paths['folder'])
+            try:
+                shutil.rmtree(self.paths['folder'])
+            except FileNotFoundError:
+                logger.warning("Could not delete folder properly")
             logger.info("Deleted folder %s", self.paths['folder'])
-
 
     def _get_opt_and_sim_folders(self):
         '''
@@ -117,8 +119,8 @@ class Run:
         """
         files_to_check = [r'resumen*',
                           r'EOLO_eoloDeci/potencias*.xlt',
-                          # r'FOTOV_solarDeci/potencias*.xlt',
-                          # r'DEM_demandaPrueba/potencias*.xlt'
+                          r'FOTOV_solarDeci/potencias*.xlt',
+                          r'DEM_demandaPrueba/potencias*.xlt'
                           ]
         # Add hydro files if complete
         if complete:
@@ -255,7 +257,7 @@ class Run:
                 content = substitute_pattern(content, pattern, value)
             content = substitute_pattern(
                 content, variable['pattern'], variable['value'])
-    
+
         return content
 
     def _create_bash(self, xml_path: Path):
