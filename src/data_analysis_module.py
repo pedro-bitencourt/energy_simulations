@@ -72,12 +72,12 @@ def process_run_df(run_df: pd.DataFrame, complete=True):
         return result_df
 
     if complete:
-        run_df['total_production'] = (run_df['production_wind']
+        run_df['production_total'] = (run_df['production_wind']
                                       + run_df['production_solar']
                                       + run_df['production_thermal']
                                       + run_df['production_salto'])
         run_df['lost_load'] = run_df['demand'] - \
-            run_df['total_production']
+            run_df['production_total']
 
         variables_to_upsample = {'water_level_salto': 'ffill',
                                  'variable_costs_thermal': 'mean', }

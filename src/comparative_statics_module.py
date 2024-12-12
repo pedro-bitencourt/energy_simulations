@@ -355,6 +355,12 @@ END
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
 
+    def clear_folders(self):
+        for investment_problem in self.list_investment_problems:
+            last_run = investment_problem.last_run()
+            investment_problem.clear_runs_folders(last_run.name)
+
+
 def construct_results(random_variables_folder: Path, results_function) -> pd.DataFrame:
     runs_list = [run.stem for run in random_variables_folder.iterdir()
                  if run.is_file()]
