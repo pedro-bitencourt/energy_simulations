@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+import matplotlib.colors as mcolors
 import pandas as pd
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +28,16 @@ EVENTS: dict[str, str] ={
     }
 
 VARIABLES: list[str] = [
+    'frequency',
     'production_wind',
     'production_solar',
     'production_salto',
     'production_thermal',
-    'production_total',
+    'total_production',
     'lost_load',
     'demand',
     'marginal_cost',
     'profits_thermal',
-    'salto_capacity',
     'water_level_salto',
     'revenues_wind',
     'revenues_solar',
@@ -66,18 +66,38 @@ COMPARISON_EVENTS: dict[str, list[dict]] = {
     ],
 }
 
-VARIABLES_TO_PLOT: dict[str, list[dict]] = {
-    'production': [{'name': 'production_wind', 'label': 'Average Production Wind (MW)'},
-                   {'name': 'production_solar', 'label': 'Average Production Solar (MW)'},
-                   {'name': 'production_salto', 'label': 'Average Production Hydro (MW)'},
-                   {'name': 'production_thermal', 'label': 'Average Production Thermal (MW)'},
-                   {'name': 'production_total', 'label': 'Average Production Total (MW)'},
-                   {'name': 'lost_load', 'label': 'Average Lost Load (MW)'},
-                   {'name': 'demand', 'label': 'Average Demand (MW)'},],
-    'thermal_vs_hydro': [{'name': 'production_salto', 'label': 'Average Production Hydro (MW)'},
-                         {'name': 'production_thermal', 'label': 'Average Production Thermal (MW)'}],
-    'price': [{'name': 'marginal_cost', 'label': 'Average Price ($/MWh)'},],
-    'profits': [{'name': 'profits_thermal', 'label': 'Average Variable Profits Thermal ($ per MW of capacity per hour)'},]
+VARIABLES_TO_PLOT: dict[str, dict] = {
+    'production': {
+        'title': 'Production (MW)',
+        'variables': [
+            {'name': 'production_wind', 'label': 'Wind'},
+            {'name': 'production_solar', 'label': 'Solar'},
+            {'name': 'production_salto', 'label': 'Hydro'},
+            {'name': 'production_thermal', 'label': 'Thermal'},
+            {'name': 'production_total', 'label': 'Total'},
+            {'name': 'lost_load', 'label': 'Lost Load'},
+            {'name': 'demand', 'label': 'Demand'},
+        ]
+    },
+    'thermal_vs_hydro': {
+        'title': 'Thermal vs Hydro Production (MW)',
+        'variables': [
+            {'name': 'production_salto', 'label': 'Hydro'},
+            {'name': 'production_thermal', 'label': 'Thermal'}
+        ]
+    },
+    'price': {
+        'title': 'Price ($/MWh)',
+        'variables': [
+            {'name': 'marginal_cost', 'label': 'Price'}
+        ]
+    },
+    'profits': {
+        'title': 'Thermal Profits ($/MW-h)',
+        'variables': [
+            {'name': 'profits_thermal', 'label': 'Variable Profits'}
+        ]
+    }
 }
 
 Y_AXIS_VARIABLE: dict = {
@@ -99,6 +119,7 @@ def visualize(results_folder: Path):
     paths: dict[str, Path] = {
         'graphics': results_folder / 'graphics',
         'conditional_means': results_folder / 'conditional_means.csv',
+        'investment_results': results_folder / 'investment_results.csv'
     }
 
     # Check if results folder contains all the files
@@ -134,20 +155,48 @@ def visualize(results_folder: Path):
 
 def all_line_plots(events_data: dict[str, pd.DataFrame], folder_path: Path):
     for comparison_name, set_events in COMPARISON_EVENTS.items():
-        for plot_name, y_variables in VARIABLES_TO_PLOT.items():
+        for plot_name, plot_config in VARIABLES_TO_PLOT.items():
             comparison_folder = folder_path / comparison_name
             # Create folder
             comparison_folder.mkdir(parents=True, exist_ok=True)
             file_path = comparison_folder /f"{plot_name}.png"
+            title = f"{plot_config['title']} - {comparison_name}"
 
-            line_plot(events_data, set_events, y_variables, Y_AXIS_VARIABLE[plot_name] , X_VARIABLE, file_path)
+            line_plot(events_data, set_events, plot_config['variables'],
+                      Y_AXIS_VARIABLE[plot_name] , X_VARIABLE, file_path,
+                      title)
+            
+def format_conditional_means(events_data: dict[str, pd.DataFrame]):
+    def header(name):
+        return pd.DataFrame([
+            ['-' * 10 + f' {name} ' + '-' * 10],  # Header with dashes
+            ['']  # Blank line
+        ])
+    # Prepare the output DataFrame
+    final_df = pd.DataFrame()
+
+    # Loop through each event
+    for event in EVENTS.keys():
+        # Add event header and append to final output
+        event_header = header(EVENTS[event])
+        event_data = events_data[event]
+        # Order in salto_capacity
+        event_data = event_data.sort_values(by=X_VARIABLE['name'])
+        final_df = pd.concat([final_df, event_header, event_data], ignore_index=True)
+        # Add a blank row as separator
+        blank_row = pd.DataFrame({col: None for col in final_df.columns}, index=[0])
+        final_df = pd.concat([final_df, blank_row], ignore_index=True)
+
+    return final_df
+
 
 def line_plot(events_data: dict[str, pd.DataFrame],
               events: list[dict],
               y_variables: list[dict],
               y_variable_axis: str,
               x_variable: dict,
-              file_path: Path):
+              file_path: Path,
+              title: str):
     """
     Create a line plot comparing different scenarios.
 
@@ -156,17 +205,48 @@ def line_plot(events_data: dict[str, pd.DataFrame],
     --- events: list[dict] - A list of dictionaries containing the name and label of each event.
     --- y_variables: list[dict] - A list of dictionaries containing the name and label of each variable.
     --- x_variable: dict - A dictionary containing the name and label of the x variable.
-    
     """
     # Set up the plot style
     plt.figure(figsize=(12, 8))
     sns.set_style("whitegrid")
     
-    # Create a color palette for the scenarios
-    colors = sns.color_palette("husl", n_colors=len(events))
+    # Create a colorblind-friendly color palette
+    # Using a combination of IBM ColorBlind Safe palette and Color Brewer
+    base_colors = [
+        '#648FFF',  # Blue
+        '#DC267F',  # Magenta
+        '#785EF0',  # Purple
+        '#FE6100',  # Orange
+        '#FFB000',  # Gold
+        '#009E73',  # Green
+        '#56B4E9',  # Light Blue
+        '#E69F00',  # Brown
+        '#CC79A7',  # Pink
+        '#000000'   # Black
+    ]
     
+    # Calculate total number of lines needed (events × variables)
+    total_lines = len(events) * len(y_variables)
+    
+    # If we need more colors than in base_colors, create variations
+    if total_lines > len(base_colors):
+        # Create variations by adjusting lightness
+        colors = []
+        for color in base_colors:
+            rgb = mcolors.to_rgb(color)
+            hsv = mcolors.rgb_to_hsv(rgb)
+            # Create a darker and lighter version of each color
+            colors.extend([
+                mcolors.hsv_to_rgb((hsv[0], hsv[1], min(1, hsv[2] * 0.7))),  # Darker
+                rgb,
+                mcolors.hsv_to_rgb((hsv[0], hsv[1], min(1, hsv[2] * 1.3)))   # Lighter
+            ])
+    else:
+        colors = base_colors
+
     # Plot each scenario
-    for event, color in zip(events, colors):
+    color_idx = 0
+    for event in events:
         # Check if the event exists in the dataframe
         if event['name'] not in events_data.keys():
             logger.warning("Warning: %s not found in DataFrame", event)
@@ -181,48 +261,30 @@ def line_plot(events_data: dict[str, pd.DataFrame],
         if x_variable['name'] not in event_df.columns:
             logger.warning("Warning: %s not found in DataFrame", x_variable)
             continue
+
         for y_variable in y_variables:
             if y_variable['name'] not in event_df.columns:
                 logger.warning("Warning: %s not found in DataFrame", y_variable)
                 continue
             
-            plt.plot(event_df[x_variable['name']], 
+            plt.plot(event_df[x_variable['name']],
                     event_df[y_variable['name']],
                     marker='o',
                     linestyle='-',
                     label=f"{event['label']}, {y_variable['label']}",
-                    color=color)
+                    color=colors[color_idx % len(colors)])
+            
+            color_idx += 1
     
-            # Customize the plot
-            plt.xlabel(x_variable['label'])
-            plt.ylabel(y_variable_axis)
-            plt.legend(title='Scenario/variable')
-            plt.grid(True, alpha=0.3)
+    # Customize the plot
+    plt.xlabel(x_variable['label'])
+    plt.ylabel(y_variable_axis)
+    plt.legend(title='Event/variable')
+    plt.title(title)
+    plt.grid(True, alpha=0.3)
     
     # Adjust layout to prevent label cutoff
     plt.tight_layout()
     
     # Save the plots
     plt.savefig(file_path, dpi=300)
-
-
-def format_conditional_means(events_data: dict[str, pd.DataFrame]):
-    def header(name):
-        return pd.DataFrame([
-            ['-' * 10 + f' {name} ' + '-' * 10],  # Header with dashes
-            ['']  # Blank line
-        ])
-    # Prepare the output DataFrame
-    final_df = pd.DataFrame()
-
-    # Loop through each event
-    for event in EVENTS.keys():
-        # Add event header and append to final output
-        event_header = header(EVENTS[event])
-        final_df = pd.concat([final_df, event_header, events_data[event]], ignore_index=True)
-        # Add a blank row as separator
-        blank_row = pd.DataFrame({col: None for col in final_df.columns})
-        final_df = pd.concat([final_df, blank_row], ignore_index=True)
-
-    return final_df
-

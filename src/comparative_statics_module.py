@@ -355,10 +355,9 @@ END
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
 
-    def clear_folders(self):
+    def clear_folders(self, force: bool = False):
         for investment_problem in self.list_investment_problems:
-            last_run = investment_problem.last_run()
-            investment_problem.clear_runs_folders(last_run.name)
+            investment_problem.clear_runs_folders()
 
 
 def construct_results(random_variables_folder: Path, results_function) -> pd.DataFrame:

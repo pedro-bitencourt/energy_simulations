@@ -181,9 +181,7 @@ class InvestmentProblem:
             self.optimization_trajectory.append(current_iteration)
 
             # Clear the runs folders, except for the current run
-            current_run: Run = self.create_run(
-                current_iteration.current_investment)
-            #self.clear_runs_folders(current_run.name)
+            #self.clear_runs_folders(current_iteration.current_investment)
 
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
@@ -191,12 +189,23 @@ class InvestmentProblem:
         # save results
         self._save_optimization_trajectory()
 
-    def clear_runs_folders(self, last_run_name: str):
+    def clear_runs_folders(self, current_investment=None, force=False):
         """
         Deletes all the directories in self.paths['folder']
         """
+        if current_investment is None:
+            current_iteration = get_last_successful_iteration(
+                self.optimization_trajectory)
+            current_investment = current_iteration.current_investment
+        perturbed_runs_dict: dict[str, Run] = self.perturbed_runs(
+            current_investment)
+        if force:
+            perturbed_runs_names = [perturbed_runs_dict['current'].name]
+        else:
+            perturbed_runs_names = [run.name for run in perturbed_runs_dict.values()]
         for directory in self.paths['folder'].iterdir():
-            if directory.is_dir() and directory.name != last_run_name:
+            # Check if the directory is in the perturbed runs names
+            if directory.is_dir() and directory.name not in perturbed_runs_names:
                 logger.info("Deleting directory %s", directory)
                 try:
                     shutil.rmtree(directory)
@@ -259,10 +268,7 @@ class InvestmentProblem:
             wait_for_jobs(job_ids_list)
             attempts += 1
 
-    def profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
-        '''
-        Computes the profits and derivatives for a given level of investment_problem 
-        '''
+    def perturbed_runs(self, current_investment: dict) -> dict[str, Run]:
         # Create a dict of the perturbed runs
         perturbed_runs_dict: dict[str, Run] = {
             'current': self.create_run(current_investment)}
@@ -270,6 +276,15 @@ class InvestmentProblem:
             investment = current_investment.copy()
             investment[var] += DELTA
             perturbed_runs_dict[var] = self.create_run(investment)
+        return perturbed_runs_dict
+
+    def profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
+        '''
+        Computes the profits and derivatives for a given level of investment_problem 
+        '''
+        # Create the runs for the current and perturbed investments
+        perturbed_runs_dict: dict[str, Run] = self.perturbed_runs(
+            current_investment)
 
         # Submit the runs
         self.submit_and_wait(perturbed_runs_dict, max_attempts=6)
