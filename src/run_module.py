@@ -177,7 +177,7 @@ class Run:
         bash_path: Path = self._create_bash(xml_path)
 
         # Submit the slurm job
-        job_id = submit_slurm_job(bash_path)
+        job_id = submit_slurm_job(bash_path, job_name=self.name)
 
         # Check if the job was submitted successfully
         if job_id:

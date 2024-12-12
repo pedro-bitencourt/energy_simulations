@@ -414,7 +414,7 @@ class InvestmentProblem:
                     self.name)
 
         script_path: Path = self._create_bash()
-        job_id = submit_slurm_job(script_path)
+        job_id = submit_slurm_job(script_path, job_name=self.name)
         return job_id
 
     def _create_bash(self):

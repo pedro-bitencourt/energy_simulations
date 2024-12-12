@@ -102,27 +102,69 @@ def find_pattern_in_file(file_path, pattern):
 #################################
 ### SLURM utility functions ###
 #################################
-def submit_slurm_job(script_path):
-    """
-    Submits a .sh file to SLURM and returns the job ID.
-
-    Parameters:
-    script_path (str): The path to the .sh file to be submitted.
-
-    Returns:
-    str: The job ID of the submitted job.
-    """
+def get_job_id_by_name(job_name: str) -> str | None:
+    """Check if a job with given name exists and return its ID."""
     try:
-        # Submit the job using sbatch
-        result = subprocess.run(['sbatch', script_path],
-                                capture_output=True, text=True, check=True)
-        # Extract the job ID from the output
-        output = result.stdout
-        job_id = output.strip().split()[-1]
-        return job_id
-    except subprocess.CalledProcessError as e:
-        logging.error("Error submitting job: %s", e.stderr)
+        result = subprocess.run(['squeue', '-h', '-n', job_name, '-o', '%i'],
+                              capture_output=True,
+                              text=True,
+                              check=True)
+        return result.stdout.strip() or None
+    except subprocess.CalledProcessError:
         return None
+
+def submit_new_job(script_path: str) -> str | None:
+    """Submit a new SLURM job with given name and return its ID."""
+    try:
+        result = subprocess.run(['sbatch', script_path],
+                              capture_output=True,
+                              text=True,
+                              check=True)
+        return result.stdout.strip().split()[-1]
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error submitting job: {e.stderr}")
+        return None
+
+def submit_slurm_job(script_path: str, job_name: str) -> str | None:
+    """
+    Submit a SLURM job or return ID of existing job with same name.
+    
+    Parameters:
+        script_path (str): Path to the .sh script to submit
+        job_name (str): Name for the job
+        
+    Returns:
+        str: Job ID if successful
+        None: If submission failed and no existing job found
+    """
+    # Check for existing job
+    if existing_id := get_job_id_by_name(job_name):
+        return existing_id
+        
+    # Submit new job if none exists
+    return submit_new_job(script_path)
+
+    #def submit_slurm_job(script_path):
+    #    """
+    #    Submits a .sh file to SLURM and returns the job ID.
+    #
+    #    Parameters:
+    #    script_path (str): The path to the .sh file to be submitted.
+    #
+    #    Returns:
+    #    str: The job ID of the submitted job.
+    #    """
+    #    try:
+    #        # Submit the job using sbatch
+    #        result = subprocess.run(['sbatch', script_path],
+    #                                capture_output=True, text=True, check=True)
+    #        # Extract the job ID from the output
+    #        output = result.stdout
+    #        job_id = output.strip().split()[-1]
+    #        return job_id
+    #    except subprocess.CalledProcessError as e:
+    #        logging.error("Error submitting job: %s", e.stderr)
+    #        return None
 
 
 def check_job_status(job_id: int):

@@ -226,7 +226,7 @@ END
         """
         bash_path = self._create_bash(lazy)
         logger.info(f"Submitting processing job for {self.name}")
-        job_id = submit_slurm_job(bash_path)
+        job_id = submit_slurm_job(bash_path, job_name=f"{self.name}_processing")
         return job_id
 
     def _grid_length(self):
