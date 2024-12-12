@@ -320,7 +320,7 @@ END
             self.list_runs = self.create_runs_from_investment_problems()
 
             # Get the investment results
-            investment_results_df = self._investment_results(lazy=lazy)
+            investment_results_df = self._investment_results()
 
             # Save to disk
             investment_results_df.to_csv(

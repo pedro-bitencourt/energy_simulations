@@ -334,13 +334,11 @@ class InvestmentProblem:
 
         return run
 
-    def investment_results(self, lazy: bool = True, resubmit: bool = False) -> dict:
+    def investment_results(self, resubmit: bool = False) -> dict:
         """
         Returns the results of the investment problem for the last iteration.
 
         Args:
-            lazy: If True, the profits are not computed and the results are returned
-                as they are stored in the optimization trajectory.
             resubmit: If True, the run is resubmitted before computing the profits, in 
                 case it was not successful.
         """
@@ -362,28 +360,24 @@ class InvestmentProblem:
         # Get the list of participants
         participants: list[str] = list(self.endogenous_variables.keys())
 
-        # Compute the profits
-        if lazy:
-            profits_dict: Optional[dict] = last_iteration.profits
-        else:
-            last_run = self.create_run(
-                last_iteration.current_investment)
-            try:
-                last_run_processor = RunProcessor(last_run)
-            except FileNotFoundError:
-                logger.critical(
-                    "Run %s not successful, resubmitting and returning empty dict",)
-                if resubmit:
-                    last_run.submit(force=True)
-                return {}
-            profits_dict: dict = last_run_processor.profits_data_dict()
+        last_run = self.create_run(
+            last_iteration.current_investment)
+        try:
+            last_run_processor = RunProcessor(last_run)
+        except FileNotFoundError:
+            logger.critical(
+                "Run %s not successful, resubmitting and returning empty dict",)
+            if resubmit:
+                last_run.submit(force=True)
+            return {}
+        profits_dict: dict = last_run_processor.profits_data_dict()
 
-            logger.debug("profits_dict for %s", self.name)
-            pprint(profits_dict)
+        logger.debug("profits_dict for %s", self.name)
+        pprint(profits_dict)
 
-            # Update the profits in the last iteration
-            last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profits']
-                                      for participant in participants}
+        # Update the profits in the last iteration
+        last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profits']
+                                  for participant in participants}
 
         convergence_reached: bool = last_iteration.check_convergence()
 
