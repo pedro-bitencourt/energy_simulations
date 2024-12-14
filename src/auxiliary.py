@@ -8,12 +8,16 @@ import os
 import glob
 import time
 import subprocess
+from pathlib import Path
 import logging
-import numpy as np
+
 
 #################################
 ### General utility functions ###
 #################################
+
+logger = logging.getLogger(__name__)
+
 
 
 def make_name(float_list):

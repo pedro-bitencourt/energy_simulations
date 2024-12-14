@@ -43,7 +43,6 @@ COSTS = {
     'solar': {'oem': 7_300, 'installation': 1_160_000, 'lifetime': 35},
     'thermal': {'oem': 12_000, 'installation': 975_000, 'lifetime': 20}
 }
-
 # Fixed costs per hour, in USD per MW per hour
 HOURLY_FIXED_COSTS = {
     participant: (COSTS[participant]['installation'] / COSTS[participant]
@@ -57,7 +56,7 @@ HOURLY_FIXED_COSTS = {
 ################################################################################################
 
 # Maximum number of iterations for the optimization algorithm
-MAX_ITER: int = 35
+MAX_ITER: int = 80
 # Delta is used to calculate the numerical derivatives of the profits
 DELTA: float = 10
 # Threshold for the profits to be considered converged, in percentage of the
@@ -89,6 +88,7 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 ################################################################################################
 BASE_PATH: Path = Path('/projects/p32342')
 POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
+
 
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:

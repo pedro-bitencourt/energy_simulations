@@ -85,7 +85,7 @@ class InvestmentProblem:
         else:
             # If not, initialize it with the initial guess
             optimization_trajectory: list[OptimizationPathEntry] = []
-            logger.critical("Optimization trajectory not found at %s. Initializing a new one.",
+            logger.info("Optimization trajectory not found at %s. Initializing a new one.",
                             self.paths['optimization_trajectory'])
 
             # initialize the first iteration
@@ -181,7 +181,7 @@ class InvestmentProblem:
             self.optimization_trajectory.append(current_iteration)
 
             # Clear the runs folders, except for the current run
-            #self.clear_runs_folders(current_iteration.current_investment)
+            self.clear_runs_folders(current_iteration.current_investment)
 
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
@@ -202,7 +202,8 @@ class InvestmentProblem:
         if force:
             perturbed_runs_names = [perturbed_runs_dict['current'].name]
         else:
-            perturbed_runs_names = [run.name for run in perturbed_runs_dict.values()]
+            perturbed_runs_names = [
+                run.name for run in perturbed_runs_dict.values()]
         for directory in self.paths['folder'].iterdir():
             # Check if the directory is in the perturbed runs names
             if directory.is_dir() and directory.name not in perturbed_runs_names:
@@ -360,16 +361,23 @@ class InvestmentProblem:
         # Get the list of participants
         participants: list[str] = list(self.endogenous_variables.keys())
 
+        # Compute the profits
         last_run = self.create_run(
             last_iteration.current_investment)
+
+        # Account for the case where the run was not successful
         try:
             last_run_processor = RunProcessor(last_run)
         except FileNotFoundError:
-            logger.critical(
-                "Run %s not successful, resubmitting and returning empty dict",)
             if resubmit:
+                logger.critical(
+                    "Run %s not successful, resubmitting and returning empty dict",)
                 last_run.submit(force=True)
+            else:
+                logger.critical(
+                    "Run %s not successful, returning empty dict",)
             return {}
+
         profits_dict: dict = last_run_processor.profits_data_dict()
 
         logger.debug("profits_dict for %s", self.name)

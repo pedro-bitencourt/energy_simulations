@@ -129,8 +129,9 @@ class ComparativeStatics:
         for run in self.list_runs:
             try:
                 run_processor = RunProcessor(run, complete=complete)
-            except ValueError:
+            except FileNotFoundError:
                 logger.error(f"Run {run.name} not successful, skipping it")
+                run.submit()
                 continue
 
             run_df = run_processor.construct_random_variables_df(
@@ -226,7 +227,8 @@ END
         """
         bash_path = self._create_bash(lazy)
         logger.info(f"Submitting processing job for {self.name}")
-        job_id = submit_slurm_job(bash_path, job_name=f"{self.name}_processing")
+        job_id = submit_slurm_job(
+            bash_path, job_name=f"{self.name}_processing")
         return job_id
 
     def _grid_length(self):
@@ -330,7 +332,7 @@ END
         self.extract_random_variables(complete=complete)
 
         # Construct the new results dataframe
-        conditional_means_df = construct_results(
+        conditional_means_df = self.construct_results(
             self.paths['random_variables'], results_function=conditional_means)
 
         # Save the results to a .csv file
@@ -353,37 +355,40 @@ END
         # yearly_results_df.to_csv(
         #    self.paths['results'] / 'yearly_results.csv', index=False)
 
-    def _investment_results(self, lazy=True):
+    def _investment_results(self):
         rows: list = []
         for investment_problem in self.list_investment_problems:
-            rows.append(investment_problem.investment_results(lazy=lazy))
+            rows.append(investment_problem.investment_results())
         results_df: pd.DataFrame = pd.DataFrame(rows)
+        return results_df
+
+    def construct_results(self, random_variables_folder: Path, results_function) -> pd.DataFrame:
+        # Create a list to store rows
+        rows = []
+    
+        for run in self.list_runs:
+            # Get the random variables for the current run
+            run_random_variables = pd.read_csv(
+                self.paths['random_variables'] / f'{run.name}.csv')
+            # Get the results to extract for the current run
+            results_dict = results_function(run_random_variables)
+
+            # Add run identifier to the results
+            results_dict['run'] = run.name
+
+            # Add the run variables to the results
+            for variable_name, variable in run.variables.items():
+                results_dict[variable_name] = variable['value']
+    
+            # Append the row to our list
+            rows.append(results_dict)
+    
+        # Create DataFrame from all rows at once
+        results_df = pd.DataFrame(rows)
+    
         return results_df
 
 #    def clear_folders(self):
 #        for investment_problem in self.list_investment_problems:
 #            last_run = investment_problem.last_run()
 #            investment_problem.clear_runs_folders(last_run.name)
-
-
-def construct_results(random_variables_folder: Path, results_function) -> pd.DataFrame:
-    runs_list = [run.stem for run in random_variables_folder.iterdir()
-                 if run.is_file()]
-    # Create a list to store rows
-    rows = []
-
-    for run in runs_list:
-        # Get the random variables for the current run
-        run_random_variables = pd.read_csv(
-            random_variables_folder / f'{run}.csv')
-        # Get the results to extract for the current run
-        results_dict = results_function(run_random_variables)
-        # Add run identifier to the results
-        results_dict['run'] = run
-        # Append the row to our list
-        rows.append(results_dict)
-
-    # Create DataFrame from all rows at once
-    results_df = pd.DataFrame(rows)
-
-    return results_df

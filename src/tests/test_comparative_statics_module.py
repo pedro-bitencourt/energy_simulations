@@ -6,7 +6,6 @@ import pandas as pd
 
 
 from ..comparative_statics_module import ComparativeStatics
-from ..constants import DATETIME_FORMAT, SCENARIOS
 
 from ..logging_config import setup_logging
 setup_logging()
@@ -20,7 +19,6 @@ PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data
 REQUESTED_TIME_SOLVER = 1
 REQUESTED_TIME_RUN = 1
 
-COLUMNS_TO_CHECK = ['run','datetime'] + SCENARIOS
 
 
 
@@ -29,7 +27,7 @@ class TestComparativeStatics(unittest.TestCase):
         name: str = 'salto_capacity_v3'
         xml_basefile: str = '/home/pdm6134/salto_capacity_v2.xml'
         
-        general_parameters: dict[str, Union[bool, str, float, int]] = {
+        general_parameters: dict = {
             'daily': True,
             'name_subfolder': 'CAD-2024-DIARIA',
             'xml_basefile': xml_basefile,
@@ -51,7 +49,7 @@ class TestComparativeStatics(unittest.TestCase):
             }
         }
         
-        endogenous_variables: dict[str, dict[str, Union[str, list[int]]]] = {
+        endogenous_variables: dict= {
             'wind': {'pattern': 'WIND_CAPACITY', 'initial_guess': [7000, 5112]},
             'solar': {'pattern': 'SOLAR_CAPACITY', 'initial_guess': [2489, 1907]},
             'thermal': {'pattern': 'THERMAL_CAPACITY', 'initial_guess': [1309, 1123]}
@@ -65,7 +63,7 @@ class TestComparativeStatics(unittest.TestCase):
         self.mock_comparative_statics = ComparativeStatics(name,
                                                  variables,
                                                  general_parameters,
-                                                    PARENT_FOLDER)
+                                                    str(PARENT_FOLDER))
         
     def tearDown(self):
         # delete all .csv files in output folder
