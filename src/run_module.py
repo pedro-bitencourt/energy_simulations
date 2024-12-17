@@ -1,7 +1,7 @@
 """
 File name: run_module.py
-Author: Pedro Bitencourt
-Email: pedro.bitencourt@u.northwestern.edu
+Author: Pedro Bitencourt (Northwestern University)
+
 Description: this file implements the Run class and related methods.
 """
 
@@ -11,14 +11,16 @@ import shutil
 from pathlib import Path
 import logging
 import subprocess
+import json
+import pandas as pd
 
 from .utils.auxiliary import try_get_file, submit_slurm_job
 from .constants import initialize_paths_run, create_run_name
+from .data_analysis_module import profits_data_dict
 
 logger = logging.getLogger(__name__)
 
-MEMORY_REQUESTED = '5G'
-
+MEMORY_REQUESTED = '5' # GB
 
 class Run:
     """
@@ -31,10 +33,9 @@ class Run:
             o name_subfolder: Name of the subfolder where the run is stored.
             o requested_time_run: Time requested for the run in the cluster.
         - variables: Dictionary containing the variables for the run. Each entry is 
-        a variable, which is a dictionary containing:
-            o value: Value of the variable.
-            o pattern: Pattern to be substituted in the .xml file.
-    Attributes:
+        a variable, with the key being the variable name and the value being the variable
+        value.
+        Attributes:
         - name: Name of the run, determined by the folder name.
         - paths: Dictionary containing relevant paths for the run.
     """
@@ -42,9 +43,9 @@ class Run:
     def __init__(self,
                  parent_folder: Path,
                  general_parameters: dict,
-                 variables: dict[str, dict]):
+                 variables: dict[str, float]):
         parent_folder: Path = Path(parent_folder)
-        self.variables: dict[str, dict] = variables
+        self.variables: dict[str, float] = variables
         self.general_parameters: dict = general_parameters
 
         self.name: str = create_run_name(variables)
@@ -57,7 +58,7 @@ class Run:
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
-    def tear_down(self):
+    def tear_down(self) -> None:
         """
         Deletes the folder and its contents.
         """
@@ -98,8 +99,7 @@ class Run:
         self.paths.update(self._get_opt_and_sim_folders())
 
         # Check if SIM folder exists
-        sim_folder = self.paths.get('sim', False)
-        if sim_folder:
+        if self.paths.get('sim', False):
             # Check if files exist
             missing_files = self.get_missing_files(self.paths['sim'], complete)
             if missing_files:
@@ -142,7 +142,7 @@ class Run:
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
-        xml_path: Path = create_xml(
+        xml_path: Path = self.create_xml(
             template_path = self.general_parameters['xml_basefile'],
             name = self.name,
             folder = self.paths['folder'],
@@ -165,7 +165,7 @@ class Run:
             logger.info(f"Run {self.name} already successful, skipping.")
             return None
 
-        logger.info(f"""Preparing to submit run {self.name}""")
+        logger.info("Preparing to submit run %s", self.name)
 
         logger.warning("Warning: this will overwrite the folder %s",)
         # Tear down the folder
@@ -175,7 +175,7 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
         # Create the xml file
-        xml_path: Path = create_xml(
+        xml_path: Path = self.create_xml(
             template_path = self.general_parameters['xml_basefile'],
             name = self.name,
             folder = self.paths['folder'],
@@ -207,16 +207,20 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        requested_time: float = self.general_parameters['requested_time_run']
+        slurm_config: dict = self.general_parameters['slurm']['run']
+
+
+        requested_time: float = slurm_config['time']
         hours: int = int(requested_time)
         minutes: int = int((requested_time * 60) % 60)
         seconds: int = int((requested_time * 3600) % 60)
         requested_time_run: str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-        if self.general_parameters.get('email', None):
-            email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
-        else:
-            email_line = ""
+        email_line = slurm_config.get('email', None)
+        mail_type = slurm_config.get('mail_type', 'NONE')
+        memory = slurm_config.get('memory', MEMORY_REQUESTED)
+
+        
 
         temp_folder_path = f"{self.paths['folder']}/temp"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
@@ -228,11 +232,11 @@ class Run:
 #SBATCH --time={requested_time_run}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --mem={MEMORY_REQUESTED}
+#SBATCH --mem={memory}G
 #SBATCH --job-name={job_name}
-#SBATCH --output={self.paths['folder']}/{self.name}.out
-#SBATCH --error={self.paths['folder']}/{self.name}.err
-#SBATCH --mail-type=FAIL,TIMEOUT
+#SBATCH --output={self.paths['slurm_out']}
+#SBATCH --error={self.paths['slurm_err']}
+#SBATCH --mail-type={mail_type}
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
 
@@ -243,7 +247,7 @@ module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3
 sleep $((RANDOM%60 + 10))
-wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{MEMORY_REQUESTED} -jar MOP_Mingo.JAR "Z:{xml_path}"
+wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{memory}G -jar MOP_Mingo.JAR "Z:{xml_path}"
 ''')
         return bash_path
 
@@ -253,22 +257,52 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
     def create_xml(template_path: Path, name: str, folder: Path, variables: dict) -> Path:
         """Creates a .xml file from template with variable substitution."""
         output_path = folder / f"{name}.xml"
-        
         # Add folder path to variables for substitution
         variables = {**variables, 'output_folder': str(folder).replace('\\', '\\\\')}
-        
         # Read template and substitute all expressions
         with open(template_path, 'r') as f:
             content = f.read()
-            
         def replace_expr(match):
             expr = match.group(1)
             return str(eval(expr, {}, variables))
-            
         content = re.sub(r'\${([^}]+)}', replace_expr, content)
-        
         # Write output
         with open(output_path, 'w') as f:
             f.write(content)
-            
         return output_path
+
+    def get_profits_data_dict(self):
+        from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
+
+        # Initialize the RunProcessor object
+        run_processor = RunProcessor(self)
+
+        # Read the run dataframe
+        run_df: pd.DataFrame = run_processor.construct_run_df()
+
+        # Create a dictionary with the capacities
+        capacities = {participant: self.variables[participant]
+                      for participant in PARTICIPANTS_LIST_ENDOGENOUS}
+
+        # Compute profits data
+        profits_data: dict = profits_data_dict(run_df, capacities)
+
+        # Save to disk using json
+        self.paths['folder'].joinpath('profits_data.json').write_text(json.dumps(profits_data))
+
+        logger.debug("profits_data for %s:", self.name)
+        logger.debug(profits_data)
+        return profits_data
+
+    def get_profits(self):
+        """
+        Computes profits for the specified endogenous variables.
+
+        Returns:
+            dict: A dictionary of profits.
+        """
+        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
+        profits_data = self.get_profits_data_dict()
+        profits_dict: dict = {participant: profits_data[f'{participant}_normalized_profits']
+                              for participant in PARTICIPANTS_LIST_ENDOGENOUS}
+        return profits_dict

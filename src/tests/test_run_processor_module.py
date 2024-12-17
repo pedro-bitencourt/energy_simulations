@@ -1,18 +1,10 @@
 '''
 Unit tests for the run_module.py and run_processor_module.py
-
-Currently tests:
-- Extracting the marginal costs from the output files
-- Calculating the profits from the output files
-- Creating a Run object with the correct attributes
-- Creating a RunProcessor object with the correct attributes
 '''
 import sys
 import unittest
 from pathlib import Path
 import pandas as pd
-import json
-from time import sleep
 import logging
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -98,8 +90,8 @@ class TestRun(unittest.TestCase):
         #            json.dump(profits, f)
         
 
-    def test_construct_random_variables_df(self):
-        random_variables = self.mock_run_processor.construct_random_variables_df(complete=True)
+    def test_construct_run_df(self):
+        random_variables = self.mock_run_processor.construct_run_df(complete=True)
         # Save to disk
         random_variables.to_csv(OUTPUT_FOLDER / 'random_variables.csv', index=False)
         self.assertIsNotNone(random_variables)
@@ -111,6 +103,12 @@ class TestRun(unittest.TestCase):
         ), "DataFrame contains invalid dates in the 'datetime' column")
         print(f'{random_variables.head()=}')
 
+    def test_get_profits(self):
+        profits: dict = self.mock_run.get_profits()
+        self.assertIsNotNone(profits)
+        # Save to disk using json
+        with open(OUTPUT_FOLDER / 'profits.json', 'w') as f:
+            json.dump(profits, f)
 
 if __name__ == '__main__':
     setup_logging(level=logging.INFO)

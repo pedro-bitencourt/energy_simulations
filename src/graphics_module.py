@@ -5,15 +5,17 @@ import matplotlib.colors as mcolors
 import pandas as pd
 import logging
 
-from .load_configs import load_events, load_variables, load_plots, load_comparisons
+from .utils.load_configs import load_events, load_variables, load_plots, load_comparisons
 
 logger = logging.getLogger(__name__)
 
 # Load the events, variables, plots and comparisons
 EVENTS: dict = load_events()
-VARIABLES: list = load_variables()
 VARIABLES_TO_PLOT: dict = load_plots()
 COMPARISON_EVENTS: dict = load_comparisons()
+
+# TO FIX
+VARIABLES = []
 
 
 # This dictionary will store the events to be plotted, along with their labels

@@ -1,8 +1,19 @@
+"""
+Module: data_analysis_module.py
+Author: Pedro Bitencourt (Northwestern University)
+
+Description: this module implements functions to perform data analysis of the dataframes 
+    produced by the RunProcessor module. It centralizes all data operations that are not 
+    parsing or processing, such as the computation of profits, revenues, prices, etc.
+"""
+
 import pandas as pd
+from typing import Dict
 import logging
 
-from .constants import HOURLY_FIXED_COSTS
-from .utils.load_configs import load_events
+from .utils.load_configs import load_events, load_costs
+
+HOURLY_FIXED_COSTS = load_costs()
 
 PARTICIPANTS = [
     'hydro',
@@ -20,6 +31,35 @@ VARIABLES = [
 logger = logging.getLogger(__name__)
 
 QUERIES_DICT: dict[str, str] = load_events()
+
+def profits_data_dict(run_df: pd.DataFrame,
+                      capacities: dict[str, float]) -> Dict:
+    """
+    Computes profits for the specified endogenous variables.
+
+    Returns:
+        dict: A dictionary of profits.
+    """
+    participants: list[str] = list(capacities.keys())
+
+    results_dict: dict = {}
+
+    # Update the results dictionary with metrics for each participant
+    for participant in participants:
+        capacity: float = capacities[participant]
+        results_dict.update(compute_participant_metrics(
+            run_df, participant, capacity))
+
+    system_total_cost: float = sum(
+        [results_dict[f'{participant}_total_cost'] for participant in participants])
+    system_fixed_cost: float = sum(
+        [results_dict[f'{participant}_fixed_cost'] for participant in participants])
+    results_dict.update({
+        'system_total_cost': system_total_cost,
+        'system_fixed_cost': system_fixed_cost,
+    })
+
+    return results_dict
 
 def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
     for participant in PARTICIPANTS:

@@ -133,10 +133,10 @@ def derivatives_from_profits(profits: dict, delta: float, endogenous_variables: 
             derivatives[r1][r2] = profit_change / delta
     return derivatives
 
-def get_last_successful_iteration(opt_trajectory: list[OptimizationPathEntry]) -> OptimizationPathEntry:
-    for entry in reversed(opt_trajectory):
+def get_last_successful_iteration(trajectory: list[OptimizationPathEntry]) -> OptimizationPathEntry:
+    for entry in reversed(trajectory):
         if entry.successful:
             return entry
     logger.warning("No successful iteration found in the optimization trajectory, returning the first entry.")
-    logger.debug("Optimization trajectory: %s", opt_trajectory)
-    return opt_trajectory[0]
+    logger.debug("Optimization trajectory: %s", trajectory)
+    return trajectory[0]

@@ -1,28 +1,47 @@
 """
 Module: comparative_statics_module.py
+Author: Pedro Bitencourt (Northwestern University)
+Last modified: 12.17.24
 
-This module contains the ComparativeStatics class.
 
-Public methods:
-- submit: submits the jobs for the runs or investment problems.
-- process: processes the results of the runs or investment problems.
-- results: gathers the results of the runs or investment problems.
+Description:
+    This module contains the ComparativeStatics class, which is the main class used in this project.
+    This class models a comparative statics exercise to be executed and processed, using both the 
+    other scripts in this folder as the Modelo de Operaciones Padron (MOP), which implements a 
+    solver for the problem of economic dispatch of energy for a given configuration of the energy 
+    system.
 
-Required modules:
-- investment_module: contains the InvestmentProblem class.
-- run_module: contains the Run class.
-- run_processor_module: contains the RunProcessor class.
-- optimization_module: contains the OptimizationPathEntry class.
+Classes:
+    - ComparativeStatistics
+        - Attributes:
+            - `name` [str]: name for the exercise, to be used for the creation of folders and files
+            - `general_parameters` [dict]: dictionary containing general options for the program, with
+            keys:
+                o xml_basefile [str]: path to the template xml file.
+                o daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
+                o annual_interest_rate [float]: annual interest rate for the investment problems.
+                o slurm [dict]: dictionary containing options for slurm, keys:
+                    - `run`:
+                    - `solver`:
+                    Each of these contains the options:
+                        - `email` [str]
+                        - `mail-type` [str]
+                        - `time` [float]: in hours
+                        - `memory` [int]: in GB
+                o `solver` [dict]: dictionary containing options for the solver
+        - Methods:
+            - `submit_solvers`: submits all Solvers for the exercise.
+            - `submit_processing`: submits a processing job for the exercise.
 """
 
 import logging
-from pathlib import Path
 from typing import Optional, Dict
 import json
 import pandas as pd
+import itertools
 
 from .utils.auxiliary import submit_slurm_job
-from .investment_module import InvestmentProblem
+from .solver_module import Solver
 from .run_module import Run
 from .run_processor_module import RunProcessor
 from .data_analysis_module import conditional_means
@@ -38,26 +57,26 @@ class ComparativeStatics:
     """
     Represents a comparative statics object. 
     Arguments:
-        - name: name of the comparative statics exercise.
-        - variables: dictionary containing the exogenous and endogenous variables.
-        - exogenous_variable_grid: dictionary containing the grids for the exogenous variables.
-        - general_parameters: dictionary containing the general parameters, with keys
-            o xml_basefile: path to the template xml file.
-            o daily: boolean indicating if the runs are daily (True) or weekly (False).
-            o name_subfolder: name of the subfolder where the runs are stored.
-            o annual_interest_rate: annual interest rate for the investment problems.
-            o requested_time_run: requested time for each MOP run to the cluster.
-            o requested_time_solver: requested time for each solver job.
+        - name [str]: name of the comparative statics exercise.
+        - variables: [dict[str, dict]] dictionary containing the exogenous and endogenous variables.
+        - general_parameters [dict[str, dict]]: dictionary containing the general parameters. Keys:
+            o xml_basefile [str]: path to the template xml file.
+            o daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
+            o annual_interest_rate [float]: annual interest rate for the investment problems.
+            o slurm [dict]: dictionary containing options for slurm, keys:
+                - `run`:
+                - `solver`:
+                Each of these contains the options:
+                    - `email`:
+                    - `mail-type`:
+                    - `time`:
+            o `solver` [dict]: dictionary containing options for the solver
 
     Attributes:
         - name: name of the comparative statics exercise.
         - general_parameters: dictionary containing the general parameters.
-        - exogenous_variable: dictionary containing the exogenous variables.
-        - endogenous_variables: dictionary containing the endogenous variables.
-        - exogenous_variable_grid: dictionary containing the grids for the exogenous variables.
         - paths: dictionary containing the paths for the input, output, and result folders.
-        - list_runs: list containing the Run objects.
-        - list_investment_problems: list containing the InvestmentProblem objects.
+        - grid_points: list containing the Solver objects.
     """
 
     def __init__(self,
@@ -75,141 +94,49 @@ class ComparativeStatics:
         self.general_parameters: dict = general_parameters
         self.variables: dict = variables
 
-        # Variables can be exogenous and endogenous
-        self.exogenous_variable: dict[str,
-                                      dict] = variables.get('exogenous', {})
-        self.exogenous_variable_key: str = list(
-            self.exogenous_variable.keys())[0]
-        self.endogenous_variables: dict[str,
-                                        dict] = variables.get('endogenous', {})
-
-        self.exogenous_variable_grid: dict[str, list] = {var_name: variable['grid']
-                                                         for var_name, variable in self.exogenous_variable.items()}
-
         # Initialize relevant paths
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
 
-        # Create the folders if they do not exist
-        for path in self.paths.values():
-            if path.is_dir():
-                path.mkdir(parents=True, exist_ok=True)
-
-        # Validate the input
-        self._validate_input()
-
         # If there are endogenous variables, we need to handle investment problems first
-        if self.endogenous_variables:
-            # Create investment problems
-            self.list_investment_problems: list[InvestmentProblem] = self._initialize_investment_problems(
-            )
-            # The runs will be obtained from the investment problems after optimization
-            self.list_runs = self.create_runs_from_investment_problems()
-        else:
-            # Create runs directly
-            self.list_runs = self._initialize_runs()
+        self.grid_points: list[Solver] = self.initialize_grid()
 
     ############################
     # Initialization methods
-    def _validate_input(self) -> None:
-        # Check if all variables have a grid
-        for variable in self.exogenous_variable:
-            if variable not in self.exogenous_variable_grid:
-                logging.error(f"Variable {variable} does not have a grid.")
-                raise ValueError(f"Variable {variable} does not have a grid.")
-        # Check if the grids have the same length
-        if len(set([len(grid) for grid in self.exogenous_variable_grid.values()])) != 1:
-            logging.error("The grids have different lengths.")
-            raise ValueError("The grids have different lengths.")
-        # Check if general parameters contain the expected keys
-        expected_keys = ['xml_basefile', 'daily', 'name_subfolder']
-        if not all(key in self.general_parameters for key in expected_keys):
-            logging.error(
-                "General parameters do not contain the expected keys.")
-            raise ValueError(
-                "General parameters do not contain the expected keys.")
+    def initialize_grid(self):
+        # Get all the grids for all exogenous variables
+        exogenous_variables_grids = {
+                variable: self.variables[variable]['grid']
+                for variable in self.variables['exogenous']
+        }
 
-
-    def _grid_length(self):
-        return len(next(iter(self.exogenous_variable_grid.values())))
-
-
-    def _initialize_runs(self):
-        # iterate over the grid
-        list_runs: list[Run] = []
-        for i in range(self._grid_length()):
-            variables = {
-                key: {"pattern": self.exogenous_variable[key]["pattern"],
-                      "value": self.exogenous_variable_grid[key][i]}
-                for key in self.exogenous_variable
+        # Create a Solver object for each combination of exogenous variables
+        grid_points = []
+        for exogenous_variables in itertools.product(*exogenous_variables_grids.values()):
+            exogenous_variables_dict = {
+                variable: {'value': exogenous_variables[idx], **self.variables[variable]}
+                for idx, variable in enumerate(exogenous_variables_grids)
             }
-            # create a run
-            list_runs.append(
-                Run(self.paths['main'],
-                    self.general_parameters,
-                    variables)
-            )
-        return list_runs
+            solver: Solver = self.create_solver(exogenous_variables_dict)
+            grid_points.append(solver)
+        return grid_points
 
-    def _initialize_investment_problems(self):
-        # create a list of InvestmentProblem objects
-        problems = []
-        # iterate over the grid of exogenous variables
-        for idx in range(self._grid_length()):
-            # get the exogenous variables for the current iteration
-            exogenous_variable_temp: dict = {
-                variable: {
-                    'value': self.exogenous_variable_grid[variable][idx],
-                    **var_dict
-                }
-                for variable, var_dict in self.exogenous_variable.items()
-            }
-            initial_guesses = {
-                variable: var_dict['initial_guess'][idx] if isinstance(
-                    var_dict['initial_guess'], list) else var_dict['initial_guess']
-                for variable, var_dict in self.endogenous_variables.items()
-            }
-
-            endogenous_variables_temp: dict = {
-                variable: {
-                    'pattern': var_dict['pattern'],
-                    'initial_guess': initial_guesses[variable]
-                }
-                for variable, var_dict in self.endogenous_variables.items()
-            }
-
-            # initialize the InvestmentProblem object
-            investment_problem = InvestmentProblem(self.paths['main'],
-                                                   exogenous_variable_temp,
-                                                   endogenous_variables_temp,
-                                                   self.general_parameters)
-
-            logger.info('Created investment_problem object for %s.',
-                        investment_problem.name)
-            problems.append(investment_problem)
-        return problems
-
-    def create_runs_from_investment_problems(self, complete: bool = False):
+    def create_solver(self, exogenous_variables: dict):
         """
-        Recover the last iteration of each investment problem and create a Run object from it.
+        Create an investment problem for the given exogenous variables.
         """
-        list_runs = []
-        for investment_problem in self.list_investment_problems:
-            # Create a Run object from the last iteration
-            last_run = investment_problem.last_run()
-            if last_run.successful(complete=complete):
-                list_runs.append(last_run)
-            else:
-                logger.error("Run %s not successful", last_run.name)
-        return list_runs
+        solver = Solver(self.paths['main'],
+                         exogenous_variables,
+                         self.variables['endogenous'],
+                         self.general_parameters)
+        return solver
 
     ############################
     # Utility methods
     def prototype(self):
         # Get first investment problem
-        investment_problem_0: InvestmentProblem = self.list_investment_problems[0]
+        investment_problem_0: Solver = self.grid_points[0]
         investment_problem_0.prototype()
-
 
     def redo_runs(self):
         """
@@ -217,38 +144,29 @@ class ComparativeStatics:
 
         WARNING: This method will delete the results of the runs.
         """
-        for run in self.list_runs:
+        for solver in self.grid_points:
+            run = solver.last_run()
             logger.info("Redoing equilibrium run %s", run.name)
             run.submit(force=True)
 
-#    def clear_folders(self):
-#        for investment_problem in self.list_investment_problems:
-#            last_run = investment_problem.last_run()
-#            investment_problem.clear_runs_folders(last_run.name)
+    def clear_folders(self):
+        for solver in self.grid_points:
+            solver.clear_runs_folders()
 
     ############################
     # Submission methods
 
-    def submit(self):
+    def submit_solvers(self):
         """
         Submit the jobs to the cluster.
         """
-        if self.endogenous_variables:
-            # Submit investment problems
-            for investment_problem in self.list_investment_problems:
-                investment_problem.submit()
-                logging.info(
-                    'Submitted job for investment problem %s', investment_problem.name)
-        else:
-            # Submit runs directly
-            for run in self.list_runs:
-                job_id = run.submit()
-                if job_id is None:
-                    logging.error("Failed to submit run %s", run.name)
-                else:
-                    logging.info("Submitted job for run %s",  run.name)
+        # Submit investment problems
+        for solver in self.grid_points:
+            solver.submit()
+            logging.info(
+                'Submitted job for investment problem %s', solver.name)
 
-    def _create_bash(self, lazy):
+    def _create_bash(self):
         # create the data dictionary
         comparative_statics_data = {
             'name': self.name,
@@ -271,7 +189,7 @@ class ComparativeStatics:
 #SBATCH --time={PROCESS_TIME}
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=20G
+#SBATCH --mem=10G
 #SBATCH --job-name={self.name}_processing
 #SBATCH --output={self.paths['main']}/{self.name}_processing.out
 #SBATCH --error={self.paths['main']}/{self.name}_processing.err
@@ -290,17 +208,17 @@ from src.comparative_statics_module import ComparativeStatics
 
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
-comparative_statics.process({lazy})
+comparative_statics.process()
 END
 ''')
 
         return self.paths['bash']
 
-    def submit_processing(self, lazy=True):
+    def submit_processing(self):
         """
         Submit the processing job to the cluster.
         """
-        bash_path = self._create_bash(lazy)
+        bash_path = self._create_bash()
         logger.info(f"Submitting processing job for {self.name}")
         job_id = submit_slurm_job(
             bash_path, job_name=f"{self.name}_processing")
@@ -315,18 +233,13 @@ END
         self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
         self.paths['investment_results'].parent.mkdir(parents=True,
                                                       exist_ok=True)
-        # If there are endogenous_variables, first process investment problems and create
-        # a list of Run objects
-        if self.endogenous_variables:
-            # Create runs from investment problems
-            self.list_runs = self.create_runs_from_investment_problems()
 
-            # Get the investment results
-            investment_results_df = self._investment_results()
+        # Get the investment results
+        investment_results_df = self.investment_results()
 
-            # Save to disk
-            investment_results_df.to_csv(
-                self.paths['investment_results'], index=False)
+        # Save to disk
+        investment_results_df.to_csv(
+                    self.paths['investment_results'], index=False)
 
         # Save the random variables df to the random_variables folder
         self.extract_random_variables(complete=complete)
@@ -357,15 +270,16 @@ END
 
     def extract_random_variables(self, complete: bool = True) -> None:
         logger.info("Extracting data from MOP's outputs...")
-        for run in self.list_runs:
+        for solver in self.grid_points:
+            run: Run = solver.last_run()
             try:
-                run_processor = RunProcessor(run, complete=complete)
+                run_processor: RunProcessor = RunProcessor(run, complete=complete)
             except FileNotFoundError:
                 logger.error("Run %s not successful. Skipping and resubmitting...", run.name)
                 run.submit()
                 continue
 
-            run_df = run_processor.construct_random_variables_df(
+            run_df = run_processor.construct_run_df(
                 complete=complete)
 
             logger.info("Successfuly extracted data from run %s. Saving to disk...", run.name)
@@ -373,11 +287,10 @@ END
             run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
                           index=False)
 
-
-    def _investment_results(self):
+    def investment_results(self):
         rows: list = []
-        for investment_problem in self.list_investment_problems:
-            rows.append(investment_problem.investment_results())
+        for solver in self.grid_points:
+            rows.append(solver.investment_results())
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
 
@@ -385,20 +298,16 @@ END
         # Create a list to store rows
         rows = []
     
-        for run in self.list_runs:
+        for point in self.grid_points:
             # Get the random variables for the current run
             run_random_variables = pd.read_csv(
-                self.paths['random_variables'] / f'{run.name}.csv')
+                self.paths['random_variables'] / f'{point.name}.csv')
             # Get the results to extract for the current run
             results_dict = results_function(run_random_variables)
 
             # Add run identifier to the results
-            results_dict['run'] = run.name
+            results_dict['point'] = point.name
 
-            # Add the run variables to the results
-            for variable_name, variable in run.variables.items():
-                results_dict[variable_name] = variable['value']
-    
             # Append the row to our list
             rows.append(results_dict)
     

@@ -10,12 +10,30 @@ logger = logging.getLogger(__name__)
 EVENTS_CONFIG_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/events.json'
 COMPARISONS_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/comparisons.json'
 PLOTS_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/plots.json'
+COSTS_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/costs_data.json'
 
 def load_config(config_path: Path) -> dict:
     # Load any .json configuration file
     with open(config_path, 'r') as f:
         config = json.load(f)
     return config
+
+
+def load_costs() -> dict:
+    """
+    Parse the costs configuration file and return a dictionary with the total fixed
+    costs per hour.
+    """
+    costs_dict: dict[str, dict[str, float | int]] = load_config(COSTS_JSON_PATH)
+    print(costs_dict)
+    from time import sleep
+    sleep(10)
+    hourly_costs_dic: dict[str, float] = {
+        participant: (costs_dict[participant]['installation'] / costs_dict[participant]
+                      ['lifetime'] + costs_dict[participant]['oem']) / 8760
+        for participant in costs_dict.keys()
+    }
+    return hourly_costs_dic
 
 # Load the events configuration from the config file
 def load_events() -> dict[str, str]:

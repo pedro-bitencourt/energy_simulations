@@ -4,39 +4,10 @@ from pathlib import Path
 from .utils.auxiliary import make_name
 
 
-################################################################################################
-# ECONOMIC PARAMETERS
-################################################################################################
-# costs are in USD per MW for installation and USD per MW per year for O&M
-COSTS = {
-    'wind': {'oem': 20_000, 'installation': 1_300_000, 'lifetime': 25},
-    'solar': {'oem': 7_300, 'installation': 1_160_000, 'lifetime': 35},
-    'thermal': {'oem': 12_000, 'installation': 975_000, 'lifetime': 20}
-}
-# Fixed costs per hour, in USD per MW per hour
-HOURLY_FIXED_COSTS = {
-    participant: (COSTS[participant]['installation'] / COSTS[participant]
-                  ['lifetime'] + COSTS[participant]['oem']) / 8760
-    for participant in COSTS.keys()
-}
-
-
-################################################################################################
-# OPTIMIZATION CONSTANTS
-################################################################################################
-
-# Maximum number of iterations for the optimization algorithm
-MAX_ITER: int = 80
-# Delta is used to calculate the numerical derivatives of the profits
-DELTA: float = 10
-# Threshold for the profits to be considered converged, in percentage of the
-# installation cost
-THRESHOLD_PROFITS: float = 0.01  # Default threshold for convergence
 
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
-
 
 def create_run_name(variables: dict):
     var_values: list[float] = [variable['value'] for variable in
@@ -88,6 +59,9 @@ def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
         f'{name}_trajectory.json'
     paths['bash'] = folder / name / f'{name}.sh'
 
+    paths['slurm_out'] = folder / f'{name}.out'
+    paths['slurm_err'] = folder / f'{name}.err'
+
     # create the directory
     paths['folder'].mkdir(parents=True, exist_ok=True)
     return paths
@@ -116,6 +90,9 @@ def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict
     paths['folder_windows'] = format_windows_path(paths['folder'])
 
     paths['subfolder'] = folder / subfolder
+
+    paths['slurm_out'] = folder / f'{name}.out'
+    paths['slurm_err'] = folder / f'{name}.err'
 
     # Add paths for results and price distribution files
     paths['random_variables'] = paths['folder'] / \

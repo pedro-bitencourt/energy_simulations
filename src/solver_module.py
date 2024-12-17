@@ -1,14 +1,12 @@
 """
-File name: investment_module.py
-Description: this file implements the InvestmentProblem class.
+File name: solver_module.py
+Description: this file implements the Solver class.
 
-The InvestmentProblem class represents a zero-profit condition problem, where you supply
+The Solver class represents a zero-profit condition problem, where you supply
 a base xml file, a set of exogenous variables, endogenous variables, and general parameters.
 
 Public methods:
-    - __init__: initializes the InvestmentProblem object.
-    - __repr__: returns a string representation of the object.
-    - solve_investment: solves the investment problem.
+    - solve: solves the investment problem.
     - last_run: returns the equilibrium run if the last iteration converged.
     - submit: submits the investment problem to Quest.
 """
@@ -19,21 +17,21 @@ import json
 import shutil
 from pprint import pprint
 
-from src.run_module import Run
-from src.run_processor_module import RunProcessor
-from src.optimization_module import (OptimizationPathEntry,
+from .run_module import Run
+from .optimization_module import (OptimizationPathEntry,
                                      derivatives_from_profits,
                                      get_last_successful_iteration)
-from src.auxiliary import submit_slurm_job, wait_for_jobs
-from src.constants import DELTA, MAX_ITER, UNSUCCESSFUL_RUN, initialize_paths_investment_problem, create_investment_name
+from .utils.auxiliary import submit_slurm_job, wait_for_jobs
+from .constants import  initialize_paths_investment_problem, create_investment_name
 
 logger = logging.getLogger(__name__)
 
 # In GB
 MEMORY_REQUESTED: int = 10
+UNSUCCESSFUL_RUN: int = 13
 
 
-class InvestmentProblem:
+class Solver:
     def __init__(self,
                  parent_folder: str,
                  exogenous_variable: dict,
@@ -58,34 +56,40 @@ class InvestmentProblem:
         parent_name: str = parent_folder.name
         self.name: str = create_investment_name(
             parent_name, exogenous_variable)
-        logger.info("Initializing investment problem %s", self.name)
 
         # initalize relevant paths
         self.paths: dict[str, Path] = initialize_paths_investment_problem(
             parent_folder, self.name)
 
-        # initialize the optimization trajectory
-        self.optimization_trajectory: list = self._initialize_optimization_trajectory()
 
-    def _initialize_optimization_trajectory(self):
+        solver_options_default: dict = {
+            'max_iter': 80,
+            'delta': 10,
+            'threshold_profits': 0.01,
+        }
+        self.solver_options: dict = general_parameters.get('solver_options', solver_options_default)
+
+        # initialize the optimization trajectory
+        self.solver_trajectory: list = self._init_trajectory()
+
+    def _init_trajectory(self):
         # Check if the optimization trajectory file exists
-        if self.paths['optimization_trajectory'].exists():
+        if self.paths['solver_trajectory'].exists():
             # If yes, load it
-            with open(self.paths['optimization_trajectory'], 'r') as file:
+            with open(self.paths['solver_trajectory'], 'r') as file:
                 data = json.load(file)
-                optimization_trajectory = [OptimizationPathEntry.from_dict(entry)
+                solver_trajectory = [OptimizationPathEntry.from_dict(entry)
                                            for entry in data]
 
             logger.info("Successfully loaded optimization trajectory from %s.",
-                        self.paths['optimization_trajectory'])
+                        self.paths['solver_trajectory'])
             logger.debug("Optimization trajectory for %s:", self.name)
-            pprint(optimization_trajectory)
+            pprint(solver_trajectory)
 
         else:
             # If not, initialize it with the initial guess
-            optimization_trajectory: list[OptimizationPathEntry] = []
-            logger.info("Optimization trajectory not found at %s. Initializing a new one.",
-                            self.paths['optimization_trajectory'])
+            solver_trajectory: list[OptimizationPathEntry] = []
+            logger.info("Initializing optimization trajectory at the initial guess.")
 
             # initialize the first iteration
             iteration_0 = OptimizationPathEntry(
@@ -96,16 +100,16 @@ class InvestmentProblem:
                 },
                 successful=False,
             )
-            optimization_trajectory.append(iteration_0)
+            solver_trajectory.append(iteration_0)
 
-        return optimization_trajectory
+        return solver_trajectory
 
-    def _save_optimization_trajectory(self):
-        with open(self.paths['optimization_trajectory'], 'w') as file:
-            json.dump([entry.to_dict() for entry in self.optimization_trajectory],
+    def _save_trajectory(self):
+        with open(self.paths['solver_trajectory'], 'w') as file:
+            json.dump([entry.to_dict() for entry in self.solver_trajectory],
                       file, indent=4, sort_keys=True)
         logger.info('Saved optimization trajectory to %s',
-                    self.paths["optimization_trajectory"])
+                    self.paths["solver_trajectory"])
 
     def prototype(self):
         # Create run at the initial guesses
@@ -116,7 +120,9 @@ class InvestmentProblem:
         run_initial_guess = self.create_run(initial_guess)
         run_initial_guess.prototype()
 
-    def solve_investment(self):
+    #########################################
+    # Methods to solve the 
+    def solve(self):
         """
         This function implements the Newton-Raphson algorithm to solve the zero-profit
         condition problem.
@@ -130,17 +136,9 @@ class InvestmentProblem:
         4. Check for convergence. If the profits are within the threshold, the algorithm stops.
         """
         # Get the current iteration
-        current_iteration: OptimizationPathEntry = self.optimization_trajectory[-1]
+        current_iteration: OptimizationPathEntry = self.solver_trajectory[-1]
         logger.info('Initializing the solver at iteration %s',
                     current_iteration)
-
-        # IF the force flag is set, compute the profits for the current investment
-        if self.general_parameters.get('force', False):
-            run: Run = self.create_run(
-                current_iteration.current_investment)
-            if run.successful():
-                profits = RunProcessor(run).get_profits()
-                current_iteration.profits = profits
 
         # Check for convergence
         if current_iteration.check_convergence():
@@ -149,7 +147,7 @@ class InvestmentProblem:
             return
 
         # Start the Newton-Raphson loop
-        while current_iteration.iteration < MAX_ITER:
+        while current_iteration.iteration < self.solver_options['max_iter']:
             logger.info('Current iteration: %s', current_iteration)
 
             # Compute the profits and derivatives
@@ -157,10 +155,8 @@ class InvestmentProblem:
                 current_iteration)
 
             # Update the optimization trajectory
-            self.optimization_trajectory[-1] = current_iteration
-
-            # Save the optimization trajectory
-            self._save_optimization_trajectory()
+            self.solver_trajectory[-1] = current_iteration
+            self._save_trajectory()
 
             # Check for convergence
             if current_iteration.check_convergence():
@@ -170,23 +166,24 @@ class InvestmentProblem:
 
             # Compute the new investment
             new_iteration: OptimizationPathEntry = current_iteration.next_iteration()
-
             logger.info('Next iteration: %s', new_iteration)
 
-            # Update the current iteration loop variable
-            current_iteration: OptimizationPathEntry = new_iteration
-
             # Append the new iteration to the optimization trajectory
-            self.optimization_trajectory.append(current_iteration)
+            self.solver_trajectory.append(new_iteration)
+            self._save_trajectory()
 
             # Clear the runs folders, except for the current run
             self.clear_runs_folders(current_iteration.current_investment)
+
+            # Update the current iteration loop variable
+            current_iteration: OptimizationPathEntry = new_iteration
 
         logger.info(
             'Maximum number of iterations reached. Optimization trajectory saved.')
 
         # save results
-        self._save_optimization_trajectory()
+        self._save_trajectory()
+
 
     def clear_runs_folders(self, current_investment=None, force=False):
         """
@@ -194,7 +191,7 @@ class InvestmentProblem:
         """
         if current_investment is None:
             current_iteration = get_last_successful_iteration(
-                self.optimization_trajectory)
+                self.solver_trajectory)
             current_investment = current_iteration.current_investment
         perturbed_runs_dict: dict[str, Run] = self.perturbed_runs(
             current_investment)
@@ -215,23 +212,21 @@ class InvestmentProblem:
                                     directory)
 
     def _update_current_iteration(self,
-                                  current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
+                                current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
         '''
         Updates the current iteration with the profits and derivatives
         '''
-        # Check if the current iteration was successful
-        if current_iteration.profits is None or current_iteration.profits_derivatives is None:
-            logger.info('Preparing to compute profits for iteration with %s',
-                        current_iteration.current_investment)
+        if current_iteration.profits and current_iteration.profits_derivatives:
+            logger.info('Profits and derivatives already computed for iteration %s',
+                        current_iteration.iteration)
+            return current_iteration
 
-            # Compute the profits and derivatives
-            profits, profits_derivatives = self.profits_and_derivatives(
-                current_iteration.current_investment)
+        logger.info('Preparing to compute profits for iteration with %s',
+                    current_iteration.current_investment)
 
-        # If the profits are already computed, use them
-        else:
-            profits = current_iteration.profits
-            profits_derivatives = current_iteration.profits_derivatives
+        # Compute the profits and derivatives
+        profits, profits_derivatives = self.profits_and_derivatives(
+            current_iteration.current_investment)
 
         # Output a new OptimizationPathEntry
         return OptimizationPathEntry(
@@ -242,7 +237,8 @@ class InvestmentProblem:
             profits_derivatives=profits_derivatives
         )
 
-    def submit_and_wait(self, runs_dict: dict[str, Run],
+    @staticmethod
+    def submit_and_wait(runs_dict: dict[str, Run],
                         max_attempts: int = 6) -> None:
         '''
         Submits the runs in the runs_dict and waits for them to finish
@@ -279,7 +275,7 @@ class InvestmentProblem:
             'current': self.create_run(current_investment)}
         for var in self.endogenous_variables.keys():
             investment = current_investment.copy()
-            investment[var] += DELTA
+            investment[var] += self.solver_options['delta']
             perturbed_runs_dict[var] = self.create_run(investment)
         return perturbed_runs_dict
 
@@ -305,12 +301,11 @@ class InvestmentProblem:
         # Extract the profits from the runs
         profits_perturb = {}
         for resource, run in perturbed_runs_dict.items():
-            run_processor = RunProcessor(run)
-            profits_perturb[resource] = run_processor.get_profits()
+            profits_perturb[resource] = run.get_profits()
 
         # Compute derivatives from the profits of the perturbed runs
         derivatives = derivatives_from_profits(
-            profits_perturb, DELTA, list(self.endogenous_variables.keys()))
+            profits_perturb, self.solver_options['delta'], list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
     def create_run(self, current_investment: dict) -> Run:
@@ -319,29 +314,16 @@ class InvestmentProblem:
         endogenous capacities
         """
         # create a values array with the same order as the variables
-        endogenous_variables_temp: dict = {
-            key:
-                {
-                    'pattern': entry['pattern'],
-                    'value': current_investment[key]
-                }
-            for key, entry in self.endogenous_variables.items()
-        }
-
-        # create the variables dictionary
-        variables: dict = self.exogenous_variable.copy()
-        variables.update(endogenous_variables_temp)
-
+        variables: dict = {**self.exogenous_variable, **current_investment}
         # create the Run object
         run: Run = Run(self.paths['folder'],
                        self.general_parameters,
                        variables)
-
         return run
 
     def investment_results(self, resubmit: bool = False) -> dict:
         """
-        Returns the results of the investment problem for the last iteration.
+        Returns the results of the solver for the last iteration.
 
         Args:
             resubmit: If True, the run is resubmitted before computing the profits, in 
@@ -349,7 +331,7 @@ class InvestmentProblem:
         """
         # Retrieve the last iteration from the solver trajectory
         last_iteration: OptimizationPathEntry = get_last_successful_iteration(
-            self.optimization_trajectory)
+            self.solver_trajectory)
 
         # Construct the header of the row
         exo_vars: dict = {key: entry['value']
@@ -362,16 +344,11 @@ class InvestmentProblem:
             **last_iteration.current_investment
         }
 
-        # Get the list of participants
-        participants: list[str] = list(self.endogenous_variables.keys())
 
         # Compute the profits
-        last_run = self.create_run(
-            last_iteration.current_investment)
-
-        # Account for the case where the run was not successful
+        last_run = self.last_run()
         try:
-            last_run_processor = RunProcessor(last_run)
+            profits_dict: dict = last_run.get_profits_data_dict()
         except FileNotFoundError:
             if resubmit:
                 logger.error(
@@ -382,10 +359,11 @@ class InvestmentProblem:
                     "Run %s not successful, returning empty dict",)
             return {}
 
-        profits_dict: dict = last_run_processor.profits_data_dict()
-
         logger.debug("profits_dict for %s", self.name)
         pprint(profits_dict)
+
+        # Get the list of participants
+        participants: list[str] = list(self.endogenous_variables.keys())
 
         # Update the profits in the last iteration
         last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profits']
@@ -399,13 +377,9 @@ class InvestmentProblem:
         return investment_results
 
     def last_run(self):
-        """
-        Returns the equilibrium run if the last iteration converged
-        """
         # Get the last successful iteration
         last_iteration: OptimizationPathEntry = get_last_successful_iteration(
-            self.optimization_trajectory)
-
+            self.solver_trajectory)
         # Create the run object
         run: Run = self.create_run(last_iteration.current_investment)
         return run
@@ -456,8 +430,8 @@ class InvestmentProblem:
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem={MEMORY_REQUESTED}G
 #SBATCH --job-name={self.name}
-#SBATCH --output={self.paths['parent_folder']}/{self.name}.out
-#SBATCH --error={self.paths['parent_folder']}/{self.name}.err
+#SBATCH --output={self.paths['slurm_out']}
+#SBATCH --error={self.paths['slurm_err']}
 #SBATCH --mail-type=FAIL,TIMEOUT
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
@@ -478,9 +452,9 @@ investment_data = json.loads('''{investment_data_str}''')
 sys.path.append('/projects/p32342/code')
 from src.investment_module import InvestmentProblem
 
-investment_problem = InvestmentProblem(**investment_data)
-print('Successfully loaded the investment problem data')
-investment_problem.solve_investment()
+solver = Solver(**investment_data)
+print('Successfully loaded the solvers data')
+solver.solve()
 END
 """)
 

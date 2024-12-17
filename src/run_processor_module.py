@@ -2,23 +2,31 @@
 File name: run_processor_module.py
 
 Description:
-This module implements the RunProcessor class, which extends the Run class to process run results.
-It extracts data such as marginal costs, price distributions, production results, and profits.
+    - This module implements the RunProcessor class, which extends the Run class to extract the 
+    output data from MOP.
 
-Public methods:
-- RunProcessor: Initializes the RunProcessor with an existing Run instance.
-- get_profits: Computes profits for the specified endogenous variables.
+Methods:
+    - RunProcessor: Initializes the RunProcessor with an existing Run instance.
+    - `construct_run_df`: extracts the dataframe with all the requested data from the 
+    MOP's output, as a pandas DataFrame with columns:
+        - `datetime` in format
+        - `scenario`: the MOP scenario for that row, from 0 to 113
+        - `demand` (in MW)
+        - `production_{participant}` (in MW)
+        - `marginal_cost` (in $/MWh)
+        - `variable_cost_{participant}` (in $)
+        - `water_level_{participant}` (in m)
+    
+
 """
 import logging
 from typing import Dict, Any
-import pandas as pd
-import json
 import copy
 from pathlib import Path
+import pandas as pd
 
 from .utils import parsing_module as proc
 from .run_module import Run
-from .data_analysis_module import compute_participant_metrics
 from .constants import (
     SALTO_WATER_LEVEL_DF,
     VARIABLE_COSTS_THERMAL_DF,
@@ -27,6 +35,7 @@ from .constants import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 PARTICIPANTS_LIST_ALL: list = ['wind', 'solar', 'thermal', 'salto', 'demand']#, 'excedentes']
 PARTICIPANTS_LIST_ENDOGENOUS: list = ['wind', 'solar', 'thermal']
@@ -37,7 +46,7 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
     "salto": {"folder": "HID_salto", "type": "hydro"},
     # FIX
-    #"excedentes": {"folder": "EXC_excedentes", "type": "excedentes"}
+    #"excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
 }
 
 class RunProcessor(Run):
@@ -77,7 +86,7 @@ class RunProcessor(Run):
             raise FileNotFoundError(f'Run {self.name} was not successful.')
 
 
-    def construct_random_variables_df(self, complete=True) -> pd.DataFrame:
+    def construct_run_df(self, complete: bool = True) -> pd.DataFrame:
         if complete:
             participants: list = PARTICIPANTS_LIST_ALL
         else:
@@ -106,7 +115,7 @@ class RunProcessor(Run):
                 df = get_variable_costs_df(participant, self.paths['sim'])
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
-            else:
+            elif participant not in ['demand', 'excedentes']:
                 random_variables_df[f'variable_costs_{participant}'] = 0
 
             # Extract water level data
@@ -140,59 +149,7 @@ class RunProcessor(Run):
         marginal_cost_df = melt_df(marginal_cost_df, 'marginal_cost')
         return marginal_cost_df
 
-    def profits_data_dict(self, complete: bool = False) -> Dict:
-        """
-        Computes profits for the specified endogenous variables.
 
-        Returns:
-            dict: A dictionary of profits.
-        """
-        # Get random variables dataframe
-        run_df: pd.DataFrame = self.construct_random_variables_df(
-            complete=False)
-
-        if complete:
-            participants: list = PARTICIPANTS_LIST_ALL
-        else:
-            participants: list = PARTICIPANTS_LIST_ENDOGENOUS
-
-        results_dict: dict = {}
-
-        # Update the results dictionary with metrics for each participant
-        for participant in participants:
-            capacity: float = self.variables[participant]['value']
-            results_dict.update(compute_participant_metrics(
-                run_df, participant, capacity))
-
-        if complete:
-            system_total_cost: float = sum(
-                [results_dict[f'{participant}_total_cost'] for participant in participants])
-            system_fixed_cost: float = sum(
-                [results_dict[f'{participant}_fixed_cost'] for participant in participants])
-            results_dict.update({
-                'system_total_cost': system_total_cost,
-                'system_fixed_cost': system_fixed_cost,
-            })
-
-        return results_dict
-
-    def get_profits(self):
-        """
-        Computes profits for the specified endogenous variables.
-
-        Returns:
-            dict: A dictionary of profits.
-        """
-        profits_data: dict = self.profits_data_dict(complete=False)
-        json_path = self.paths['folder'] / 'profits_data.json'
-        with open(json_path, "w") as f:
-            json.dump(profits_data, f)
-
-        logger.debug("profits_data for %s:", self.name)
-        logger.debug(profits_data)
-        profits_dict: dict = {participant: profits_data[f'{participant}_normalized_profits']
-                              for participant in PARTICIPANTS_LIST_ENDOGENOUS}
-        return profits_dict
 
 
 def _initialize_df_configuration(key_participant: str, sim_folder: Path) -> Dict[str, Any]:
