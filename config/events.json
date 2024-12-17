@@ -1,0 +1,51 @@
+{
+    "unconditional": {
+        "label": "",
+        "lhs": "index",
+        "operator": "==",
+        "rhs_type": "value",
+        "rhs": ["index"]
+    },
+    "water_level": {
+        "label": "Water Level < $ meters",
+        "lhs": "water_level_salto",
+        "operator": "<",
+        "rhs_type": "value",
+        "rhs": [31, 32, 33, 34]
+    },
+    "low_wind": {
+        "label": "Wind < $th pct",
+        "lhs": "production_wind",
+        "operator": "<",
+        "rhs_type": "percentile",
+        "rhs": [25, 50]
+    },
+    "lost_load": {
+        "label": "Lost Load > $ MW",
+        "lhs": "lost_load",
+        "operator": ">",
+        "rhs_type": "value",
+        "rhs": [1, 100, 250, 500]
+    },
+    "negative_lost_load": {
+        "label": "Lost Load < -1 MW",
+        "lhs": "lost_load",
+        "operator": "<",
+        "rhs_type": "value",
+        "rhs": [-1]
+    },
+    "positive_thermal_production": {
+        "label": "Thermal Production > 0 MW",
+        "lhs": "production_thermal",
+        "operator": ">",
+        "rhs_type": "value",
+        "rhs": [0.01]
+    },
+    "positive_hydro_production": {
+        "label": "Hydro Production > 0 MW",
+        "lhs": "production_hydro",
+        "operator": ">",
+        "rhs_type": "value",
+        "rhs": [0.01]
+    }
+}

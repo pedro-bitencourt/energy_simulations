@@ -1,9 +1,10 @@
 # src/logging_config.py
 # Sets up the logging configuration for the project
 
-from rich.logging import RichHandler
 import logging
 from typing import Optional
+
+from rich.logging import RichHandler
 
 def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
     """

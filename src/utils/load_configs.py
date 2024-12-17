@@ -7,10 +7,9 @@ logger = logging.getLogger(__name__)
 
 
 # JSON Paths
-EVENTS_CONFIG_JSON_PATH: Path = Path(__file__).parent.parent / 'config/events.json'
-COMPARISONS_JSON_PATH: Path = Path(__file__).parent.parent / 'config/comparisons.json'
-PLOTS_JSON_PATH: Path = Path(__file__).parent.parent / 'config/plots.json'
-VARIABLES_JSON_PATH: Path = Path(__file__).parent.parent / 'config/variables.json'
+EVENTS_CONFIG_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/events.json'
+COMPARISONS_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/comparisons.json'
+PLOTS_JSON_PATH: Path = Path(__file__).parent.parent.parent / 'config/plots.json'
 
 def load_config(config_path: Path) -> dict:
     # Load any .json configuration file

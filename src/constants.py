@@ -1,37 +1,7 @@
 # Description: This file contains the constants used in the project.
 from pathlib import Path
-from rich.logging import RichHandler
-import logging
 
-from src.auxiliary import make_name
-
-
-################################################################################################
-# LOGGING CONFIGURATION
-################################################################################################
-# Configure the handler with pretty printing enabled
-rich_handler = RichHandler(
-    rich_tracebacks=True,
-    show_time=True,
-    show_path=True,
-    markup=True
-)
-
-
-# Configure basic logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[rich_handler]
-)
-
-# Ensure root logger uses the rich handler
-logging.getLogger().handlers = [rich_handler]
-
-
-def get_logger(name):
-    return logging.getLogger(name)
+from .utils.auxiliary import make_name
 
 
 ################################################################################################
@@ -89,12 +59,10 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 BASE_PATH: Path = Path('/projects/p32342')
 POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
 
-
-
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths = {}
     # Folders
-    paths['main'] = Path(f"{base_path}/comparative_statics/{name}")
+    paths['main'] = Path(f"{base_path}/raw/{name}")
     paths['results'] = Path(f"{base_path}/results/{name}")
     paths['random_variables'] = Path(
         f"{base_path}/results/{name}/random_variables")
@@ -104,11 +72,10 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
 
     # Files
     paths['bash'] = Path(
-        f"{base_path}/comparative_statics/{name}/process.sh")
+        f"{base_path}/raw/{name}/process.sh")
     paths['investment_results'] = paths['results'] / 'investment_results.csv'
     paths['conditional_means'] = paths['results'] / 'conditional_means.csv'
     return paths
-
 
 def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
     paths: dict[str, Path] = {}
@@ -234,7 +201,7 @@ DEMAND_DF = {
 
 VARIABLE_COSTS_THERMAL_DF = {
     'name': 'variable_costs',
-    'filename': 'TER_new_thermal/costos*xlt',
+    'filename': 'TER_thermal/costos*xlt',
     'table_pattern': {
         'start': 'CANT_POSTE',
         'end': None

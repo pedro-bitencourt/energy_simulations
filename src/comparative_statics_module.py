@@ -21,7 +21,7 @@ from typing import Optional, Dict
 import json
 import pandas as pd
 
-from .auxiliary import submit_slurm_job
+from .utils.auxiliary import submit_slurm_job
 from .investment_module import InvestmentProblem
 from .run_module import Run
 from .run_processor_module import RunProcessor
@@ -109,38 +109,8 @@ class ComparativeStatics:
             # Create runs directly
             self.list_runs = self._initialize_runs()
 
-    def prototype(self):
-        # Get first investment problem
-        investment_problem_0: InvestmentProblem = self.list_investment_problems[0]
-        investment_problem_0.prototype()
-
-    def redo_runs(self):
-        """
-        Deletes and runs again the equilibrium runs.
-
-        WARNING: This method will delete the results of the runs.
-        """
-        for run in self.list_runs:
-            logger.info("Redoing equilibrium run %s", run.name)
-            run.submit(force=True)
-
-    def extract_random_variables(self, complete: bool = True) -> None:
-        logger.info("Saving random variables DataFrame to results folder...")
-        for run in self.list_runs:
-            try:
-                run_processor = RunProcessor(run, complete=complete)
-            except FileNotFoundError:
-                logger.error(f"Run {run.name} not successful, skipping it")
-                run.submit()
-                continue
-
-            run_df = run_processor.construct_random_variables_df(
-                complete=complete)
-
-            # Copy the random variables to the random_variables folder with the run name
-            run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
-                          index=False)
-
+    ############################
+    # Initialization methods
     def _validate_input(self) -> None:
         # Check if all variables have a grid
         for variable in self.exogenous_variable:
@@ -159,6 +129,66 @@ class ComparativeStatics:
             raise ValueError(
                 "General parameters do not contain the expected keys.")
 
+
+    def _grid_length(self):
+        return len(next(iter(self.exogenous_variable_grid.values())))
+
+
+    def _initialize_runs(self):
+        # iterate over the grid
+        list_runs: list[Run] = []
+        for i in range(self._grid_length()):
+            variables = {
+                key: {"pattern": self.exogenous_variable[key]["pattern"],
+                      "value": self.exogenous_variable_grid[key][i]}
+                for key in self.exogenous_variable
+            }
+            # create a run
+            list_runs.append(
+                Run(self.paths['main'],
+                    self.general_parameters,
+                    variables)
+            )
+        return list_runs
+
+    def _initialize_investment_problems(self):
+        # create a list of InvestmentProblem objects
+        problems = []
+        # iterate over the grid of exogenous variables
+        for idx in range(self._grid_length()):
+            # get the exogenous variables for the current iteration
+            exogenous_variable_temp: dict = {
+                variable: {
+                    'value': self.exogenous_variable_grid[variable][idx],
+                    **var_dict
+                }
+                for variable, var_dict in self.exogenous_variable.items()
+            }
+            initial_guesses = {
+                variable: var_dict['initial_guess'][idx] if isinstance(
+                    var_dict['initial_guess'], list) else var_dict['initial_guess']
+                for variable, var_dict in self.endogenous_variables.items()
+            }
+
+            endogenous_variables_temp: dict = {
+                variable: {
+                    'pattern': var_dict['pattern'],
+                    'initial_guess': initial_guesses[variable]
+                }
+                for variable, var_dict in self.endogenous_variables.items()
+            }
+
+            # initialize the InvestmentProblem object
+            investment_problem = InvestmentProblem(self.paths['main'],
+                                                   exogenous_variable_temp,
+                                                   endogenous_variables_temp,
+                                                   self.general_parameters)
+
+            logger.info('Created investment_problem object for %s.',
+                        investment_problem.name)
+            problems.append(investment_problem)
+        return problems
+
     def create_runs_from_investment_problems(self, complete: bool = False):
         """
         Recover the last iteration of each investment problem and create a Run object from it.
@@ -172,6 +202,51 @@ class ComparativeStatics:
             else:
                 logger.error("Run %s not successful", last_run.name)
         return list_runs
+
+    ############################
+    # Utility methods
+    def prototype(self):
+        # Get first investment problem
+        investment_problem_0: InvestmentProblem = self.list_investment_problems[0]
+        investment_problem_0.prototype()
+
+
+    def redo_runs(self):
+        """
+        Deletes and runs again the equilibrium runs.
+
+        WARNING: This method will delete the results of the runs.
+        """
+        for run in self.list_runs:
+            logger.info("Redoing equilibrium run %s", run.name)
+            run.submit(force=True)
+
+#    def clear_folders(self):
+#        for investment_problem in self.list_investment_problems:
+#            last_run = investment_problem.last_run()
+#            investment_problem.clear_runs_folders(last_run.name)
+
+    ############################
+    # Submission methods
+
+    def submit(self):
+        """
+        Submit the jobs to the cluster.
+        """
+        if self.endogenous_variables:
+            # Submit investment problems
+            for investment_problem in self.list_investment_problems:
+                investment_problem.submit()
+                logging.info(
+                    'Submitted job for investment problem %s', investment_problem.name)
+        else:
+            # Submit runs directly
+            for run in self.list_runs:
+                job_id = run.submit()
+                if job_id is None:
+                    logging.error("Failed to submit run %s", run.name)
+                else:
+                    logging.info("Submitted job for run %s",  run.name)
 
     def _create_bash(self, lazy):
         # create the data dictionary
@@ -231,87 +306,12 @@ END
             bash_path, job_name=f"{self.name}_processing")
         return job_id
 
-    def _grid_length(self):
-        return len(next(iter(self.exogenous_variable_grid.values())))
+    ############################
+    # Processing methods
 
-    def _initialize_runs(self):
-        # iterate over the grid
-        list_runs: list[Run] = []
-        for i in range(self._grid_length()):
-            variables = {
-                key: {"pattern": self.exogenous_variable[key]["pattern"],
-                      "value": self.exogenous_variable_grid[key][i]}
-                for key in self.exogenous_variable
-            }
-            # create a run
-            list_runs.append(
-                Run(self.paths['main'],
-                    self.general_parameters,
-                    variables)
-            )
-        return list_runs
-
-    def _initialize_investment_problems(self):
-        # create a list of InvestmentProblem objects
-        problems = []
-        # iterate over the grid of exogenous variables
-        for idx in range(self._grid_length()):
-            # get the exogenous variables for the current iteration
-            exogenous_variable_temp: dict = {
-                variable: {
-                    'value': self.exogenous_variable_grid[variable][idx],
-                    **var_dict
-                }
-                for variable, var_dict in self.exogenous_variable.items()
-            }
-            initial_guesses = {
-                variable: var_dict['initial_guess'][idx] if isinstance(
-                    var_dict['initial_guess'], list) else var_dict['initial_guess']
-                for variable, var_dict in self.endogenous_variables.items()
-            }
-
-            endogenous_variables_temp: dict = {
-                variable: {
-                    'pattern': var_dict['pattern'],
-                    'initial_guess': initial_guesses[variable]
-                }
-                for variable, var_dict in self.endogenous_variables.items()
-            }
-
-            # initialize the InvestmentProblem object
-            investment_problem = InvestmentProblem(self.paths['main'],
-                                                   exogenous_variable_temp,
-                                                   endogenous_variables_temp,
-                                                   self.general_parameters)
-
-            logger.info('Created investment_problem object for %s.',
-                        investment_problem.name)
-            problems.append(investment_problem)
-        return problems
-
-    def submit(self):
-        """
-        Submit the jobs to the cluster.
-        """
-        if self.endogenous_variables:
-            # Submit investment problems
-            for investment_problem in self.list_investment_problems:
-                investment_problem.submit()
-                logging.info(
-                    f'Submitted job for investment problem %s', investment_problem.name)
-        else:
-            # Submit runs directly
-            for run in self.list_runs:
-                job_id = run.submit()
-                if job_id is None:
-                    logging.error("Failed to submit run %s", run.name)
-                else:
-                    logging.info("Submitted job for run %s",  run.name)
-
-    def process(self, lazy=True, complete=True):
+    def process(self, complete=True):
         """
         """
-
         self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
         self.paths['investment_results'].parent.mkdir(parents=True,
                                                       exist_ok=True)
@@ -355,6 +355,25 @@ END
         # yearly_results_df.to_csv(
         #    self.paths['results'] / 'yearly_results.csv', index=False)
 
+    def extract_random_variables(self, complete: bool = True) -> None:
+        logger.info("Extracting data from MOP's outputs...")
+        for run in self.list_runs:
+            try:
+                run_processor = RunProcessor(run, complete=complete)
+            except FileNotFoundError:
+                logger.error("Run %s not successful. Skipping and resubmitting...", run.name)
+                run.submit()
+                continue
+
+            run_df = run_processor.construct_random_variables_df(
+                complete=complete)
+
+            logger.info("Successfuly extracted data from run %s. Saving to disk...", run.name)
+            # Copy the random variables to the random_variables folder with the run name
+            run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
+                          index=False)
+
+
     def _investment_results(self):
         rows: list = []
         for investment_problem in self.list_investment_problems:
@@ -362,7 +381,7 @@ END
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
 
-    def construct_results(self, random_variables_folder: Path, results_function) -> pd.DataFrame:
+    def construct_results(self, results_function) -> pd.DataFrame:
         # Create a list to store rows
         rows = []
     
@@ -388,7 +407,3 @@ END
     
         return results_df
 
-#    def clear_folders(self):
-#        for investment_problem in self.list_investment_problems:
-#            last_run = investment_problem.last_run()
-#            investment_problem.clear_runs_folders(last_run.name)

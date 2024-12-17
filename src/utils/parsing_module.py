@@ -11,7 +11,7 @@ import pandas as pd
 
 # Local imports
 from src.constants import DATETIME_FORMAT, POSTE_FILEPATH
-from src import auxiliary
+from src.utils import auxiliary
 
 
 logger = logging.getLogger(__name__)
@@ -194,7 +194,6 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
             f'File matching pattern {option["filename"]} not found in {input_folder}.')
 
     # Read the DataFrame; raise error if not found
-    logger.debug(f'Opening DataFrame from {file_path}')
     data = read_xlt(file_path=file_path, options=option)
     if data is None:
         logger.error(f'Could not read DataFrame from {file_path}.')
@@ -203,11 +202,11 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
 
     # Process the DataFrame columns
     dataframe = process_dataframe(data, option['columns_options'])
+
     if dataframe is None:
         logger.error('Error processing DataFrame %s', dataframe)
         raise ValueError('Error processing DataFrame %s', dataframe)
     dataframe = dataframe.loc[:, ~dataframe.columns.duplicated()]
-    logger.debug(f'{dataframe.head()=}')
 
     # Create the datetime column
     if option.get('convert_poste', True):
@@ -219,6 +218,13 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
     columns_to_keep = ['datetime'] + [str(i) for i in range(114)]
     dataframe = dataframe[columns_to_keep]
 
+    # Validate the dataframe
+    validate_dataframe(dataframe, option['name'])
+    #logger.debug(f'{dataframe.head()=}')
+
+    return dataframe
+
+def validate_dataframe(dataframe: pd.DataFrame, name: str) -> bool:
     # Ensure datetime is in the correct format
     if 'datetime' in dataframe.columns:
         try:
@@ -233,29 +239,23 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
                 dataframe['datetime'], format=DATETIME_FORMAT)
     else:
         logger.error(
-            'DataFrame %s does not contain a datetime column.', option['name'])
+            'DataFrame %s does not contain a datetime column.', name)
         raise ValueError(
-            f'DataFrame {option["name"]} does not contain a datetime column.')
-
-    if dataframe is None:
-        logger.error(f'Could not process DataFrame from {file_path}.')
-        raise ValueError(
-            f'Could not process DataFrame from {file_path}, with head {dataframe.head()}.')
+            f'DataFrame {name} does not contain a datetime column.')
 
     # Check for NaN values
     if dataframe.isna().sum().sum() > 0:
-        logger.error('DataFrame %s contains NaN values.', option['name'])
+        logger.error('DataFrame %s contains NaN values.', name)
         nan_rows = dataframe[dataframe.isna().any(
             axis=1)]
         logger.error(f'Rows with NaN values:\n{nan_rows}')
         raise ValueError(
             'Marginal cost DataFrame contains NaN values.')
 
-    return dataframe
-
+    return True
 
 def convert_from_poste_to_datetime(participant_df: pd.DataFrame,
-                                   daily: bool) -> pd.DataFrame:
+                                   daily: bool = True) -> pd.DataFrame:
     """
     Converts 'poste' time format to datetime.
     """

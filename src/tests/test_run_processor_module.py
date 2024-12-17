@@ -13,55 +13,41 @@ from pathlib import Path
 import pandas as pd
 import json
 from time import sleep
+import logging
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.run_module import Run
 from src.run_processor_module import RunProcessor
-from src.constants import DATETIME_FORMAT, SCENARIOS
+from src.constants import DATETIME_FORMAT
+from src.utils.logging_config import setup_logging
 
 
-COLUMNS_TO_CHECK = ['datetime'] + SCENARIOS
+OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/test_data/output')
+RUN_FOLDER = Path('/Users/pedrobitencourt/energy_simulations/test_data/1.25_13041_1957_480')
 
-
-PARENT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/comparative_statics/salto_capacity_v3/salto_capacity_v3_investment_101.25')
-OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/tests/data/output')
-
-# Not necessary
-REQUESTED_TIME_RUN: float = 6.5
-REQUESTED_TIME_SOLVER: float = 16
 
 class TestRun(unittest.TestCase):
     def setUp(self):
-        # Set up the mock Run object
-        name = 'salto_capacity_v3'
-        exogenous_capacity = 101.25
-        wind_capacity = 4540
-        solar_capacity = 1769
-        thermal_capacity = 1051
+        # set up logging level
+        setup_logging(level=logging.INFO)
+
+        parent_folder = RUN_FOLDER.parent
+        run_name: str = RUN_FOLDER.name
+        # Break run name into capacities
+        capacities = run_name.split('_')
+        exogenous_capacity = float(capacities[0])
+        wind_capacity = float(capacities[1])
+        solar_capacity = float(capacities[2])
+        thermal_capacity = float(capacities[3])
         general_parameters: dict = {'daily': True,
-                            'name_subfolder': 'CAD-2024-DIARIA',
-                            'xml_basefile': f'/projects/p32342/code/xml/{name}.xml',
-                            'email': 'pedro.bitencourt@u.northwestern.edu',
-                            'annual_interest_rate': 0.0,
-                            'years_run': 6.61,
-                            'requested_time_run': REQUESTED_TIME_RUN,
-                            'requested_time_solver': REQUESTED_TIME_SOLVER,
-                            'force': True}
+                            'name_subfolder': 'CAD-2024-DIARIA'}
 
-        variables = {'hydro_factor': {'pattern': 'HYDRO_FACTOR',
-                                      'label': 'Hydro Factor',
-                                      'value': exogenous_capacity},
-                     'wind': {'pattern': 'WIND_CAPACITY',
-                              'label': 'Wind Capacity',
-                              'value': wind_capacity},
-                     'solar': {'pattern': 'SOLAR_CAPACITY',
-                               'label': 'Solar Capacity',
-                               'value': solar_capacity},
-                     'thermal': {'pattern': 'THERMAL_CAPACITY',
-                                 'label': 'Thermal Capacity',
-                                 'value': thermal_capacity}}
+        variables = {'hydro_factor': {'value': exogenous_capacity},
+                     'wind': {'value': wind_capacity},
+                     'solar': {'value': solar_capacity},
+                     'thermal': {'value': thermal_capacity}}
 
-        self.mock_run = Run(PARENT_FOLDER, general_parameters, variables)
+        self.mock_run = Run(parent_folder, general_parameters, variables)
         # Initialize the RunProcessor object
         self.mock_run_processor = RunProcessor(self.mock_run)
 
@@ -98,21 +84,19 @@ class TestRun(unittest.TestCase):
 #        print(f'{dataframe.head()=}')
 #        self.assertEqual(dataframe.columns.tolist(), COLUMNS_TO_CHECK)
 
-    def test_profits_data_dict(self):
-        profits_data_dict = self.mock_run_processor.profits_data_dict()
-        self.assertIsNotNone(profits_data_dict)
-        print(f'{profits_data_dict=}')
-        sleep(5)
-
-    def test_get_profits(self):
-        profits: dict = self.mock_run_processor.get_profits()
-        self.assertIsNotNone(profits)
-        # Save to disk using json
-        with open(OUTPUT_FOLDER / 'profits.json', 'w') as f:
-            json.dump(profits, f)
+        #    def test_profits_data_dict(self):
+        #        profits_data_dict = self.mock_run_processor.profits_data_dict()
+        #        self.assertIsNotNone(profits_data_dict)
+        #        print(f'{profits_data_dict=}')
+        #        sleep(5)
+        #
+        #    def test_get_profits(self):
+        #        profits: dict = self.mock_run_processor.get_profits()
+        #        self.assertIsNotNone(profits)
+        #        # Save to disk using json
+        #        with open(OUTPUT_FOLDER / 'profits.json', 'w') as f:
+        #            json.dump(profits, f)
         
-
-
 
     def test_construct_random_variables_df(self):
         random_variables = self.mock_run_processor.construct_random_variables_df(complete=True)
@@ -129,4 +113,5 @@ class TestRun(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    setup_logging(level=logging.INFO)
     unittest.main()

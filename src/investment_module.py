@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 import logging
 import json
-from typing import Optional
 import shutil
 from pprint import pprint
 
@@ -263,11 +262,16 @@ class InvestmentProblem:
                 if attempts == 0:
                     logger.info("First attempt for %s", run.name)
                 else:
-                    logger.critical("RETRYING %s, previous attempts = %s", run.name,
+                    logger.warning("RETRYING %s, previous attempts = %s", run.name,
                                     attempts)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1
+
+        if attempts == max_attempts:
+            logger.critical(
+                "Could not successfully finish all runs after %s attempts", max_attempts)
+            sys.exit(UNSUCCESSFUL_RUN)
 
     def perturbed_runs(self, current_investment: dict) -> dict[str, Run]:
         # Create a dict of the perturbed runs
@@ -370,11 +374,11 @@ class InvestmentProblem:
             last_run_processor = RunProcessor(last_run)
         except FileNotFoundError:
             if resubmit:
-                logger.critical(
+                logger.error(
                     "Run %s not successful, resubmitting and returning empty dict",)
                 last_run.submit(force=True)
             else:
-                logger.critical(
+                logger.error(
                     "Run %s not successful, returning empty dict",)
             return {}
 

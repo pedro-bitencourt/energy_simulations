@@ -1,0 +1,54 @@
+{
+  "capacities": {
+    "title": "Capacities (MW)",
+    "variables": [
+      { "name": "capacity_wind", "label": "Wind" },
+      { "name": "capacity_solar", "label": "Solar" },
+      { "name": "capacity_salto", "label": "Hydro" },
+      { "name": "capacity_thermal", "label": "Thermal" }
+    ],
+    "y_label": "Capacity (MW)"
+  },
+  "production": {
+    "title": "Production (MW)",
+    "variables": [
+      { "name": "production_wind", "label": "Wind" },
+      { "name": "production_solar", "label": "Solar" },
+      { "name": "production_salto", "label": "Hydro" },
+      { "name": "production_thermal", "label": "Thermal" },
+      { "name": "production_total", "label": "Total" },
+      { "name": "lost_load", "label": "Lost Load" },
+      { "name": "demand", "label": "Demand" }
+    ],
+    "y_label": "Average Production (MW)"
+  },
+  "thermal_vs_hydro": {
+    "title": "Thermal vs Hydro Production (MW)",
+    "variables": [
+      { "name": "production_salto", "label": "Hydro" },
+      { "name": "production_thermal", "label": "Thermal" }
+    ],
+    "y_label": "Average Production (MW)"
+  },
+  "thermal_vs_hydro_utilization": {
+    "title": "Thermal vs Hydro Utilization (%)",
+    "variables": [
+      { "name": "utilization_salto", "label": "Hydro" },
+      { "name": "utilization_thermal", "label": "Thermal" }
+    ],
+    "y_label": "Utilization (%)"
+  },
+  "price": {
+    "title": "Price ($/MWh)",
+    "variables": [
+      { "name": "marginal_cost", "label": "Price" }
+    ]
+  },
+  "profits": {
+    "title": "Thermal Profits ($/MW-h)",
+    "variables": [
+      { "name": "profits_thermal", "label": "Variable Profits" }
+    ],
+    "y_label": "Average Profits ($/MW-h)"
+  }
+}
