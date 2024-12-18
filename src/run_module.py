@@ -16,7 +16,7 @@ import pandas as pd
 
 from .utils.auxiliary import try_get_file, submit_slurm_job
 from .constants import initialize_paths_run, create_run_name
-from .data_analysis_module import profits_data_dict
+from .data_analysis_module import profits_data_dict, std_variables
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +271,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             f.write(content)
         return output_path
 
-    def get_profits_data_dict(self):
+    def get_profits_data_dict(self, complete: bool = False):
         from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
 
         # Initialize the RunProcessor object
@@ -280,15 +280,26 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         # Read the run dataframe
         run_df: pd.DataFrame = run_processor.construct_run_df()
 
+        participants = PARTICIPANTS_LIST_ENDOGENOUS
+
         # Create a dictionary with the capacities
         capacities = {participant: self.variables[participant]
-                      for participant in PARTICIPANTS_LIST_ENDOGENOUS}
+                      for participant in participants}
 
         # Compute profits data
         profits_data: dict = profits_data_dict(run_df, capacities)
 
         # Save to disk using json
         self.paths['folder'].joinpath('profits_data.json').write_text(json.dumps(profits_data))
+
+
+        if complete:
+            revenues_variables = [f'revenue_{participant}'
+                                  for participant in participants]
+            std_revenues = std_variables(run_df, revenues_variables)
+
+            # update the profits data with the standard deviations
+            profits_data.update(std_revenues)
 
         logger.debug("profits_data for %s:", self.name)
         logger.debug(profits_data)

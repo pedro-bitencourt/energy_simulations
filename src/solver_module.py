@@ -348,7 +348,7 @@ class Solver:
         # Compute the profits
         last_run = self.last_run()
         try:
-            profits_dict: dict = last_run.get_profits_data_dict()
+            profits_dict: dict = last_run.get_profits_data_dict(complete=True)
         except FileNotFoundError:
             if resubmit:
                 logger.error(
@@ -374,6 +374,8 @@ class Solver:
         # Append the data to the investment_results dictionary
         investment_results.update(profits_dict)
         investment_results['convergence_reached'] = convergence_reached
+
+
         return investment_results
 
     def last_run(self):

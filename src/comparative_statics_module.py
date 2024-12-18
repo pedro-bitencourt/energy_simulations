@@ -27,7 +27,7 @@ Classes:
                         - `email` [str]
                         - `mail-type` [str]
                         - `time` [float]: in hours
-                        - `memory` [int]: in GB
+                        - `memory` [str]: in GB
                 o `solver` [dict]: dictionary containing options for the solver
         - Methods:
             - `submit_solvers`: submits all Solvers for the exercise.

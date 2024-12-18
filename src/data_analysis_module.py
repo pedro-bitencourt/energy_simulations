@@ -178,3 +178,42 @@ def intra_year_averages(run_df: pd.DataFrame) -> dict:
 
     return results_dict
 
+def std_variables(run_df: pd.DataFrame,
+                  variables: list[str]) -> dict:
+    """
+    Compute the standard deviation of participant revenues with respect to scenarios.
+
+    For each scenario, we first compute the mean revenue for each participant 
+    (averaging over all time steps or data points in that scenario), and then 
+    we compute the standard deviation of these scenario-level means across all scenarios.
+
+    Arguments:
+        run_df (pd.DataFrame): DataFrame containing at least a scenario identifier column 
+                               and revenue columns for each participant.
+        scenario_col (str): Name of the column that identifies scenarios in `run_df`.
+
+    Returns:
+        dict: A dictionary with keys as `participant_revenue_scenario_std` and values 
+              as the standard deviation of scenario-level mean revenues.
+    """
+    # Ensure the scenario column exists
+    if 'scenario' not in run_df.columns:
+        raise ValueError("Column 'scenario' not found in run_df.")
+
+    # Verify that all variables exist
+    for variable in variables:
+        if variable not in run_df.columns:
+            raise ValueError(f"Missing variable column: '{variable}' in run_df.")
+
+    # Group by scenario and compute the mean revenues for each participant in each scenario
+    scenario_means = (run_df
+                      .groupby('scenario')[variables]
+                      .mean())
+    
+    # Compute the standard deviation of these scenario-level means across all scenarios
+    results_dict = {}
+    for variable in variables:
+        scenario_std = scenario_means[variable].std()
+        results_dict[f'{variable}_std'] = scenario_std
+
+    return results_dict

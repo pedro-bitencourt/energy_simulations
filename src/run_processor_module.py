@@ -43,6 +43,7 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
     "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
     "thermal": {"folder": "TER_thermal", "type": "thermal"},
+    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
     "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
     "salto": {"folder": "HID_salto", "type": "hydro"},
     # FIX
@@ -184,11 +185,53 @@ def get_production_df(key_participant: str,
     dataframe = proc.open_dataframe(
         df_config,
         sim_path)
+
+    dataframe = melt_df(dataframe, f"production_{key_participant}")
+
+    if key_participant == 'thermal':
+        df_config = _initialize_df_configuration('thermal_remainder', sim_path)
+        remainder_dataframe = proc.open_dataframe(
+            df_config,
+            sim_path)
+
+    
+        # FIX ME
+
     logger.debug(
         f"Successfully extracted and processed {key_participant} production data."
     )
-    dataframe = melt_df(dataframe, f"production_{key_participant}")
     return dataframe
+
+#def get_variable_costs_df(key_participant: str,
+#                          sim_path: Path) -> pd.DataFrame:
+#    """
+#    Extracts and processes the variable costs data for the participant.
+#    """
+#    participant_type = PARTICIPANTS[key_participant]["type"]
+#    if participant_type != "thermal":
+#        logger.error("Variable costs are only available for thermal participants.")
+#        raise ValueError("Variable costs are only available for thermal participants.")
+#
+#    variable_costs_df = proc.open_dataframe(
+#        VARIABLE_COSTS_THERMAL_DF,
+#        sim_path
+#    )
+#    variable_costs_df = melt_df(variable_costs_df, "variable_cost")
+#
+#    # Get the production data
+#    production_df = get_production_df(key_participant, sim_path)
+#    
+#    # Rename the produciton column
+#    production_df = production_df.rename(columns={f'production_{key_participant}': 'production'})
+#
+#    # Upsample the variable costs to hourly frequency
+#    dataframe = upsample_scenario_proportional(variable_costs_df, production_df)
+#    # Rename the variable cost column
+#    dataframe = dataframe.rename(columns={'hourly_variable_cost': f'variable_cost_{key_participant}'})
+#    logger.debug(
+#        f"Successfully extracted and processed {key_participant} variable costs data."
+#    )
+#    return dataframe
 
 def get_variable_costs_df(key_participant: str,
                           sim_path: Path) -> pd.DataFrame:
@@ -200,27 +243,19 @@ def get_variable_costs_df(key_participant: str,
         logger.error("Variable costs are only available for thermal participants.")
         raise ValueError("Variable costs are only available for thermal participants.")
 
-    variable_costs_df = proc.open_dataframe(
-        VARIABLE_COSTS_THERMAL_DF,
-        sim_path
-    )
-    variable_costs_df = melt_df(variable_costs_df, f"variable_cost")
-
     # Get the production data
     production_df = get_production_df(key_participant, sim_path)
-    
-    # Rename the produciton column
-    production_df = production_df.rename(columns={f'production_{key_participant}': 'production'})
 
-    # Upsample the variable costs to hourly frequency
-    dataframe = upsample_scenario_proportional(variable_costs_df, production_df)
-    # Rename the variable cost column
-    dataframe = dataframe.rename(columns={'hourly_variable_cost': f'variable_cost_{key_participant}'})
+    # Create the variable costs column
+    dataframe = production_df.copy()
+
+    # HARD CODED
+    dataframe[f'variable_cost_{key_participant}'] = 192.3 * dataframe[f'production_{key_participant}']
+
     logger.debug(
         f"Successfully extracted and processed {key_participant} variable costs data."
     )
     return dataframe
-
 def get_water_level_df(key_participant: str,
                        sim_path: Path) -> pd.DataFrame:
     """
