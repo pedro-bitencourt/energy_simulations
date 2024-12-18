@@ -2,10 +2,15 @@
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
 
+from src.comparative_statics_module import ComparativeStatics
+import logging
 import sys
 sys.path.append('/projects/p32342/code')
+
 # Import modules from the src folder
-from src.comparative_statics_module import ComparativeStatics
+
+logger = logging.getLogger(__name__)
+
 
 # Input parameters
 name: str = 'salto_volume'
@@ -21,14 +26,14 @@ general_parameters: dict = {
             'mail-type': 'NONE',
             'time': 0.5,
             'memory': 8
-            },
+        },
         'solver': {
             'email': 'pedro.bitencourt@u.northwestern.edu',
             'mail-type': 'END,FAIL',
             'time': 16.5,
             'memory': 8
-            }
         }
+    }
 }
 
 exog_grid: list[float] = [0.75, 1, 1.25, 1.5, 2, 3, 5]
@@ -57,4 +62,4 @@ comparative_statics = ComparativeStatics(
 # Submit the solver jobs
 comparative_statics.submit_solvers()
 # Submit the processing job
-#comparative_statics.submit_processing()
+# comparative_statics.submit_processing()

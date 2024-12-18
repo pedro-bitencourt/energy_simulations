@@ -6,9 +6,9 @@ Last modified: 12.17.24
 
 Description:
     This module contains the ComparativeStatics class, which is the main class used in this project.
-    This class models a comparative statics exercise to be executed and processed, using both the 
-    other scripts in this folder as the Modelo de Operaciones Padron (MOP), which implements a 
-    solver for the problem of economic dispatch of energy for a given configuration of the energy 
+    This class models a comparative statics exercise to be executed and processed, using both the
+    other scripts in this folder as the Modelo de Operaciones Padron (MOP), which implements a
+    solver for the problem of economic dispatch of energy for a given configuration of the energy
     system.
 
 Classes:
@@ -55,7 +55,7 @@ PROCESS_TIME = '05:00:00'
 
 class ComparativeStatics:
     """
-    Represents a comparative statics object. 
+    Represents a comparative statics object.
     Arguments:
         - name [str]: name of the comparative statics exercise.
         - variables: [dict[str, dict]] dictionary containing the exogenous and endogenous variables.
@@ -87,6 +87,7 @@ class ComparativeStatics:
         """
         Initialize the ComparativeStatics object.
         """
+        logger.info("Initializing the ComparativeStatics object.")
         if base_path is None:
             base_path = str(BASE_PATH)
 
@@ -105,16 +106,19 @@ class ComparativeStatics:
     # Initialization methods
     def initialize_grid(self):
         # Get all the grids for all exogenous variables
-        exogenous_variables_grids = {
-                variable: self.variables[variable]['grid']
-                for variable in self.variables['exogenous']
-        }
+        # exogenous_variables_grids = {
+        #     variable: variable['grid']
+        #     for variable in self.variables['exogenous']
+        # }
+        exogenous_variables_grids = self.variables['exogenous']
+        print(f"{exogenous_variables_grids=}")
 
         # Create a Solver object for each combination of exogenous variables
         grid_points = []
         for exogenous_variables in itertools.product(*exogenous_variables_grids.values()):
             exogenous_variables_dict = {
-                variable: {'value': exogenous_variables[idx], **self.variables[variable]}
+                variable: {
+                    'value': exogenous_variables[idx], **self.variables[variable]}
                 for idx, variable in enumerate(exogenous_variables_grids)
             }
             solver: Solver = self.create_solver(exogenous_variables_dict)
@@ -126,9 +130,9 @@ class ComparativeStatics:
         Create an investment problem for the given exogenous variables.
         """
         solver = Solver(self.paths['main'],
-                         exogenous_variables,
-                         self.variables['endogenous'],
-                         self.general_parameters)
+                        exogenous_variables,
+                        self.variables['endogenous'],
+                        self.general_parameters)
         return solver
 
     ############################
@@ -239,7 +243,7 @@ END
 
         # Save to disk
         investment_results_df.to_csv(
-                    self.paths['investment_results'], index=False)
+            self.paths['investment_results'], index=False)
 
         # Save the random variables df to the random_variables folder
         self.extract_random_variables(complete=complete)
@@ -273,16 +277,19 @@ END
         for solver in self.grid_points:
             run: Run = solver.last_run()
             try:
-                run_processor: RunProcessor = RunProcessor(run, complete=complete)
+                run_processor: RunProcessor = RunProcessor(
+                    run, complete=complete)
             except FileNotFoundError:
-                logger.error("Run %s not successful. Skipping and resubmitting...", run.name)
+                logger.error(
+                    "Run %s not successful. Skipping and resubmitting...", run.name)
                 run.submit()
                 continue
 
             run_df = run_processor.construct_run_df(
                 complete=complete)
 
-            logger.info("Successfuly extracted data from run %s. Saving to disk...", run.name)
+            logger.info(
+                "Successfuly extracted data from run %s. Saving to disk...", run.name)
             # Copy the random variables to the random_variables folder with the run name
             run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
                           index=False)
@@ -297,7 +304,7 @@ END
     def construct_results(self, results_function) -> pd.DataFrame:
         # Create a list to store rows
         rows = []
-    
+
         for point in self.grid_points:
             # Get the random variables for the current run
             run_random_variables = pd.read_csv(
@@ -310,9 +317,8 @@ END
 
             # Append the row to our list
             rows.append(results_dict)
-    
+
         # Create DataFrame from all rows at once
         results_df = pd.DataFrame(rows)
-    
-        return results_df
 
+        return results_df
