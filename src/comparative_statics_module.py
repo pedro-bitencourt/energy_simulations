@@ -105,21 +105,17 @@ class ComparativeStatics:
     ############################
     # Initialization methods
     def initialize_grid(self):
-        # Get all the grids for all exogenous variables
-        # exogenous_variables_grids = {
-        #     variable: variable['grid']
-        #     for variable in self.variables['exogenous']
-        # }
-        exogenous_variables_grids = self.variables['exogenous']
-        print(f"{exogenous_variables_grids=}")
-
         # Create a Solver object for each combination of exogenous variables
         grid_points = []
-        for exogenous_variables in itertools.product(*exogenous_variables_grids.values()):
+        grids: list = self.variables['exogenous'].values()
+
+        exogenous_variable_0 = list(self.variables['exogenous'].keys())[0]
+        grid_0 = grids[0]
+        # Iterate over exogenous variables
+        for value in grid_0:
             exogenous_variables_dict = {
-                variable: {
-                    'value': exogenous_variables[idx], **self.variables[variable]}
-                for idx, variable in enumerate(exogenous_variables_grids)
+                exogenous_variable_0: {
+                    'value': value}
             }
             solver: Solver = self.create_solver(exogenous_variables_dict)
             grid_points.append(solver)
