@@ -1,44 +1,48 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<corrida>
-	<parametrosGenerales>
-		<nombre>CAD-2024-DIARIA</nombre>
-		<descripcion>CAD-2024-DIARIA</descripcion>
-		<postizacion tipo="interna"/>
-		<valpostizacion tipo="interna"/>
-		<tipoSimulacion>enHaz</tipoSimulacion>
-		<inicioCorrida>20 05 2023 00:00:00</inicioCorrida>
-		<finCorrida>31 12 2029 23:59:59</finCorrida>
-		<cantEscenarios>114</cantEscenarios>
-		<tasaAnual>0.1</tasaAnual>
-		<!-- tasa por 1 -->
-		<topeSpot>250.0</topeSpot>
-		<!-- En USD/MWh -->
-		<despachoSinExportacion>
-			<despSinExp>false</despSinExp>
-			<!-- Si es true en la simulación se obtiene el despacho sin exportacion en la iteración especificada abajo -->
-			<iteracionSinExp>1</iteracionSinExp>
-			<!-- Se usa la primera iteración sin exportación -->
-			<paisesACortar>Argentina,Brasil</paisesACortar>
-		</despachoSinExportacion>
-		<lineaTiempo unidad="segundos">
-			<inicioTiempo>20 05 2023 00:00:00</inicioTiempo>
-			<periodoIntegracion>
-				<activo>false</activo>
-				<durPeriodoIntegracion>0</durPeriodoIntegracion>
-			</periodoIntegracion>
-			<listaBloques>
-				<bloque>
-					<cantPasos>2418</cantPasos>
-					<!--2023 2029-->
-					<durPaso unidad="segundos">86400</durPaso>
-					<intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
-					<cantPostes>24</cantPostes>
-					<duracionPostes unidad="segundos">3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600</duracionPostes>
-					<periodoBloque>0</periodoBloque>
-					<cronologico>true</cronologico>
-				</bloque>				
-			</listaBloques>
-		</lineaTiempo>
+  <corrida>
+  	<parametrosGenerales>
+  		<nombre>CAD-2024-DIARIA</nombre>
+  		<descripcion>CAD-2024-DIARIA</descripcion>
+  		<postizacion tipo="interna"/>
+  		<valpostizacion tipo="interna"/>
+  		<tipoSimulacion>enHaz</tipoSimulacion>
+  		<inicioCorrida>01 01 2024 00:00:00</inicioCorrida>
+  		<finCorrida>01 01 2029 00:00:00</finCorrida>
+  		<cantEscenarios>114</cantEscenarios>
+  		<tasaAnual>0.1</tasaAnual>
+  		<!-- tasa por 1 -->
+  		<topeSpot>250.0</topeSpot>
+  		<!-- En USD/MWh -->
+  		<despachoSinExportacion>
+  			<despSinExp>false</despSinExp>
+  			<!-- Si es true en la simulación se obtiene el despacho sin exportacion en la iteración especificada abajo -->
+  			<iteracionSinExp>1</iteracionSinExp>
+  			<!-- Se usa la primera iteración sin exportación -->
+  			<paisesACortar>Argentina,Brasil</paisesACortar>
+  		</despachoSinExportacion>
+  		<lineaTiempo unidad="segundos">
+  			<inicioTiempo>01 01 2024 00:00:00</inicioTiempo>
+  			<periodoIntegracion>
+  				<activo>false</activo>
+  				<durPeriodoIntegracion>0</durPeriodoIntegracion>
+  			</periodoIntegracion>
+  			<listaBloques>
+  				<bloque>
+  					<!-- From 2024-01-01 to 2029-01-01 is 5 years including two leap years (2024 & 2028), totaling 1827 days -->
+  					<cantPasos>1827</cantPasos>
+  					<durPaso unidad="segundos">86400</durPaso>
+  					<intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
+  					<cantPostes>24</cantPostes>
+  					<duracionPostes unidad="segundos">
+  						3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600,3600
+  					</duracionPostes>
+  					<periodoBloque>0</periodoBloque>
+  					<cronologico>true</cronologico>
+  				</bloque>
+  			</listaBloques>
+  		</lineaTiempo>
+  	</parametrosGenerales>
+  </corrida>
 		<compsGlobales>
 			<tipoResolucionValoresBellman>incrementos</tipoResolucionValoresBellman>
 			<tipoDemanda>residual</tipoDemanda>
@@ -208,6 +212,55 @@
               <propietario>UTE</propietario>
               <barra>barraPrueba1</barra>
               <cantModInst>
+                <ev tipo="const">${thermal_capacity // 50}</ev>
+              </cantModInst>
+              <listaCombustibles>gasOil</listaCombustibles>
+              <listaBarrasComb>barraGasOil1</listaBarrasComb>
+              <potMin>
+                <ev tipo="const">5.0</ev>
+              </potMin>
+              <potMax>
+                <ev tipo="const">50</ev>
+              </potMax>
+              <rendPotMin>
+                <ev tipo="const">0.374</ev>
+              </rendPotMin>
+              <rendPotMax>
+                <ev tipo="const">0.374</ev>
+              </rendPotMax>
+              <flexibilidadMin>horaria</flexibilidadMin>
+              <dispModulos tipo="exponencial">
+                <cantModIni>6</cantModIni>
+                <dispMedia>
+                  <ev tipo="porInstantes">(01 01 2020;0.9)</ev>
+                </dispMedia>
+                <tMedioArreglo unidad="dias">
+                  <ev tipo="const">7.0</ev>
+                </tMedioArreglo>
+              </dispModulos>
+              <mantProgramado>
+                <ev tipo="const">0</ev>
+              </mantProgramado>
+              <costoFijo>
+                <ev tipo="const">0.0</ev>
+              </costoFijo>
+              <costoVariable>
+                <ev tipo="const">0</ev>
+              </costoVariable>
+              <salidaDetallada>true</salidaDetallada>
+            </datosParticipante>
+          </gTermico>
+          <gTermico>
+            <compsGenerales>
+              <compMinimosTecnicos>
+                <ev tipo="const">SinMinTec</ev>
+              </compMinimosTecnicos>
+            </compsGenerales>
+            <datosParticipante>
+              <nombre>thermal_remainder</nombre>
+              <propietario>UTE</propietario>
+              <barra>barraPrueba1</barra>
+              <cantModInst>
                 <ev tipo="const">1</ev>
               </cantModInst>
               <listaCombustibles>gasOil</listaCombustibles>
@@ -216,7 +269,7 @@
                 <ev tipo="const">5.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">${thermal_capacity}</ev>
+                <ev tipo="const">${thermal_capacity % 50}</ev>
               </potMax>
               <rendPotMin>
                 <ev tipo="const">0.374</ev>
@@ -645,7 +698,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;4000.0),(85.5;4000.0)</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
             <demanda>demand</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>

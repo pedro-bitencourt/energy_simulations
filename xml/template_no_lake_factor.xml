@@ -336,7 +336,7 @@
               <ev tipo="const">0.0</ev>
             </potMin>
             <potMax>
-              <ev tipo="const">135</ev>
+              <ev tipo="const">${salto_capacity / 12}</ev>
             </potMax>
             <rendMin>
               <ev tipo="const">0.9</ev>
@@ -353,7 +353,7 @@
               <ev tipo="const">2100.0</ev>
             </volFijo>
             <qTur1Max>
-              <ev tipo="const">600</ev>
+              <ev tipo="const">${salto_capacity * 600 / 1620}</ev>
             </qTur1Max>
             <saltoMinimo>10.0</saltoMinimo>
             <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>

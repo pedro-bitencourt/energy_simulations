@@ -8,7 +8,7 @@ sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 
 # Input parameters
-name: str = 'expensive_blackout'
+name: str = 'salto_volume'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
 
 general_parameters: dict = {
@@ -31,13 +31,9 @@ general_parameters: dict = {
         }
 }
 
-exogenous_variable_grid: list[float] = [
-    0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3]
-exog_grid: list[float] = [val*135 for val in exogenous_variable_grid]
+exog_grid: list[float] = [0.75, 1, 1.25, 1.5, 2, 3, 5]
 exogenous_variables: dict[str, dict] = {
-    'salto_capacity': {
-        'grid': exog_grid
-    },
+    'lake_factor': {'grid': exog_grid},
 }
 endogenous_variables: dict[str, dict] = {
     'wind_capacity': {'initial_guess': 1000},
