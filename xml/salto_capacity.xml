@@ -41,8 +41,6 @@
   				</bloque>
   			</listaBloques>
   		</lineaTiempo>
-  	</parametrosGenerales>
-  </corrida>
 		<compsGlobales>
 			<tipoResolucionValoresBellman>incrementos</tipoResolucionValoresBellman>
 			<tipoDemanda>residual</tipoDemanda>

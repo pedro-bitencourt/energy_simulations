@@ -171,7 +171,7 @@ class Run:
 
         logger.warning("Warning: this will overwrite the folder %s",)
         # Tear down the folder
-        self.tear_down()
+        # self.tear_down()
 
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)

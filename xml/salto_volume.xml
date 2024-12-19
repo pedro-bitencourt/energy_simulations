@@ -196,7 +196,7 @@
             <ev tipo="const">SinMinTec</ev>
           </compMinimosTecnicos>
         </compsPorDefecto>
-        <listaUtilizados>thermal</listaUtilizados>
+        <listaUtilizados>thermal,thermal_remainder</listaUtilizados>
         <listaAtributos>potencias,energias,costos</listaAtributos>
         <listaGTermico>
           <gTermico>

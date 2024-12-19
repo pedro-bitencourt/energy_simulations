@@ -1,11 +1,13 @@
 """
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
+import sys
+sys.path.append('/projects/p32342/code')
+
 import logging
 from src.utils.logging_config import setup_logging
 from src.comparative_statics_module import ComparativeStatics
-import sys
-sys.path.append('/projects/p32342/code')
+
 # Import modules from the src folder
 
 
@@ -23,7 +25,7 @@ general_parameters: dict = {
             'email': 'aschwerz@u.northwestern.edu',
             'mail-type': 'NONE',
             'time': 0.5,
-            'memory': 8
+            'memory': 3
         },
         'solver': {
             'email': 'aschwerz@u.northwestern.edu',

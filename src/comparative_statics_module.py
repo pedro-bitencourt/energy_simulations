@@ -244,7 +244,7 @@ END
 
         # Construct the new results dataframe
         conditional_means_df = self.construct_results(
-            self.paths['random_variables'], results_function=conditional_means)
+            results_function=conditional_means)
 
         # Save the results to a .csv file
         conditional_means_df.to_csv(

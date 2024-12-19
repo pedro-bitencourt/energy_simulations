@@ -44,11 +44,11 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
     "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
     "thermal": {"folder": "TER_thermal", "type": "thermal"},
-#    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
-    "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
+    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
+    "demand": {"folder": "DEM_demand", "type": "demand"},
     "salto": {"folder": "HID_salto", "type": "hydro"},
     # FIX
-#    "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
+    "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
 }
 
 
@@ -188,14 +188,15 @@ def get_production_df(key_participant: str,
 
     dataframe = melt_df(dataframe, f"production_{key_participant}")
 
-    #if key_participant == 'thermal':
-    #    df_config = _initialize_df_configuration('thermal_remainder', sim_path)
-    #    remainder_dataframe = proc.open_dataframe(
-    #        df_config,
-    #        sim_path)
-    #    remainder_dataframe = melt_df(remainder_dataframe, f"production_{key_participant}")
+    if key_participant == 'thermal':
+        df_config = _initialize_df_configuration('thermal_remainder', sim_path)
+        remainder_dataframe = proc.open_dataframe(
+            df_config,
+            sim_path)
+        remainder_dataframe = melt_df(
+            remainder_dataframe, f"production_{key_participant}")
 
-    #    dataframe = dataframe + remainder_dataframe
+        dataframe = dataframe + remainder_dataframe
 
     # FIX ME
 
@@ -237,7 +238,7 @@ def get_production_df(key_participant: str,
 
 
 def get_variable_cost_df(key_participant: str,
-                          sim_path: Path) -> pd.DataFrame:
+                         sim_path: Path) -> pd.DataFrame:
     """
     Extracts and processes the variable costs data for the participant.
     """
