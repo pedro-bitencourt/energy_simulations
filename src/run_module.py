@@ -113,6 +113,7 @@ class Run:
                          self.name,
                          self.paths['subfolder'])
             return False
+
         return True
 
     @staticmethod
@@ -123,7 +124,7 @@ class Run:
         files_to_check = [r'resumen*',
                           r'EOLO_eoloDeci/potencias*.xlt',
                           r'FOTOV_solarDeci/potencias*.xlt',
-                          r'DEM_demandaPrueba/potencias*.xlt'
+                          r'DEM_demand/potencias*.xlt'
                           ]
         # Add hydro files if complete
         if complete:
@@ -171,7 +172,7 @@ class Run:
 
         logger.warning("Warning: this will overwrite the folder %s",)
         # Tear down the folder
-        # self.tear_down()
+        self.tear_down()
 
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
@@ -279,12 +280,14 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         run_processor = RunProcessor(self)
 
         # Read the run dataframe
-        run_df: pd.DataFrame = run_processor.construct_run_df()
+        run_df: pd.DataFrame = run_processor.construct_run_df(
+            complete=complete)
 
         participants = PARTICIPANTS_LIST_ENDOGENOUS
+        print(f"{self.variables=}")
 
         # Create a dictionary with the capacities
-        capacities = {participant: self.variables[participant]
+        capacities = {participant: self.variables[f"{participant}_capacity"]
                       for participant in participants}
 
         # Compute profits data
@@ -315,6 +318,6 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         """
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
         profits_data = self.get_profits_data_dict()
-        profits_dict: dict = {participant: profits_data[f'{participant}_normalized_profits']
+        profits_dict: dict = {f"{participant}_capacity": profits_data[f'{participant}_normalized_profits']
                               for participant in PARTICIPANTS_LIST_ENDOGENOUS}
         return profits_dict

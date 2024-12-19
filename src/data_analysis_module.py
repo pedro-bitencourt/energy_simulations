@@ -23,7 +23,7 @@ PARTICIPANTS = [
 ]
 VARIABLES = [
     *[f'production_{participant}' for participant in PARTICIPANTS],
-    *[f'variable_costs_{participant}' for participant in PARTICIPANTS],
+    *[f'variable_cost_{participant}' for participant in PARTICIPANTS],
     'marginal_cost',
     'demand'
 ]
@@ -31,6 +31,7 @@ VARIABLES = [
 logger = logging.getLogger(__name__)
 
 QUERIES_DICT: dict[str, str] = load_events()
+
 
 def profits_data_dict(run_df: pd.DataFrame,
                       capacities: dict[str, float]) -> Dict:
@@ -50,30 +51,33 @@ def profits_data_dict(run_df: pd.DataFrame,
         results_dict.update(compute_participant_metrics(
             run_df, participant, capacity))
 
-    system_total_cost: float = sum(
-        [results_dict[f'{participant}_total_cost'] for participant in participants])
-    system_fixed_cost: float = sum(
-        [results_dict[f'{participant}_fixed_cost'] for participant in participants])
-    results_dict.update({
-        'system_total_cost': system_total_cost,
-        'system_fixed_cost': system_fixed_cost,
-    })
+#    system_total_cost: float = sum(
+#        [results_dict[f'{participant}_total_cost'] for participant in participants])
+#    system_fixed_cost: float = sum(
+#        [results_dict[f'{participant}_fixed_cost'] for participant in participants])
+#    results_dict.update({
+#        'system_total_cost': system_total_cost,
+#        'system_fixed_cost': system_fixed_cost,
+#    })
 
     return results_dict
 
+
 def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
     for participant in PARTICIPANTS:
-        run_df[f'revenue_{participant}'] = (run_df[f'production_{participant}'] * 
-                                                        run_df['marginal_cost'])
-        run_df[f'utilization_{participant}'] = (run_df[f'production_{participant}'] / 
-                                                        capacities_dict[participant])
+        run_df[f'revenue_{participant}'] = (run_df[f'production_{participant}'] *
+                                            run_df['marginal_cost'])
+        run_df[f'utilization_{participant}'] = (run_df[f'production_{participant}'] /
+                                                capacities_dict[participant])
 
-    run_df['production_total'] = run_df[[f'production_{participant}' for participant in PARTICIPANTS]].sum(axis=1)
-
+    run_df['production_total'] = run_df[[
+        f'production_{participant}' for participant in PARTICIPANTS]].sum(axis=1)
 
     return run_df
 
 # Helper function to compute metrics for each participant
+
+
 def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float) -> dict:
     """
     For a given run, compute the economic metrics for a given participant.
@@ -85,7 +89,7 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
     """
     def revenue_hour(run_df: pd.DataFrame, participant: str) -> float:
         # Get present value of revenues
-        revenues: float = (run_df[f'production_{participant}'] * 
+        revenues: float = (run_df[f'production_{participant}'] *
                            run_df['marginal_cost']).mean()
         return revenues
 
@@ -94,7 +98,7 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
             return 0
         # Get present value of variable costs
         variable_costs: float = (
-            run_df[f'variable_costs_{participant}']).mean()
+            run_df[f'variable_cost_{participant}']).mean()
         return variable_costs
 
     revenue = revenue_hour(run_df, participant)
@@ -110,8 +114,8 @@ def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity
         f'{participant}_fixed_costs_mw_hour': fixed_costs,
         f'{participant}_total_costs_mw_hour': (fixed_costs + variable_costs / capacity_mw),
         f'{participant}_profits_mw_hw': (revenue - variable_costs)/capacity_mw - fixed_costs,
-        f'{participant}_normalized_profits': (((revenue - variable_costs)/capacity_mw - fixed_costs) 
-            / (fixed_costs + variable_costs / capacity_mw))
+        f'{participant}_normalized_profits': (((revenue - variable_costs)/capacity_mw - fixed_costs)
+                                              / (fixed_costs + variable_costs / capacity_mw))
     }
 
 
@@ -178,6 +182,7 @@ def intra_year_averages(run_df: pd.DataFrame) -> dict:
 
     return results_dict
 
+
 def std_variables(run_df: pd.DataFrame,
                   variables: list[str]) -> dict:
     """
@@ -203,13 +208,14 @@ def std_variables(run_df: pd.DataFrame,
     # Verify that all variables exist
     for variable in variables:
         if variable not in run_df.columns:
-            raise ValueError(f"Missing variable column: '{variable}' in run_df.")
+            raise ValueError(
+                f"Missing variable column: '{variable}' in run_df.")
 
     # Group by scenario and compute the mean revenues for each participant in each scenario
     scenario_means = (run_df
                       .groupby('scenario')[variables]
                       .mean())
-    
+
     # Compute the standard deviation of these scenario-level means across all scenarios
     results_dict = {}
     for variable in variables:

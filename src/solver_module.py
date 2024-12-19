@@ -249,17 +249,20 @@ class Solver:
             job_ids_list: list[str] = []
             for run in runs_dict.values():
                 # Check if the run was successful
-                successful: bool = run.successful()
-                # If not, submit it and append the job_id to the list
-                if not successful:
+                if not run.successful():
+                    logger.warning("Run %s not successful", run.name)
+                    # If not, submit it and append the job_id to the list
                     job_id = run.submit()
                     if job_id:
                         job_ids_list.append(job_id)
-                if attempts == 0:
-                    logger.info("First attempt for %s", run.name)
-                else:
-                    logger.warning("RETRYING %s, previous attempts = %s", run.name,
-                                   attempts)
+                    if attempts == 0:
+                        logger.info("First attempt for %s", run.name)
+                    else:
+                        logger.warning("RETRYING %s, previous attempts = %s", run.name,
+                                       attempts)
+            if not job_ids_list:
+                return None
+            logger.info("Waiting for jobs %s", job_ids_list)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1

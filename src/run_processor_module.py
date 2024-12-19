@@ -105,8 +105,12 @@ class RunProcessor(Run):
 
         for participant in participants:
             logger.debug(f'Extracting data for participant: {participant}')
+            original_length = len(random_variables_df)
+            logger.debug(f'Length before participant %s: %s', participant,
+                         original_length)
             # Extract production data
             df = get_production_df(participant, self.paths['sim'])
+            logger.debug("Production data for %s: %s", participant, df.head())
             random_variables_df = pd.merge(random_variables_df, df, on=[
                 'datetime', 'scenario'], how='left')
 
@@ -126,6 +130,10 @@ class RunProcessor(Run):
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
 
+            random_variables_df = random_variables_df.dropna()
+            removed_rows = original_length - len(random_variables_df)
+            logger.debug(f'Removed {removed_rows} rows with NA values.')
+
         # Remove NA's and log the number of rows removed
 
         original_length = len(random_variables_df)
@@ -134,6 +142,9 @@ class RunProcessor(Run):
         logger.debug(f'Removed {removed_rows} rows with NA values.')
         if removed_rows > 3_000:
             logger.warning(f'Over 3,000 rows were removed due to NA values.')
+
+        logger.debug("Columns of run_df: %s", random_variables_df.columns)
+        logger.debug("Head of run_df: %s", random_variables_df.head())
 
         # Save to disk
         random_variables_df.to_csv(self.paths['random_variables'], index=False)
@@ -196,7 +207,8 @@ def get_production_df(key_participant: str,
         remainder_dataframe = melt_df(
             remainder_dataframe, f"production_{key_participant}")
 
-        dataframe = dataframe + remainder_dataframe
+        dataframe[f"production_{key_participant}"] = dataframe[f"production_{key_participant}"] + \
+            remainder_dataframe[f"production_{key_participant}"]
 
     # FIX ME
 
@@ -259,6 +271,8 @@ def get_variable_cost_df(key_participant: str,
     dataframe[f'variable_cost_{key_participant}'] = 192.3 * \
         dataframe[f'production_{key_participant}']
 
+    dataframe.drop(columns=[f'production_{key_participant}'], inplace=True)
+
     logger.debug(
         f"Successfully extracted and processed {key_participant} variable costs data."
     )
@@ -286,6 +300,7 @@ def get_water_level_df(key_participant: str,
     logger.debug(
         f"Successfully extracted and processed {key_participant} water level data."
     )
+    logger.debug("Head of water_level_df: %s", dataframe.head())
     return dataframe
 
 
@@ -294,6 +309,7 @@ def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
         df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
 
     df_result = df.copy()
+    logger.debug("df to upsample: %s", df.head())
     for scenario in df['scenario'].unique():
         scenario_mask = df['scenario'] == scenario
         scenario_df = df[scenario_mask].copy()
@@ -303,10 +319,11 @@ def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
             if column in ['scenario']:
                 continue
             scenario_df[column] = scenario_df[column].resample(
-                'H').ffill().bfill()
+                'h').ffill().bfill()
         # Update in the original DataFrame
         df_result.loc[scenario_mask, scenario_df.columns] = scenario_df.values
 
+    logger.debug("df after upsample: %s", df.head())
     df_result.reset_index(inplace=True)
     return df_result
 

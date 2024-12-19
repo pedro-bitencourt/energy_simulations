@@ -161,7 +161,7 @@ MARGINAL_COST_DF = {
 
 DEMAND_DF = {
     'name': 'demand',
-    'filename': 'DEM_demandaPrueba/potencias*xlt',
+    'filename': 'DEM_demand/potencias*xlt',
     'table_pattern': {
         'start': 'CANT_POSTE',
         'end': None

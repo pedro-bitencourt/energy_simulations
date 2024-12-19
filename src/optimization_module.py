@@ -126,6 +126,8 @@ def newton_iteration(profits_array: np.ndarray,
 
 
 def derivatives_from_profits(profits: dict, delta: float, endogenous_variables: list[str]):
+    logger.debug("profits dict %s", profits)
+    logger.debug("endogenous variables dict %s", endogenous_variables)
     derivatives = {}
     for r1 in endogenous_variables:
         derivatives[r1] = {}
@@ -134,10 +136,12 @@ def derivatives_from_profits(profits: dict, delta: float, endogenous_variables: 
             derivatives[r1][r2] = profit_change / delta
     return derivatives
 
+
 def get_last_successful_iteration(trajectory: list[OptimizationPathEntry]) -> OptimizationPathEntry:
     for entry in reversed(trajectory):
         if entry.successful:
             return entry
-    logger.warning("No successful iteration found in the optimization trajectory, returning the first entry.")
+    logger.warning(
+        "No successful iteration found in the optimization trajectory, returning the first entry.")
     logger.debug("Optimization trajectory: %s", trajectory)
     return trajectory[0]
