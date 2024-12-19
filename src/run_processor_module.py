@@ -305,27 +305,56 @@ def get_water_level_df(key_participant: str,
 
 
 def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
+    # Ensure 'datetime' is in datetime format
     if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
         df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
 
-    df_result = df.copy()
-    logger.debug("df to upsample: %s", df.head())
+    # Create a DataFrame to hold the result
+    df_result = []
+
+    # Iterate through each scenario
     for scenario in df['scenario'].unique():
-        scenario_mask = df['scenario'] == scenario
-        scenario_df = df[scenario_mask].copy()
-        scenario_df = scenario_df.set_index('datetime')
+        # Filter by the scenario
+        scenario_df = df[df['scenario'] == scenario].copy()
 
-        for column in scenario_df.columns:
-            if column in ['scenario']:
-                continue
-            scenario_df[column] = scenario_df[column].resample(
-                'h').ffill().bfill()
-        # Update in the original DataFrame
-        df_result.loc[scenario_mask, scenario_df.columns] = scenario_df.values
+        # Set datetime as the index for resampling
+        scenario_df.set_index('datetime', inplace=True)
 
-    logger.debug("df after upsample: %s", df.head())
-    df_result.reset_index(inplace=True)
+        # Resample to hourly and forward-fill missing values
+        scenario_resampled = scenario_df.resample('h').ffill()
+
+        # Reset the index to include datetime as a column again
+        scenario_resampled.reset_index(inplace=True)
+
+        # Append the result to the final list
+        df_result.append(scenario_resampled)
+
+    # Concatenate all the resampled scenario DataFrames
+    df_result = pd.concat(df_result, ignore_index=True)
+
     return df_result
+# def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
+#    if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
+#        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
+#
+#    df_result = df.copy()
+#    logger.debug("df to upsample: %s", df.head())
+#    for scenario in df['scenario'].unique():
+#        scenario_mask = df['scenario'] == scenario
+#        scenario_df = df[scenario_mask].copy()
+#        scenario_df = scenario_df.set_index('datetime')
+#
+#        for column in scenario_df.columns:
+#            if column in ['scenario']:
+#                continue
+#            scenario_df[column] = scenario_df[column].resample(
+#                'h').ffill().bfill()
+#        # Update in the original DataFrame
+#        df_result.loc[scenario_mask, scenario_df.columns] = scenario_df.values
+#
+#    logger.debug("df after upsample: %s", df.head())
+#    df_result.reset_index(inplace=True)
+#    return df_result
 
 
 def upsample_scenario_proportional(variable_cost_df: pd.DataFrame, production_df: pd.DataFrame) -> pd.DataFrame:

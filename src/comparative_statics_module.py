@@ -43,7 +43,7 @@ from .utils.auxiliary import submit_slurm_job
 from .solver_module import Solver
 from .run_module import Run
 from .run_processor_module import RunProcessor
-from .data_analysis_module import conditional_means
+from .data_analysis_module import conditional_means, full_run_df
 from .constants import BASE_PATH, initialize_paths_comparative_statics
 
 # Get logger for current module
@@ -201,8 +201,12 @@ module load python-miniconda3/4.12.0
 python - <<END
 import sys
 import json
+import logging
 sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
+from src.utils.logging_config import setup_logging
+
+setup_logging(level = logging.DEBUG)
 
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
@@ -285,7 +289,7 @@ END
             logger.info(
                 "Successfuly extracted data from run %s. Saving to disk...", run.name)
             # Copy the random variables to the random_variables folder with the run name
-            run_df.to_csv(self.paths['random_variables'] / f"{run.name}.csv",
+            run_df.to_csv(self.paths['random_variables'] / f"{solver.name}.csv",
                           index=False)
 
     def investment_results(self):
@@ -303,6 +307,11 @@ END
             # Get the random variables for the current run
             run_random_variables = pd.read_csv(
                 self.paths['random_variables'] / f'{point.name}.csv')
+            last_run = point.last_run()
+            capacities = last_run.capacities()
+            run_random_variables = full_run_df(run_random_variables,
+                                               capacities)
+
             # Get the results to extract for the current run
             results_dict = results_function(run_random_variables)
 

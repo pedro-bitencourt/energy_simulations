@@ -196,7 +196,7 @@
             <ev tipo="const">SinMinTec</ev>
           </compMinimosTecnicos>
         </compsPorDefecto>
-        <listaUtilizados>thermal</listaUtilizados>
+        <listaUtilizados>thermal,thermal_remainder</listaUtilizados>
         <listaAtributos>potencias,energias,costos</listaAtributos>
         <listaGTermico>
           <gTermico>
@@ -335,7 +335,7 @@
 			      <ev tipo="const">0.0</ev>
 			    </potMin>
 			    <potMax>
-				<ev tipo="const">${salto_capacity / 12}</ev>
+				  <ev tipo="const">${salto_capacity / 12}</ev>
 			    </potMax>
 			    <rendMin>
 			      <ev tipo="const">0.9</ev>
@@ -694,7 +694,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-			<escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
             <demanda>demand</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>

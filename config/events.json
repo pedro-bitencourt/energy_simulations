@@ -43,7 +43,7 @@
     },
     "positive_hydro_production": {
         "label": "Hydro Production > 0 MW",
-        "lhs": "production_hydro",
+        "lhs": "production_salto",
         "operator": ">",
         "rhs_type": "value",
         "rhs": [0.01]

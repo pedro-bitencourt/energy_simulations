@@ -368,10 +368,11 @@ class Solver:
 
         # Get the list of participants
         participants: list[str] = list(self.endogenous_variables.keys())
+        participants_temp = [p.replace('_capacity', '') for p in participants]
 
         # Update the profits in the last iteration
-        last_iteration.profits = {participant: profits_dict[f'{participant}_normalized_profits']
-                                  for participant in participants}
+        last_iteration.profits = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
+                                  for participant in participants_temp}
 
         convergence_reached: bool = last_iteration.check_convergence()
 

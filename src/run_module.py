@@ -16,7 +16,7 @@ import pandas as pd
 
 from .utils.auxiliary import try_get_file, submit_slurm_job
 from .constants import initialize_paths_run, create_run_name
-from .data_analysis_module import profits_data_dict, std_variables
+from .data_analysis_module import profits_data_dict, std_variables, full_run_df
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +219,7 @@ class Run:
         requested_time_run: str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
         email_line = slurm_config.get('email', None)
-        mail_type = slurm_config.get('mail_type', 'NONE')
+        mail_type = slurm_config.get('mail-type', 'NONE')
         memory = slurm_config.get('memory', MEMORY_REQUESTED)
 
         temp_folder_path = f"{self.paths['folder']}/temp"
@@ -286,9 +286,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         participants = PARTICIPANTS_LIST_ENDOGENOUS
         print(f"{self.variables=}")
 
-        # Create a dictionary with the capacities
-        capacities = {participant: self.variables[f"{participant}_capacity"]
-                      for participant in participants}
+        capacities = self.capacities()
 
         # Compute profits data
         profits_data: dict = profits_data_dict(run_df, capacities)
@@ -298,6 +296,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             'profits_data.json').write_text(json.dumps(profits_data))
 
         if complete:
+            run_df = full_run_df(run_df, capacities)
             revenues_variables = [f'revenue_{participant}'
                                   for participant in participants]
             std_revenues = std_variables(run_df, revenues_variables)
@@ -308,6 +307,20 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         logger.debug("profits_data for %s:", self.name)
         logger.debug(profits_data)
         return profits_data
+
+    def capacities(self):
+        from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
+
+        participants = PARTICIPANTS_LIST_ENDOGENOUS
+        # Create a dictionary with the capacities
+        capacities = {participant: self.variables[f"{participant}_capacity"]
+                      for participant in participants}
+        if 'salto_capacity' in self.variables.keys():
+            capacities['salto'] = self.variables['salto_capacity']
+        else:
+            capacities['salto'] = 1620
+
+        return capacities
 
     def get_profits(self):
         """

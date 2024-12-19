@@ -16,7 +16,7 @@ from .utils.load_configs import load_events, load_costs
 HOURLY_FIXED_COSTS = load_costs()
 
 PARTICIPANTS = [
-    'hydro',
+    'salto',
     'wind',
     'solar',
     'thermal'
@@ -47,9 +47,13 @@ def profits_data_dict(run_df: pd.DataFrame,
 
     # Update the results dictionary with metrics for each participant
     for participant in participants:
+        if participant == 'salto':
+            continue
         capacity: float = capacities[participant]
         results_dict.update(compute_participant_metrics(
             run_df, participant, capacity))
+
+    results_dict['avg_price'] = run_df['marginal_cost'].mean()
 
 #    system_total_cost: float = sum(
 #        [results_dict[f'{participant}_total_cost'] for participant in participants])
@@ -72,6 +76,9 @@ def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
 
     run_df['production_total'] = run_df[[
         f'production_{participant}' for participant in PARTICIPANTS]].sum(axis=1)
+
+    run_df['lost_load'] = (run_df['demand'] -
+                           run_df['production_total']).clip(lower=0)
 
     return run_df
 
