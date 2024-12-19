@@ -20,7 +20,8 @@ from .data_analysis_module import profits_data_dict, std_variables
 
 logger = logging.getLogger(__name__)
 
-MEMORY_REQUESTED = '5' # GB
+MEMORY_REQUESTED = '5'  # GB
+
 
 class Run:
     """
@@ -51,10 +52,11 @@ class Run:
         self.name: str = create_run_name(variables)
         self.parent_name: str = parent_folder.parts[-1]
 
+        name_subfolder = self.general_parameters.get('name_subfolder',
+                                                     'CAD2024DIARIA')
         # Initialize relevant paths
         self.paths: dict = initialize_paths_run(
-            parent_folder, self.name, self.general_parameters['name_subfolder'])
-
+            parent_folder, self.name, name_subfolder)
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
@@ -143,10 +145,10 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
         xml_path: Path = self.create_xml(
-            template_path = self.general_parameters['xml_basefile'],
-            name = self.name,
-            folder = self.paths['folder'],
-            variables = self.variables
+            template_path=self.general_parameters['xml_basefile'],
+            name=self.name,
+            folder=self.paths['folder'],
+            variables=self.variables
         )
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
@@ -176,10 +178,10 @@ class Run:
 
         # Create the xml file
         xml_path: Path = self.create_xml(
-            template_path = self.general_parameters['xml_basefile'],
-            name = self.name,
-            folder = self.paths['folder'],
-            variables = self.variables
+            template_path=self.general_parameters['xml_basefile'],
+            name=self.name,
+            folder=self.paths['folder'],
+            variables=self.variables
         )
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
@@ -209,7 +211,6 @@ class Run:
 
         slurm_config: dict = self.general_parameters['slurm']['run']
 
-
         requested_time: float = slurm_config['time']
         hours: int = int(requested_time)
         minutes: int = int((requested_time * 60) % 60)
@@ -219,8 +220,6 @@ class Run:
         email_line = slurm_config.get('email', None)
         mail_type = slurm_config.get('mail_type', 'NONE')
         memory = slurm_config.get('memory', MEMORY_REQUESTED)
-
-        
 
         temp_folder_path = f"{self.paths['folder']}/temp"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
@@ -258,10 +257,12 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         """Creates a .xml file from template with variable substitution."""
         output_path = folder / f"{name}.xml"
         # Add folder path to variables for substitution
-        variables = {**variables, 'output_folder': str(folder).replace('\\', '\\\\')}
+        variables = {**variables,
+                     'output_folder': str(folder).replace('\\', '\\\\')}
         # Read template and substitute all expressions
         with open(template_path, 'r') as f:
             content = f.read()
+
         def replace_expr(match):
             expr = match.group(1)
             return str(eval(expr, {}, variables))
@@ -290,8 +291,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         profits_data: dict = profits_data_dict(run_df, capacities)
 
         # Save to disk using json
-        self.paths['folder'].joinpath('profits_data.json').write_text(json.dumps(profits_data))
-
+        self.paths['folder'].joinpath(
+            'profits_data.json').write_text(json.dumps(profits_data))
 
         if complete:
             revenues_variables = [f'revenue_{participant}'

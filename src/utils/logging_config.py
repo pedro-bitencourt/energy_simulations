@@ -6,10 +6,11 @@ from typing import Optional
 
 from rich.logging import RichHandler
 
+
 def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
     """
     Configure logging with Rich handler and set up basic configuration.
-    
+
     Args:
         level: The logging level to use. Defaults to logging.DEBUG.
     """
@@ -20,7 +21,7 @@ def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
         show_path=True,
         markup=True
     )
-    
+
     # Configure basic logging
     logging.basicConfig(
         level=level,
@@ -28,11 +29,9 @@ def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
         datefmt="[%X]",
         handlers=[rich_handler]
     )
-    
+
     # Ensure root logger uses the rich handler
     logging.getLogger().handlers = [rich_handler]
-    
+
     # Suppress matplotlib debug messages
     logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
-
-

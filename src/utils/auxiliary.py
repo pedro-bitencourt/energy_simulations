@@ -19,12 +19,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 def make_name(float_list):
     """
     Takes list of floats, returns string with at most 2 decimals
-    Example: [0.12345, 1.0, 2.67890] -> "0.123_1_2.679" 
+    Example: [0.12345, 1.0, 2.67890] -> "0.123_1_2.679"
     """
+    print(float_list)
     formatted = []
     for num in float_list:
         # Format to 3 decimals and remove trailing zeros

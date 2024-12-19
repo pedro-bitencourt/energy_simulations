@@ -313,6 +313,7 @@
         <listaAtributos>energias,potencias,cotaAguasArriba</listaAtributos>
         <listaUtilizados>salto</listaUtilizados>
       <listaGHidraulico>
+		<gHidraulico>
           <compsGenerales>
             <compLago>
               <ev tipo="const">ConLago</ev>
@@ -496,6 +497,7 @@
               <discretaIncremental>false</discretaIncremental>
             </variableEstado>
           </variablesEstado>
+         </gHidraulico>
       </listaGHidraulico>
       </hidraulicos>
       <eolicos>

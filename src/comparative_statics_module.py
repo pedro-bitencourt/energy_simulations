@@ -107,10 +107,10 @@ class ComparativeStatics:
     def initialize_grid(self):
         # Create a Solver object for each combination of exogenous variables
         grid_points = []
-        grids: list = self.variables['exogenous'].values()
+        grids = self.variables['exogenous'].values()
 
         exogenous_variable_0 = list(self.variables['exogenous'].keys())[0]
-        grid_0 = grids[0]
+        grid_0 = list(grids)[0]['grid']
         # Iterate over exogenous variables
         for value in grid_0:
             exogenous_variables_dict = {
@@ -174,7 +174,6 @@ class ComparativeStatics:
             'general_parameters': self.general_parameters
         }
         comparative_statics_data = json.dumps(comparative_statics_data)
-        print(f"{comparative_statics_data=}")
 
         if self.general_parameters.get('email', None):
             email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"

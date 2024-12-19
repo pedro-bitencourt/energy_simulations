@@ -61,12 +61,6 @@ def load_events() -> dict[str, str]:
     return events
 
 
-def load_variables() -> list:
-    """
-    """
-    return load_config(VARIABLES_JSON_PATH)
-
-
 def load_plots() -> dict:
     """
     Parse the plots configuration file and return a dictionary with the plots.

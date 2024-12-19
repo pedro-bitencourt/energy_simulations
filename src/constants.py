@@ -4,14 +4,14 @@ from pathlib import Path
 from .utils.auxiliary import make_name
 
 
-
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
-
 def create_run_name(variables: dict):
-    var_values: list[float] = [variable['value'] for variable in
-                               variables.values()]
+    # Extract the values directly, assuming they are floats
+    var_values: list[float] = list(variables.values())
+
+    # Assuming make_name processes the list correctly
     name: str = make_name(var_values)
     return name
 
@@ -29,6 +29,7 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 ################################################################################################
 BASE_PATH: Path = Path('/projects/p32342')
 POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
+
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths = {}
@@ -48,6 +49,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['conditional_means'] = paths['results'] / 'conditional_means.csv'
     return paths
 
+
 def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
     paths: dict[str, Path] = {}
     # Folders
@@ -55,7 +57,7 @@ def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
     paths['folder'] = folder / name
 
     # Files
-    paths['optimization_trajectory'] = folder / name /\
+    paths['solver_trajectory'] = folder / name /\
         f'{name}_trajectory.json'
     paths['bash'] = folder / name / f'{name}.sh'
 

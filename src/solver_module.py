@@ -19,10 +19,10 @@ from pprint import pprint
 
 from .run_module import Run
 from .optimization_module import (OptimizationPathEntry,
-                                     derivatives_from_profits,
-                                     get_last_successful_iteration)
+                                  derivatives_from_profits,
+                                  get_last_successful_iteration)
 from .utils.auxiliary import submit_slurm_job, wait_for_jobs
-from .constants import  initialize_paths_investment_problem, create_investment_name
+from .constants import initialize_paths_investment_problem, create_investment_name
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +61,13 @@ class Solver:
         self.paths: dict[str, Path] = initialize_paths_investment_problem(
             parent_folder, self.name)
 
-
         solver_options_default: dict = {
             'max_iter': 80,
             'delta': 10,
             'threshold_profits': 0.01,
         }
-        self.solver_options: dict = general_parameters.get('solver_options', solver_options_default)
+        self.solver_options: dict = general_parameters.get(
+            'solver_options', solver_options_default)
 
         # initialize the optimization trajectory
         self.solver_trajectory: list = self._init_trajectory()
@@ -79,7 +79,7 @@ class Solver:
             with open(self.paths['solver_trajectory'], 'r') as file:
                 data = json.load(file)
                 solver_trajectory = [OptimizationPathEntry.from_dict(entry)
-                                           for entry in data]
+                                     for entry in data]
 
             logger.info("Successfully loaded optimization trajectory from %s.",
                         self.paths['solver_trajectory'])
@@ -89,7 +89,8 @@ class Solver:
         else:
             # If not, initialize it with the initial guess
             solver_trajectory: list[OptimizationPathEntry] = []
-            logger.info("Initializing optimization trajectory at the initial guess.")
+            logger.info(
+                "Initializing optimization trajectory at the initial guess.")
 
             # initialize the first iteration
             iteration_0 = OptimizationPathEntry(
@@ -121,7 +122,7 @@ class Solver:
         run_initial_guess.prototype()
 
     #########################################
-    # Methods to solve the 
+    # Methods to solve the
     def solve(self):
         """
         This function implements the Newton-Raphson algorithm to solve the zero-profit
@@ -184,7 +185,6 @@ class Solver:
         # save results
         self._save_trajectory()
 
-
     def clear_runs_folders(self, current_investment=None, force=False):
         """
         Deletes all the directories in self.paths['folder']
@@ -212,7 +212,7 @@ class Solver:
                                     directory)
 
     def _update_current_iteration(self,
-                                current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
+                                  current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
         '''
         Updates the current iteration with the profits and derivatives
         '''
@@ -259,7 +259,7 @@ class Solver:
                     logger.info("First attempt for %s", run.name)
                 else:
                     logger.warning("RETRYING %s, previous attempts = %s", run.name,
-                                    attempts)
+                                   attempts)
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1
@@ -314,7 +314,9 @@ class Solver:
         endogenous capacities
         """
         # create a values array with the same order as the variables
-        variables: dict = {**self.exogenous_variable, **current_investment}
+        exogenous_variable_temp = {var_name: variable['value'] for var_name,
+                                   variable in self.exogenous_variable.items()}
+        variables: dict = {**exogenous_variable_temp, **current_investment}
         # create the Run object
         run: Run = Run(self.paths['folder'],
                        self.general_parameters,
@@ -343,7 +345,6 @@ class Solver:
             **exo_vars,
             **last_iteration.current_investment
         }
-
 
         # Compute the profits
         last_run = self.last_run()
@@ -374,7 +375,6 @@ class Solver:
         # Append the data to the investment_results dictionary
         investment_results.update(profits_dict)
         investment_results['convergence_reached'] = convergence_reached
-
 
         return investment_results
 
@@ -410,15 +410,20 @@ class Solver:
 
         investment_data_str = json.dumps(investment_data)
 
-        requested_time: float = self.general_parameters['requested_time_solver']
+        requested_time: float = self.general_parameters['slurm']['solver']['time']
         hours = int(requested_time)
         minutes = int((requested_time - hours) * 60)
         seconds = int(((requested_time - hours) * 60 - minutes) * 60)
 
+        logging_level: str = self.general_parameters['slurm']['solver'].get(
+            'log_level', 'DEBUG')
+
         requested_time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-        if self.general_parameters.get('email', None):
-            email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
+        email = self.general_parameters['slurm']['solver'].get('email',
+                                                               None)
+        if email:
+            email_line = f"#SBATCH --mail-user={email}"
         else:
             email_line = ""
 
@@ -452,7 +457,11 @@ import json
 investment_data = json.loads('''{investment_data_str}''')
 
 sys.path.append('/projects/p32342/code')
-from src.investment_module import InvestmentProblem
+from src.solver_module import Solver
+from src.utils.logging_config import setup_logging
+import logging
+
+setup_logging(level=logging.{logging_level})
 
 solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')
