@@ -53,7 +53,7 @@ class Run:
         self.parent_name: str = parent_folder.parts[-1]
 
         name_subfolder = self.general_parameters.get('name_subfolder',
-                                                     'CAD2024DIARIA')
+                                                     'CAD-2024-DIARIA')
         # Initialize relevant paths
         self.paths: dict = initialize_paths_run(
             parent_folder, self.name, name_subfolder)

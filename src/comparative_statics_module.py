@@ -38,7 +38,6 @@ import logging
 from typing import Optional, Dict
 import json
 import pandas as pd
-import itertools
 
 from .utils.auxiliary import submit_slurm_job
 from .solver_module import Solver

@@ -8,7 +8,6 @@ import os
 import glob
 import time
 import subprocess
-from pathlib import Path
 import logging
 
 

@@ -34,10 +34,10 @@ class TestRun(unittest.TestCase):
         general_parameters: dict = {'daily': True,
                             'name_subfolder': 'CAD-2024-DIARIA'}
 
-        variables = {'hydro_factor': {'value': exogenous_capacity},
-                     'wind': {'value': wind_capacity},
-                     'solar': {'value': solar_capacity},
-                     'thermal': {'value': thermal_capacity}}
+        variables = {'hydro_factor':  exogenous_capacity,
+                     'wind':  wind_capacity,
+                     'solar':  solar_capacity,
+                     'thermal':  thermal_capacity}
 
         self.mock_run = Run(parent_folder, general_parameters, variables)
         # Initialize the RunProcessor object

@@ -44,11 +44,11 @@ PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
     "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
     "thermal": {"folder": "TER_thermal", "type": "thermal"},
-    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
+#    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
     "demand": {"folder": "DEM_demandaPrueba", "type": "demand"},
     "salto": {"folder": "HID_salto", "type": "hydro"},
     # FIX
-    "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
+#    "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
 }
 
 
@@ -114,11 +114,11 @@ class RunProcessor(Run):
             participant_type = PARTICIPANTS[participant]['type']
             if participant_type == 'thermal':
                 # Extract variable costs data
-                df = get_variable_costs_df(participant, self.paths['sim'])
+                df = get_variable_cost_df(participant, self.paths['sim'])
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
             elif participant not in ['demand', 'excedentes']:
-                random_variables_df[f'variable_costs_{participant}'] = 0
+                random_variables_df[f'variable_cost_{participant}'] = 0
 
             # Extract water level data
             if participant_type == 'hydro':
@@ -188,22 +188,23 @@ def get_production_df(key_participant: str,
 
     dataframe = melt_df(dataframe, f"production_{key_participant}")
 
-    if key_participant == 'thermal':
-        df_config = _initialize_df_configuration('thermal_remainder', sim_path)
-        remainder_dataframe = proc.open_dataframe(
-            df_config,
-            sim_path)
+    #if key_participant == 'thermal':
+    #    df_config = _initialize_df_configuration('thermal_remainder', sim_path)
+    #    remainder_dataframe = proc.open_dataframe(
+    #        df_config,
+    #        sim_path)
+    #    remainder_dataframe = melt_df(remainder_dataframe, f"production_{key_participant}")
 
-    combined_dataframe = dataframe + remainder_dataframe
+    #    dataframe = dataframe + remainder_dataframe
 
     # FIX ME
 
     logger.debug(
         f"Successfully extracted and processed {key_participant} production data."
     )
-    return combined_dataframe
+    return dataframe
 
-# def get_variable_costs_df(key_participant: str,
+# def get_variable_cost_df(key_participant: str,
 #                          sim_path: Path) -> pd.DataFrame:
 #    """
 #    Extracts and processes the variable costs data for the participant.
@@ -213,11 +214,11 @@ def get_production_df(key_participant: str,
 #        logger.error("Variable costs are only available for thermal participants.")
 #        raise ValueError("Variable costs are only available for thermal participants.")
 #
-#    variable_costs_df = proc.open_dataframe(
-#        VARIABLE_COSTS_THERMAL_DF,
+#    variable_cost_df = proc.open_dataframe(
+#        variable_cost_THERMAL_DF,
 #        sim_path
 #    )
-#    variable_costs_df = melt_df(variable_costs_df, "variable_cost")
+#    variable_cost_df = melt_df(variable_cost_df, "variable_cost")
 #
 #    # Get the production data
 #    production_df = get_production_df(key_participant, sim_path)
@@ -226,7 +227,7 @@ def get_production_df(key_participant: str,
 #    production_df = production_df.rename(columns={f'production_{key_participant}': 'production'})
 #
 #    # Upsample the variable costs to hourly frequency
-#    dataframe = upsample_scenario_proportional(variable_costs_df, production_df)
+#    dataframe = upsample_scenario_proportional(variable_cost_df, production_df)
 #    # Rename the variable cost column
 #    dataframe = dataframe.rename(columns={'hourly_variable_cost': f'variable_cost_{key_participant}'})
 #    logger.debug(
@@ -235,7 +236,7 @@ def get_production_df(key_participant: str,
 #    return dataframe
 
 
-def get_variable_costs_df(key_participant: str,
+def get_variable_cost_df(key_participant: str,
                           sim_path: Path) -> pd.DataFrame:
     """
     Extracts and processes the variable costs data for the participant.
@@ -309,26 +310,26 @@ def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
     return df_result
 
 
-def upsample_scenario_proportional(variable_costs_df: pd.DataFrame, production_df: pd.DataFrame) -> pd.DataFrame:
+def upsample_scenario_proportional(variable_cost_df: pd.DataFrame, production_df: pd.DataFrame) -> pd.DataFrame:
     """
     This function upsamples the variable costs (which are reported on a daily frequency by MOP) to hourly frequency,
     distributing the daily costs proportionally to the hourly production.
 
     Args:
-        variable_costs_df (pd.DataFrame): DataFrame containing the variable costs for each scenario.
+        variable_cost_df (pd.DataFrame): DataFrame containing the variable costs for each scenario.
             Should have columns: 'datetime','scenario', 'variable_cost'
         production_df (pd.DataFrame): DataFrame containing the production for each scenario
             Should have columns: 'datetime','scenario', 'production'
     """
-    if not pd.api.types.is_datetime64_any_dtype(variable_costs_df['datetime']):
-        variable_costs_df['datetime'] = pd.to_datetime(
-            variable_costs_df['datetime'], errors='coerce')
+    if not pd.api.types.is_datetime64_any_dtype(variable_cost_df['datetime']):
+        variable_cost_df['datetime'] = pd.to_datetime(
+            variable_cost_df['datetime'], errors='coerce')
     if not pd.api.types.is_datetime64_any_dtype(production_df['datetime']):
         production_df['datetime'] = pd.to_datetime(
             production_df['datetime'], errors='coerce')
 
     # Merge the two dataframes
-    df = pd.merge(variable_costs_df, production_df, on=[
+    df = pd.merge(variable_cost_df, production_df, on=[
                   'datetime', 'scenario'], how='outer')
 
     results = []

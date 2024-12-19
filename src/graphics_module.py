@@ -5,7 +5,7 @@ import matplotlib.colors as mcolors
 import pandas as pd
 import logging
 
-from .utils.load_configs import load_events, load_variables, load_plots, load_comparisons
+from .utils.load_configs import load_events, load_plots, load_comparisons
 
 logger = logging.getLogger(__name__)
 
