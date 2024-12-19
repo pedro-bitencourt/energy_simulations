@@ -41,6 +41,7 @@ exogenous_variable_grid: list[float] = [
 exogenous_variable_grid: list[float] = [
     0, 0.2, 0.6, 0.75, 1.25, 1.5, 2, 3]
 exog_grid: list[float] = [val*1620 for val in exogenous_variable_grid]
+exog_grid: list[float] = [0, 324, 972]
 exogenous_variables: dict[str, dict] = {
     'salto_capacity': {
         'grid': exog_grid
