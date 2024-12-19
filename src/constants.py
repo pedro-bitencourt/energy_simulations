@@ -70,6 +70,7 @@ def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
     paths['random_variables'] = paths['folder'] / 'random_variables.csv'
     paths['investment_results'] = paths['folder'] / 'investment_results.json'
     paths['conditional_means'] = paths['folder'] / 'conditional_means.csv'
+    paths['master_trajectory'] = paths['folder'] / 'master_trajectory.json'
     return paths
 
 

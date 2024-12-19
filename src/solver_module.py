@@ -111,6 +111,10 @@ class Solver:
                       file, indent=4, sort_keys=True)
         logger.info('Saved optimization trajectory to %s',
                     self.paths["solver_trajectory"])
+        with open(self.paths['master_trajectory'], 'a') as file:
+            last_entry = self.solver_trajectory[-1].to_dict()
+            last_entry['name'] = self.name
+            file.write(json.dumps(last_entry) + '\n')
 
     def prototype(self):
         # Create run at the initial guesses
