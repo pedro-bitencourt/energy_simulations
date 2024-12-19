@@ -304,20 +304,7 @@ END
         rows = []
 
         for point in self.grid_points:
-            # Get the random variables for the current run
-            run_random_variables = pd.read_csv(
-                self.paths['random_variables'] / f'{point.name}.csv')
-            last_run = point.last_run()
-            capacities = last_run.capacities()
-            run_random_variables = full_run_df(run_random_variables,
-                                               capacities)
-
-            # Get the results to extract for the current run
-            results_dict = results_function(run_random_variables)
-
-            # Add run identifier to the results
-            results_dict['point'] = point.name
-
+            results_dict = point.last_run_results(results_function)
             # Append the row to our list
             rows.append(results_dict)
 
