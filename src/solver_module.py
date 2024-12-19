@@ -142,10 +142,10 @@ class Solver:
                     current_iteration)
 
         # Check for convergence
-        if current_iteration.check_convergence():
-            logger.info(
-                'Convergence reached. Current iteration %s', current_iteration)
-            return
+        # if current_iteration.check_convergence():
+        #    logger.info(
+        #        'Convergence reached. Current iteration %s', current_iteration)
+        #    return
 
         # Start the Newton-Raphson loop
         while current_iteration.iteration < self.solver_options['max_iter']:
@@ -216,10 +216,10 @@ class Solver:
         '''
         Updates the current iteration with the profits and derivatives
         '''
-        if current_iteration.profits and current_iteration.profits_derivatives:
-            logger.info('Profits and derivatives already computed for iteration %s',
-                        current_iteration.iteration)
-            return current_iteration
+        # if current_iteration.profits and current_iteration.profits_derivatives:
+        #    logger.info('Profits and derivatives already computed for iteration %s',
+        #                current_iteration.iteration)
+        #    return current_iteration
 
         logger.info('Preparing to compute profits for iteration with %s',
                     current_iteration.current_investment)

@@ -1,9 +1,15 @@
 """
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
-# Import modules from the src folder
+import logging
+from src.utils.logging_config import setup_logging
 from src.comparative_statics_module import ComparativeStatics
+import sys
+sys.path.append('/projects/p32342/code')
+# Import modules from the src folder
 
+
+setup_logging(level=logging.DEBUG)
 # Input parameters
 name: str = 'expensive_blackout'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
@@ -18,14 +24,14 @@ general_parameters: dict = {
             'mail-type': 'NONE',
             'time': 0.5,
             'memory': 8
-            },
+        },
         'solver': {
             'email': 'aschwerz@u.northwestern.edu',
             'mail-type': 'END,FAIL',
             'time': 16.5,
             'memory': 8
-            }
         }
+    }
 }
 
 exog_grid: list[float] = [2000, 4000, 8000, 12000, 16000, 20000]
@@ -56,4 +62,4 @@ comparative_statics = ComparativeStatics(
 # Submit the solver jobs
 comparative_statics.submit_solvers()
 # Submit the processing job
-#comparative_statics.submit_processing()
+# comparative_statics.submit_processing()

@@ -699,7 +699,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;4000.0),(85.5;4000.0)</escalonesPorciento>
             <demanda>demand</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>

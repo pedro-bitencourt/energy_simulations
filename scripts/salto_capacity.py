@@ -4,8 +4,13 @@ Comparative statics exercise for changing the volume of the lakes in the system.
 
 import sys
 sys.path.append('/projects/p32342/code')
-# Import modules from the src folder
+import logging
+from src.utils.logging_config import setup_logging
 from src.comparative_statics_module import ComparativeStatics
+# Import modules from the src folder
+
+
+setup_logging(level=logging.DEBUG)
 
 # Input parameters
 name: str = 'salto_capacity'
@@ -18,22 +23,22 @@ general_parameters: dict = {
     'slurm': {
         'run': {
             'email': 'pedro.bitencourt@u.northwestern.edu',
-            'mail-type': 'NONE',
+            'mail-type': 'FAIL',
             'time': 0.5,
             'memory': 8
-            },
+        },
         'solver': {
             'email': 'pedro.bitencourt@u.northwestern.edu',
             'mail-type': 'END,FAIL',
             'time': 16.5,
             'memory': 8
-            }
         }
+    }
 }
 
 exogenous_variable_grid: list[float] = [
     0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3]
-exog_grid: list[float] = [val*135 for val in exogenous_variable_grid]
+exog_grid: list[float] = [val*1620 for val in exogenous_variable_grid]
 exogenous_variables: dict[str, dict] = {
     'salto_capacity': {
         'grid': exog_grid
@@ -61,4 +66,4 @@ comparative_statics = ComparativeStatics(
 # Submit the solver jobs
 comparative_statics.submit_solvers()
 # Submit the processing job
-#comparative_statics.submit_processing()
+# comparative_statics.submit_processing()
