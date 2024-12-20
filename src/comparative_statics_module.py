@@ -228,6 +228,23 @@ END
 
     ############################
     # Processing methods
+    def process_lazy(self):
+        investment_results_dict = {}
+        conditional_means_dict = {}
+        for solver in self.grid_points:
+            investment_results_dict[solver.name] = solver.read_inv_results()
+            conditional_means_dict[solver.name] = solver.read_conditional_means()
+
+        investment_results_df = pd.DataFrame(investment_results_dict)
+        conditional_means_df = pd.DataFrame(conditional_means_dict)
+
+        # Save to disk
+        investment_results_df.to_csv(
+            self.paths['investment_results'], index=False)
+        conditional_means_df.to_csv(
+            self.paths['conditional_means'], index=False)
+        
+
 
     def process(self, complete=True):
         """

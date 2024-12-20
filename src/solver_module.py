@@ -429,6 +429,22 @@ class Solver:
         # yearly_results_df.to_csv(
         #    self.paths['results'] / 'yearly_results.csv', index=False)
 
+    def read_inv_results(self):
+        """
+        Reads the investment results from the investment_results.json file
+        """
+        with open(self.paths['investment_results'], 'r') as file:
+            investment_results = json.load(file)
+        return investment_results
+
+    def read_conditional_means(self):
+        """
+        Reads the conditional means from the conditional_means.json file
+        """
+        with open(self.paths['conditional_means'], 'r') as file:
+            conditional_means = json.load(file)
+        return conditional_means
+
 
     def last_run_results(self, results_function) -> dict:
         from .data_analysis_module import full_run_df
