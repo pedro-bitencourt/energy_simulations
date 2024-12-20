@@ -37,6 +37,7 @@ general_parameters: dict = {
 }
 
 exog_grid: list[float] = [0.75, 1, 1.25, 1.5, 2, 3, 5]
+exog_grid = [3]
 exogenous_variables: dict[str, dict] = {
     'lake_factor': {'grid': exog_grid},
 }
@@ -60,6 +61,6 @@ comparative_statics = ComparativeStatics(
 
 
 # Submit the solver jobs
-#comparative_statics.submit_solvers()
+comparative_statics.submit_solvers()
 # Submit the processing job
-comparative_statics.submit_processing()
+#comparative_statics.submit_processing()

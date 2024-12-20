@@ -38,10 +38,7 @@ general_parameters: dict = {
 
 exogenous_variable_grid: list[float] = [
     0, 0.2, 0.6, 0.75, 1, 1.25, 1.5, 2, 3]
-exogenous_variable_grid: list[float] = [
-    0, 0.2, 0.6, 0.75, 1.25, 1.5, 2, 3]
 exog_grid: list[float] = [val*1620 for val in exogenous_variable_grid]
-exog_grid: list[float] = [0, 324, 972]
 exogenous_variables: dict[str, dict] = {
     'salto_capacity': {
         'grid': exog_grid
@@ -70,4 +67,4 @@ comparative_statics = ComparativeStatics(
 #comparative_statics.prototype()
 comparative_statics.submit_solvers()
 # Submit the processing job
-# comparative_statics.submit_processing()
+#comparative_statics.submit_processing()
