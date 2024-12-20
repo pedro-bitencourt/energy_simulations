@@ -1,30 +1,10 @@
 {
-  "unconditional": {
-    "events": ["unconditional"],
-    "excluded_plots": []
-  },
-  "water_level": {
-    "events": ["unconditional", "water_level_34", "water_level_33", "water_level_32"],
-    "excluded_plots": ["production"]
-  },
-  "wind_production": {
-    "events": ["unconditional", "low_wind_25", "low_wind_10"],
-    "excluded_plots": ["thermal_vs_hydro_utilization"]
-  },
-  "lost_load": {
-    "events": ["unconditional", "blackout_positive"],
-    "excluded_plots": []
-  },
-  "thermal_profits": {
-    "events": ["unconditional", "profits_thermal_75", "profits_thermal_95"],
-    "excluded_plots": []
-  },
-  "thermal_production": {
-    "events": ["unconditional", "thermal_production_positive"],
-    "excluded_plots": []
-  },
-  "hydro_production": {
-    "events": ["unconditional", "hydro_production_positive"],
-    "excluded_plots": []
-  }
+  "unconditional": ["unconditional"],
+  "water_level": ["unconditional", "water_level_34", "water_level_32"],
+  "wind_production": ["unconditional", "low_wind_25", "low_wind_10"],
+  "lost_load": ["unconditional", "lost_load_500", "lost_load_100"],
+  "lost_load_1": ["unconditional", "lost_load_100", "lost_load_1"],
+  "thermal_profits": ["unconditional", "profits_thermal_75", "profits_thermal_95"],
+  "thermal_production": ["unconditional", "positive_thermal_production_0.01"],
+  "hydro_production": ["unconditional", "positive_hydro_production_0.01"]
 }

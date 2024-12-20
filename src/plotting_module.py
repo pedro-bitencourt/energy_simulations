@@ -89,7 +89,7 @@ def line_plot(
     plt.close()  # close figure to free memory
 
 def event_comparison_plot(events_data: dict[str, pd.DataFrame],
-                     events_config: dict,
+                     events_config: list,
                      y_variables: list[dict],
                      y_variable_axis: str,
                      x_variable: dict,
@@ -112,7 +112,7 @@ def event_comparison_plot(events_data: dict[str, pd.DataFrame],
                 events_config, y_variables, y_variable_axis, x_variable, file_path, title)
 
     # Extract list of events from config
-    events = events_config.get('events', [])
+    events = events_config
     if not events:
         logger.warning("No events provided in events_config.")
         return

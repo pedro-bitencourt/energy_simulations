@@ -22,7 +22,8 @@ VARIABLES = [
     #*[f'revenue_{participant}' for participant in PARTICIPANTS],
     #*[f'profit_{participant}' for participant in PARTICIPANTS],
     'marginal_cost',
-    'demand'
+    'demand',
+    'frequency'
 ]
 # TO FIX
 CAPACITY_VARIABLES = [
@@ -60,14 +61,14 @@ def visualize(results_folder: Path, x_variable: dict):
         if path.is_dir():
             path.mkdir(parents=True, exist_ok=True)
 
-#    # Visualize conditional means
-#    plot_event_comparisons(results_folder, x_variable)
-#
-#    # Format csv
-#    formatted_df = format_conditional_means(results_folder, x_variable)
-#
-#    # Save to disk
-#    formatted_df.to_csv(results_folder / 'formatted_conditional_means.csv', index=False)
+    # Visualize conditional means
+    plot_event_comparisons(results_folder, x_variable)
+
+    # Format csv
+    formatted_df = format_conditional_means(results_folder, x_variable)
+
+    # Save to disk
+    formatted_df.to_csv(results_folder / 'formatted_conditional_means.csv', index=False)
 
     # Plot optimal capacities
     plot_optimal_capacities(results_folder, x_variable)
@@ -141,6 +142,14 @@ def plot_event_comparisons(folder_path: Path, x_variable: dict):
     for comparison_name, set_events in COMPARISON_EVENTS.items():
         logger.info("Plotting comparison: %s", comparison_name)
         for plot_name, plot_config in VARIABLES_TO_PLOT.items():
+            if plot_name == 'production':
+                # remove unconditional
+                set_events_temp = [event for event in set_events if event != 'unconditional']
+                if not set_events_temp:
+                    set_events_temp = set_events
+            else:
+                set_events_temp = set_events
+            print(f"{set_events_temp=}")
             comparison_folder = folder_path / comparison_name
             # Create folder
             comparison_folder.mkdir(parents=True, exist_ok=True)
@@ -148,7 +157,7 @@ def plot_event_comparisons(folder_path: Path, x_variable: dict):
             title = f"{plot_config['title']} - {comparison_name}"
 
             logger.info("Plotting %s", title)
-            event_comparison_plot(events_data, set_events, plot_config['variables'],
+            event_comparison_plot(events_data, set_events_temp, plot_config['variables'],
                       plot_config['y_label'], x_variable, file_path,
                       title)
 
@@ -168,9 +177,9 @@ def plot_std_revenues(folder_path: Path, x_variable: dict):
     # Load the investment results_folder
     investment_results = load_investment_results(folder_path)
     y_variables = {f'{participant}_std_revenue': f'{participant} Capacity (MW)' for participant in PARTICIPANTS}
-    y_variable_axis = 'Standard Deviation of Expected Revenue ($)'
-    title = 'Standard Deviation of Expected Revenue ($)'
-    output_path = folder_path / 'std_revenues.png'
+    y_variable_axis = 'Standard Deviation of Expected Profitts ($)'
+    title = 'Standard Deviation of Expected Profits ($)'
+    output_path = folder_path / 'std_profits.png'
     line_plot(investment_results, x_variable['name'], y_variables, title, x_variable['label'], y_variable_axis, output_path)
             
 def format_conditional_means(folder_path: Path, x_variable) -> pd.DataFrame:
@@ -180,7 +189,8 @@ def format_conditional_means(folder_path: Path, x_variable) -> pd.DataFrame:
             ['']  # Blank line
         ])
     # Load the event data
-    events_data = events_data_from_csv(folder_path, x_variable)
+    events_data: dict = events_data_from_csv(folder_path, x_variable)
+
 
     # Prepare the output DataFrame
     final_df = pd.DataFrame()
@@ -193,6 +203,9 @@ def format_conditional_means(folder_path: Path, x_variable) -> pd.DataFrame:
             continue
         event_header = header(EVENTS[event])
         event_data = events_data[event]
+        print(f"{event_data.columns=}")
+        print(f"{event_data['frequency'].head()=}")
+        print(f"{event_data.head()=}")
         # Order in salto_capacity
         event_data = event_data.sort_values(by=x_variable['name'])
         final_df = pd.concat([final_df, event_header, event_data], ignore_index=True)
