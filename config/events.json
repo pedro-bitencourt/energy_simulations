@@ -3,7 +3,7 @@
         "label": "",
         "lhs": "index",
         "operator": "==",
-        "rhs_type": "value",
+        "rhs_type": "index",
         "rhs": ["index"]
     },
     "water_level": {
@@ -14,11 +14,11 @@
         "rhs": [31, 32, 33, 34]
     },
     "low_wind": {
-        "label": "Wind < $th pct",
-        "lhs": "production_wind",
+        "label": "Wind Utilization < $",
+        "lhs": "utilization_wind",
         "operator": "<",
-        "rhs_type": "percentile",
-        "rhs": [25, 50]
+        "rhs_type": "value",
+        "rhs": [0.01, 0.05, 0.1, 0.25]
     },
     "lost_load": {
         "label": "Lost Load > $ MW",

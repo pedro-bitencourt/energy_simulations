@@ -2,10 +2,10 @@
   "capacities": {
     "title": "Capacities (MW)",
     "variables": [
-      { "name": "capacity_wind", "label": "Wind" },
-      { "name": "capacity_solar", "label": "Solar" },
-      { "name": "capacity_salto", "label": "Hydro" },
-      { "name": "capacity_thermal", "label": "Thermal" }
+      { "name": "wind_capacity", "label": "Wind" },
+      { "name": "solar_capacity", "label": "Solar" },
+      { "name": "salto_capacity", "label": "Hydro" },
+      { "name": "thermal_capacity", "label": "Thermal" }
     ],
     "y_label": "Capacity (MW)"
   },
@@ -16,6 +16,7 @@
       { "name": "production_solar", "label": "Solar" },
       { "name": "production_salto", "label": "Hydro" },
       { "name": "production_thermal", "label": "Thermal" },
+      { "name": "production_excedentes", "label": "Excess" },
       { "name": "production_total", "label": "Total" },
       { "name": "lost_load", "label": "Lost Load" },
       { "name": "demand", "label": "Demand" }
@@ -42,12 +43,13 @@
     "title": "Price ($/MWh)",
     "variables": [
       { "name": "marginal_cost", "label": "Price" }
-    ]
+    ],
+    "y_label": "Average Price ($/MWh)"
   },
   "profits": {
     "title": "Thermal Profits ($/MW-h)",
     "variables": [
-      { "name": "profits_thermal", "label": "Variable Profits" }
+      { "name": "profit_thermal", "label": "Variable Profits Thermal" }
     ],
     "y_label": "Average Profits ($/MW-h)"
   }

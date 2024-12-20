@@ -58,6 +58,9 @@ def load_events() -> dict[str, str]:
             elif event_config['rhs_type'] == 'percentile':
                 logger.warning("Percentile not implemented yet")
                 continue
+            elif event_config['rhs_type'] == 'index':
+                event_query: str = f"{event_config['lhs']} {event_config['operator']} {rhs_entry}"
+                events[f"{event_name}"] = event_query
     return events
 
 

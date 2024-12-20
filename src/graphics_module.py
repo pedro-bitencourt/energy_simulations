@@ -6,6 +6,7 @@ import pandas as pd
 import logging
 
 from .utils.load_configs import load_events, load_plots, load_comparisons
+from .data_analysis_module import PARTICIPANTS, VARIABLES
 
 logger = logging.getLogger(__name__)
 
@@ -14,18 +15,32 @@ EVENTS: dict = load_events()
 VARIABLES_TO_PLOT: dict = load_plots()
 COMPARISON_EVENTS: dict = load_comparisons()
 
+VARIABLES = [
+    *[f'production_{participant}' for participant in PARTICIPANTS],
+    *[f'variable_cost_{participant}' for participant in PARTICIPANTS],
+    #*[f'revenue_{participant}' for participant in PARTICIPANTS],
+    #*[f'profit_{participant}' for participant in PARTICIPANTS],
+    'marginal_cost',
+    'demand'
+]
 # TO FIX
-VARIABLES = []
+CAPACITY_VARIABLES = [
+    *[f'{participant}_capacity' for participant in PARTICIPANTS]
+]
 
 
 # This dictionary will store the events to be plotted, along with their labels
 # Load events from events.json
 X_VARIABLE: dict = {
-    'name': 'salto_capacity', 'label': 'Salto Capacity (MW)'
+    #'name': 'salto_capacity', 'label': 'Salto Capacity (MW)'
+    'name': 'lake_factor', 'label': 'Lake Factor'
 }
 
+# Include X_VARIABLE in CAPACITY_VARIABLES
+CAPACITY_VARIABLES = [X_VARIABLE['name']] + CAPACITY_VARIABLES
+
 def visualize(results_folder: Path):
-    logger.info("Starting the visualize() function... at path: " + str(results_folder))
+    logger.info("Starting the visualize() function at path: " + str(results_folder))
 
     paths: dict[str, Path] = {
         'graphics': results_folder / 'graphics',
@@ -35,16 +50,20 @@ def visualize(results_folder: Path):
 
     # Create relevant folders
     for path in paths.values():
-        path.mkdir(parents=True, exist_ok=True)
+        # Check if path is dir
+        if path.is_dir():
+            path.mkdir(parents=True, exist_ok=True)
 
     # Visualize conditional means
     visualize_conditional_means(results_folder)
 
     # Plot optimal capacities
-    plot_optimal_capacities(folder_path)
+    plot_optimal_capacities(results_folder)
     pass
 
 def visualize_conditional_means(folder_path: Path):
+    logger.info("Starting the visualize_conditional_means() function at path: " + str(folder_path))
+
     # Plot event comparisons
     plot_event_comparisons(folder_path)
 
@@ -55,8 +74,15 @@ def visualize_conditional_means(folder_path: Path):
     formatted_df.to_csv(folder_path / 'formatted_conditional_means.csv', index=False)
 
 def events_data_from_csv(folder_path: Path) -> dict[str, pd.DataFrame]:
+    logger.info("Starting the events_data_from_csv() function at path: " + str(folder_path))
     # Load the conditional means dataframe
     conditional_means_df = pd.read_csv(folder_path / 'conditional_means.csv')
+
+    logger.info("Conditional means dataframe loaded: %s", conditional_means_df.head())
+    print(conditional_means_df)
+
+    logger.debug("EVENTS: %s", EVENTS)
+    logger.debug("VARIABLES: %s", VARIABLES)
 
     # Create a dictionary with the data for each event
     events_data: dict = {
@@ -64,21 +90,38 @@ def events_data_from_csv(folder_path: Path) -> dict[str, pd.DataFrame]:
         for event in EVENTS.keys()
     }
 
+    capacities_df = conditional_means_df[CAPACITY_VARIABLES]
+
+    logger.info("Events data loaded: %s", events_data)
+
     # Remove the prefixes
     for event, df in events_data.items():
+        logger.debug("Dataframe columns: %s", df.columns)
+        logger.debug("Dataframe: %s", df.head())
+
         df.columns = [col.replace(f"{event}_", "") for col in df.columns]
 
+        logger.debug("Dataframe columns after: %s", df.columns)
+        logger.debug("capacities columns after: %s", capacities_df.columns)
+        # Merge df with capacities
+        df = pd.concat([df, capacities_df], axis=1)
         # Get utilization rate for thermal and hydro
         df['utilization_thermal'] = df['production_thermal'] / df['thermal_capacity']
         df['utilization_salto'] = df['production_salto'] / df['salto_capacity']
 
+        logger.debug("Dataframe columns after: %s", df.columns)
+        events_data[event] = df
     return events_data
 
 def plot_event_comparisons(folder_path: Path):
+    logger.info("Starting the plot_event_comparisons() function at path: " + str(folder_path))
     # Load events data from csv
-    events_data = events_data_from_csv(folder_path / 'conditional_means.csv')
+    events_data = events_data_from_csv(folder_path)
 
+
+    logger.info("Plotting event comparisons...")
     for comparison_name, set_events in COMPARISON_EVENTS.items():
+        logger.info("Plotting comparison: %s", comparison_name)
         for plot_name, plot_config in VARIABLES_TO_PLOT.items():
             comparison_folder = folder_path / comparison_name
             # Create folder
@@ -86,6 +129,7 @@ def plot_event_comparisons(folder_path: Path):
             file_path = comparison_folder /f"{plot_name}.png"
             title = f"{plot_config['title']} - {comparison_name}"
 
+            logger.info("Plotting %s", title)
             line_plot(events_data, set_events, plot_config['variables'],
                       plot_config['y_label'], X_VARIABLE, file_path,
                       title)
@@ -112,7 +156,7 @@ def format_conditional_means(folder_path: Path) -> pd.DataFrame:
             ['']  # Blank line
         ])
     # Load the event data
-    events_data = events_data_from_csv(folder_path / 'conditional_means.csv')
+    events_data = events_data_from_csv(folder_path)
 
     # Prepare the output DataFrame
     final_df = pd.DataFrame()
@@ -170,7 +214,7 @@ def generate_colot_palette(total_lines: int):
 
 
 def line_plot(events_data: dict[str, pd.DataFrame],
-              events: list[dict],
+              events_config: list[dict],
               y_variables: list[dict],
               y_variable_axis: str,
               x_variable: dict,
@@ -185,6 +229,11 @@ def line_plot(events_data: dict[str, pd.DataFrame],
     --- y_variables: list[dict] - A list of dictionaries containing the name and label of each variable.
     --- x_variable: dict - A dictionary containing the name and label of the x variable.
     """
+    logger.info("Starting the line_plot() function at inputs: %s, %s, %s, %s, %s, %s",
+                events_config, y_variables, y_variable_axis, x_variable, file_path, title)
+    #logger.debug("Events data unconditional: %s", events_data['unconditional'].head())
+    #logger.debug("Events data unconditional columns: %s", events_data['unconditional'].columns)
+    events = events_config['events']
     # Set up the plot style
     plt.figure(figsize=(12, 8))
     sns.set_style("whitegrid")
@@ -194,19 +243,21 @@ def line_plot(events_data: dict[str, pd.DataFrame],
 
     # Generate a color palette
     colors = generate_colot_palette(total_lines)
-    
-    # Plot each scenario
     color_idx = 0
+
+    # Plot each scenario
     for event in events:
+        print(f"{event=}")
+        print(f"{events_data.keys()=}")
         # Check if the event exists in the dataframe
-        if event['name'] not in events_data.keys():
+        if event not in events_data.keys():
             logger.warning("Warning: %s not found in DataFrame", event)
             continue
 
-        event_df = events_data[event['name']]
+        event_df = events_data[event]
 
         # Sort the DataFrame by the x variable
-        event_df = events_data[event['name']].sort_values(by=x_variable['name'])
+        event_df = events_data[event].sort_values(by=x_variable['name'])
         
         # Check if variables exist in DataFrame
         if x_variable['name'] not in event_df.columns:
@@ -222,7 +273,7 @@ def line_plot(events_data: dict[str, pd.DataFrame],
                     event_df[y_variable['name']],
                     marker='o',
                     linestyle='-',
-                    label=f"{event['label']}, {y_variable['label']}",
+                    label=f"{event}, {y_variable['label']}",
                     color=colors[color_idx % len(colors)])
             
             color_idx += 1
@@ -239,3 +290,4 @@ def line_plot(events_data: dict[str, pd.DataFrame],
     
     # Save the plots
     plt.savefig(file_path, dpi=300)
+    logger.info("Plot saved to: %s", file_path)
