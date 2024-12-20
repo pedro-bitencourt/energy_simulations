@@ -61,6 +61,6 @@ comparative_statics = ComparativeStatics(
 
 
 # Submit the solver jobs
-comparative_statics.submit_solvers()
+#comparative_statics.submit_solvers()
 # Submit the processing job
-#comparative_statics.submit_processing()
+comparative_statics.submit_processing()

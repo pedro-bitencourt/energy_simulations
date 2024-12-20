@@ -24,6 +24,8 @@ PARTICIPANTS = [
 VARIABLES = [
     *[f'production_{participant}' for participant in PARTICIPANTS],
     *[f'variable_cost_{participant}' for participant in PARTICIPANTS],
+    *[f'revenue_{participant}' for participant in PARTICIPANTS],
+    *[f'profit_{participant}' for participant in PARTICIPANTS],
     'marginal_cost',
     'demand'
 ]
@@ -73,6 +75,8 @@ def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
                                             run_df['marginal_cost'])
         run_df[f'utilization_{participant}'] = (run_df[f'production_{participant}'] /
                                                 capacities_dict[participant])
+        run_df[f'profit_{participant}'] = run_df[f'revenue_{participant}'] - \
+            run_df[f'variable_cost_{participant}']
 
     run_df['production_total'] = run_df[[
         f'production_{participant}' for participant in PARTICIPANTS]].sum(axis=1)
