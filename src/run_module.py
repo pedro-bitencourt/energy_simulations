@@ -273,18 +273,25 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             f.write(content)
         return output_path
 
-    def get_profits_data_dict(self, complete: bool = False):
+    def run_df(self, complete: bool = False):
         from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
-
         # Initialize the RunProcessor object
         run_processor = RunProcessor(self)
 
         # Read the run dataframe
         run_df: pd.DataFrame = run_processor.construct_run_df(
             complete=complete)
+        return run_df
+
+    def get_profits_data_dict(self, complete: bool = False):
+        from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
+
 
         participants = PARTICIPANTS_LIST_ENDOGENOUS
         print(f"{self.variables=}")
+
+        # Get the run DataFrame
+        run_df = self.run_df(complete=complete)
 
         capacities = self.capacities()
 

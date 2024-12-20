@@ -333,6 +333,7 @@ def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
     df_result = pd.concat(df_result, ignore_index=True)
 
     return df_result
+
 # def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
 #    if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
 #        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')

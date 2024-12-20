@@ -163,7 +163,7 @@ class Solver:
             if current_iteration.check_convergence():
                 logger.info(
                     'Convergence reached. Current iteration %s', current_iteration)
-                break
+                return
 
             # Compute the new investment
             new_iteration: OptimizationPathEntry = current_iteration.next_iteration()
@@ -184,6 +184,7 @@ class Solver:
 
         # save results
         self._save_trajectory()
+        return
 
     def clear_runs_folders(self, current_investment=None, force=False):
         """
@@ -390,6 +391,56 @@ class Solver:
         run: Run = self.create_run(last_iteration.current_investment)
         return run
 
+    def process(self, complete=True):
+        """
+        """
+        from .data_analysis_module import conditional_means
+
+        self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
+        self.paths['investment_results'].parent.mkdir(parents=True,
+                                                      exist_ok=True)
+
+        # Get the investment results
+        investment_results_dict = self.investment_results()
+        json.dump(investment_results_dict, open(self.paths['investment_results'], 'w'), indent=4)
+
+        # Construct the new results dataframe
+        conditional_means_dict = self.last_run_results(
+            results_function=conditional_means)
+        json.dump(conditional_means_dict, open(self.paths['conditional_means'], 'w'), indent=4)
+
+        # Get daily, weekly, and yearly averages
+        # daily_results_df = construct_results(self.paths['random_variables'],
+        #                                     results_function=intra_daily_averages)
+        # weekly_results_df = construct_results(self.paths['random_variables'],
+        #                                      results_function=intra_weekly_averages)
+        # yearly_results_df = construct_results(self.paths['random_variables'],
+        #                                      results_function=intra_year_averages)
+
+        # Save to disk
+        # daily_results_df.to_csv(
+        #    self.paths['results'] / 'daily_results.csv', index=False)
+        # weekly_results_df.to_csv(
+        #    self.paths['results'] / 'weekly_results.csv', index=False)
+        # yearly_results_df.to_csv(
+        #    self.paths['results'] / 'yearly_results.csv', index=False)
+
+
+    def last_run_results(self, results_function) -> dict:
+        from .data_analysis_module import full_run_df
+        # Get the random variables for the current run
+        run_random_variables = self.last_run().run_df()
+        capacities = self.last_run().capacities()
+        run_random_variables = full_run_df(run_random_variables,
+                                           capacities)
+        
+        # Get the results to extract for the current run
+        results_dict = results_function(run_random_variables)
+        
+        # Add run identifier to the results
+        results_dict['point'] = self.name
+        return results_dict
+
     #########################################
     # Methods to submit the job to Quest
     def submit(self):
@@ -470,6 +521,7 @@ setup_logging(level=logging.{logging_level})
 solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')
 solver.solve()
+solver.process()
 END
 """)
 
