@@ -114,7 +114,8 @@ def events_data_from_csv(folder_path: Path, x_variable: dict) -> dict[str, pd.Da
 
 
     # Merge CAPACITY_VARIABLES with x_variable
-    capacities_df = conditional_means_df[[x_variable['name']] + CAPACITY_VARIABLES]
+    #capacities_df = conditional_means_df[[x_variable['name']] + CAPACITY_VARIABLES]
+    capacities_df = conditional_means_df[CAPACITY_VARIABLES]
 
     logger.info("Events data loaded: %s", events_data)
 
@@ -180,7 +181,15 @@ def plot_std_revenues(folder_path: Path, x_variable: dict):
     y_variable_axis = 'Standard Deviation of Expected Profitts ($)'
     title = 'Standard Deviation of Expected Profits ($)'
     output_path = folder_path / 'std_profits.png'
-    line_plot(investment_results, x_variable['name'], y_variables, title, x_variable['label'], y_variable_axis, output_path)
+    # Check if the columns exist
+    y_variables_new = {}
+    for y_var in y_variables.keys():
+        if y_var not in investment_results.columns:
+            logger.warning("Column %s not found in investment_results. Skipping.", y_var)
+            continue
+        y_variables_new[y_var] = y_variables[y_var]
+
+    line_plot(investment_results, x_variable['name'], y_variables_new, title, x_variable['label'], y_variable_axis, output_path)
             
 def format_conditional_means(folder_path: Path, x_variable) -> pd.DataFrame:
     def header(name):

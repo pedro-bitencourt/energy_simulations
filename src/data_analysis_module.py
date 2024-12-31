@@ -26,6 +26,7 @@ VARIABLES = [
     *[f'variable_cost_{participant}' for participant in PARTICIPANTS],
     *[f'revenue_{participant}' for participant in PARTICIPANTS],
     *[f'profit_{participant}' for participant in PARTICIPANTS],
+    'water_level_salto',
     'production_excedentes',
     'marginal_cost',
     'demand'

@@ -125,7 +125,7 @@ class RunProcessor(Run):
                 random_variables_df[f'variable_cost_{participant}'] = 0
 
             # Extract water level data
-            if participant_type == 'hydro':
+            if participant_type == 'hydro' or participant == 'salto':
                 df = get_water_level_df(participant, self.paths['sim'])
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
