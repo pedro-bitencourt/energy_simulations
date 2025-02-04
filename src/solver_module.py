@@ -72,20 +72,24 @@ class Solver:
         # initialize the optimization trajectory
         self.solver_trajectory: list = self._init_trajectory()
 
+
+    def _load_trajectory(self):
+        with open(self.paths['solver_trajectory'], 'r') as file:
+            data = json.load(file)
+            solver_trajectory = [OptimizationPathEntry.from_dict(entry)
+                                 for entry in data]
+
+        logger.info("Successfully loaded optimization trajectory from %s.",
+                    self.paths['solver_trajectory'])
+        logger.debug("Optimization trajectory for %s:", self.name)
+        pprint(solver_trajectory)
+        return solver_trajectory
+
     def _init_trajectory(self):
         # Check if the optimization trajectory file exists
         if self.paths['solver_trajectory'].exists():
             # If yes, load it
-            with open(self.paths['solver_trajectory'], 'r') as file:
-                data = json.load(file)
-                solver_trajectory = [OptimizationPathEntry.from_dict(entry)
-                                     for entry in data]
-
-            logger.info("Successfully loaded optimization trajectory from %s.",
-                        self.paths['solver_trajectory'])
-            logger.debug("Optimization trajectory for %s:", self.name)
-            pprint(solver_trajectory)
-
+            solver_trajectory = self._load_trajectory()
         else:
             # If not, initialize it with the initial guess
             solver_trajectory: list[OptimizationPathEntry] = []
@@ -156,7 +160,7 @@ class Solver:
             logger.info('Current iteration: %s', current_iteration)
 
             # Compute the profits and derivatives
-            current_iteration = self._update_current_iteration(
+            current_iteration = self._update_iteration(
                 current_iteration)
 
             # Update the optimization trajectory
@@ -216,34 +220,37 @@ class Solver:
                     logger.critical("Could not delete directory %s",
                                     directory)
 
-    def _update_current_iteration(self,
-                                  current_iteration: OptimizationPathEntry) -> OptimizationPathEntry:
+    def _update_iteration(self, iteration: OptimizationPathEntry) -> OptimizationPathEntry:
         '''
         Updates the current iteration with the profits and derivatives
         '''
-        # if current_iteration.profits and current_iteration.profits_derivatives:
-        #    logger.info('Profits and derivatives already computed for iteration %s',
-        #                current_iteration.iteration)
-        #    return current_iteration
-
         logger.info('Preparing to compute profits for iteration with %s',
-                    current_iteration.current_investment)
+                    iteration.current_investment)
 
         # Compute the profits and derivatives
         profits, profits_derivatives = self.profits_and_derivatives(
-            current_iteration.current_investment)
+            iteration.current_investment)
 
         # Output a new OptimizationPathEntry
         return OptimizationPathEntry(
-            iteration=current_iteration.iteration,
-            current_investment=current_iteration.current_investment,
+            iteration=iteration.iteration,
+            current_investment=iteration.current_investment,
             successful=True,
             profits=profits,
             profits_derivatives=profits_derivatives
         )
 
-    @staticmethod
-    def submit_and_wait(runs_dict: dict[str, Run],
+    def perturbed_runs(self, current_investment: dict) -> dict[str, Run]:
+        # Create a dict of the perturbed runs
+        perturbed_runs_dict: dict[str, Run] = {
+            'current': self.create_run(current_investment)}
+        for var in self.endogenous_variables.keys():
+            investment = current_investment.copy()
+            investment[var] += self.solver_options['delta']
+            perturbed_runs_dict[var] = self.create_run(investment)
+        return perturbed_runs_dict
+
+    def submit_and_wait_for_runs(self, runs_dict: dict[str, Run],
                         max_attempts: int = 6) -> None:
         '''
         Submits the runs in the runs_dict and waits for them to finish
@@ -271,21 +278,11 @@ class Solver:
             # Wait for the jobs to finish
             wait_for_jobs(job_ids_list)
             attempts += 1
-
+    
         if attempts == max_attempts:
             logger.critical(
                 "Could not successfully finish all runs after %s attempts", max_attempts)
             sys.exit(UNSUCCESSFUL_RUN)
-
-    def perturbed_runs(self, current_investment: dict) -> dict[str, Run]:
-        # Create a dict of the perturbed runs
-        perturbed_runs_dict: dict[str, Run] = {
-            'current': self.create_run(current_investment)}
-        for var in self.endogenous_variables.keys():
-            investment = current_investment.copy()
-            investment[var] += self.solver_options['delta']
-            perturbed_runs_dict[var] = self.create_run(investment)
-        return perturbed_runs_dict
 
     def profits_and_derivatives(self, current_investment: dict) -> tuple[dict, dict]:
         '''
@@ -296,7 +293,7 @@ class Solver:
             current_investment)
 
         # Submit the runs
-        self.submit_and_wait(perturbed_runs_dict, max_attempts=6)
+        self.submit_and_wait_for_runs(perturbed_runs_dict, max_attempts=6)
 
         # Check if all runs were successful
         if not all(run.successful() for run in perturbed_runs_dict.values()):
@@ -331,7 +328,15 @@ class Solver:
                        variables)
         return run
 
-    def investment_results(self, resubmit: bool = False) -> dict:
+    def last_iteration(self):
+        last_iteration: OptimizationPathEntry = get_last_successful_iteration(
+            self.solver_trajectory)
+        last_iteration: OptimizationPathEntry = self._update_iteration(
+            last_iteration)
+        return last_iteration
+
+
+    def solver_results(self, resubmit: bool = False) -> dict:
         """
         Returns the results of the solver for the last iteration.
 
@@ -339,50 +344,28 @@ class Solver:
             resubmit: If True, the run is resubmitted before computing the profits, in 
                 case it was not successful.
         """
-        # Retrieve the last iteration from the solver trajectory
-        last_iteration: OptimizationPathEntry = get_last_successful_iteration(
-            self.solver_trajectory)
-
-        # Construct the header of the row
-        exo_vars: dict = {key: entry['value']
-                          for key, entry in self.exogenous_variable.items()}
-
-        investment_results: dict = {
-            'name': self.name,
-            'iteration': last_iteration.iteration,
-            **exo_vars,
-            **last_iteration.current_investment
-        }
-
-        # Compute the profits
-        last_run = self.last_run()
-        try:
-            profits_dict: dict = last_run.get_profits_data_dict(complete=True)
-        except FileNotFoundError:
+        last_iteration: OptimizationPathEntry = self.last_iteration()
+        convergence_reached: bool = last_iteration.check_convergence()
+        if not convergence_reached:
+            logger.error("Convergence not reached, current iteration: %s", last_iteration)
             if resubmit:
-                logger.error(
-                    "Run %s not successful, resubmitting and returning empty dict",)
-                last_run.submit(force=True)
-            else:
-                logger.error(
-                    "Run %s not successful, returning empty dict",)
+                logger.info("Resubmitting the solver")
+                self.submit()
             return {}
 
-        logger.debug("profits_dict for %s", self.name)
-        pprint(profits_dict)
+        def create_header(last_iteration: OptimizationPathEntry) -> dict:
+            exo_vars: dict = {key: entry['value']
+                              for key, entry in self.exogenous_variable.items()}
+            header: dict = {
+                'name': self.name,
+                'iteration': last_iteration.iteration,
+                **exo_vars,
+                **last_iteration.current_investment
+            }
+            return header
 
-        # Get the list of participants
-        participants: list[str] = list(self.endogenous_variables.keys())
-        participants_temp = [p.replace('_capacity', '') for p in participants]
-
-        # Update the profits in the last iteration
-        last_iteration.profits = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
-                                  for participant in participants_temp}
-
-        convergence_reached: bool = last_iteration.check_convergence()
-
-        # Append the data to the investment_results dictionary
-        investment_results.update(profits_dict)
+        investment_results: dict = create_header(last_iteration)
+        investment_results.update(self.last_run().get_profits())
         investment_results['convergence_reached'] = convergence_reached
 
         return investment_results
@@ -405,7 +388,7 @@ class Solver:
                                                       exist_ok=True)
 
         # Get the investment results
-        investment_results_dict = self.investment_results()
+        investment_results_dict = self.solver_results()
         json.dump(investment_results_dict, open(self.paths['investment_results'], 'w'), indent=4)
 
         # Construct the new results dataframe
@@ -444,7 +427,6 @@ class Solver:
         with open(self.paths['conditional_means'], 'r') as file:
             conditional_means = json.load(file)
         return conditional_means
-
 
     def last_run_results(self, results_function) -> dict:
         from .data_analysis_module import full_run_df

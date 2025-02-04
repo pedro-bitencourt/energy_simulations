@@ -6,9 +6,10 @@ Description: Contains auxiliary functions.
 import re
 import os
 import glob
-import time
-import subprocess
 import logging
+import subprocess
+import time
+
 
 
 #################################
@@ -150,27 +151,6 @@ def submit_slurm_job(script_path: str, job_name: str):
     # Submit new job if none exists
     return submit_new_job(script_path)
 
-    # def submit_slurm_job(script_path):
-    #    """
-    #    Submits a .sh file to SLURM and returns the job ID.
-    #
-    #    Parameters:
-    #    script_path (str): The path to the .sh file to be submitted.
-    #
-    #    Returns:
-    #    str: The job ID of the submitted job.
-    #    """
-    #    try:
-    #        # Submit the job using sbatch
-    #        result = subprocess.run(['sbatch', script_path],
-    #                                capture_output=True, text=True, check=True)
-    #        # Extract the job ID from the output
-    #        output = result.stdout
-    #        job_id = output.strip().split()[-1]
-    #        return job_id
-    #    except subprocess.CalledProcessError as e:
-    #        logging.error("Error submitting job: %s", e.stderr)
-    #        return None
 
 
 def check_job_status(job_id: int):

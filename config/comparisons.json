@@ -3,8 +3,13 @@
   "water_level": ["unconditional", "water_level_34", "water_level_32"],
   "wind_production": ["unconditional", "low_wind_25", "low_wind_10"],
   "lost_load": ["unconditional", "lost_load_500", "lost_load_100"],
-  "lost_load_1": ["unconditional", "lost_load_100", "lost_load_1"],
+  "lost_load_1": ["unconditional", "lost_load_1"],
+  "lost_load_100": ["unconditional", "lost_load_100"],
+  "lost_load_1_no_unc": ["lost_load_1"],
+  "lost_load_100_no_unc": ["lost_load_100"],
   "thermal_profits": ["unconditional", "profits_thermal_75", "profits_thermal_95"],
   "thermal_production": ["unconditional", "positive_thermal_production_0.01"],
-  "hydro_production": ["unconditional", "positive_hydro_production_0.01"]
+  "thermal_production_no_unc": ["positive_thermal_production_0.01"],
+  "hydro_production": ["unconditional", "positive_hydro_production_0.01"],
+  "hydro_production_no_unc": ["positive_hydro_production_0.01"]
 }

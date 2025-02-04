@@ -29,9 +29,7 @@ from .utils import parsing_module as proc
 from .run_module import Run
 from .constants import (
     SALTO_WATER_LEVEL_DF,
-    VARIABLE_COSTS_THERMAL_DF,
     MARGINAL_COST_DF, DEMAND_DF
-
 )
 
 logger = logging.getLogger(__name__)
@@ -217,37 +215,6 @@ def get_production_df(key_participant: str,
     )
     return dataframe
 
-# def get_variable_cost_df(key_participant: str,
-#                          sim_path: Path) -> pd.DataFrame:
-#    """
-#    Extracts and processes the variable costs data for the participant.
-#    """
-#    participant_type = PARTICIPANTS[key_participant]["type"]
-#    if participant_type != "thermal":
-#        logger.error("Variable costs are only available for thermal participants.")
-#        raise ValueError("Variable costs are only available for thermal participants.")
-#
-#    variable_cost_df = proc.open_dataframe(
-#        variable_cost_THERMAL_DF,
-#        sim_path
-#    )
-#    variable_cost_df = melt_df(variable_cost_df, "variable_cost")
-#
-#    # Get the production data
-#    production_df = get_production_df(key_participant, sim_path)
-#
-#    # Rename the produciton column
-#    production_df = production_df.rename(columns={f'production_{key_participant}': 'production'})
-#
-#    # Upsample the variable costs to hourly frequency
-#    dataframe = upsample_scenario_proportional(variable_cost_df, production_df)
-#    # Rename the variable cost column
-#    dataframe = dataframe.rename(columns={'hourly_variable_cost': f'variable_cost_{key_participant}'})
-#    logger.debug(
-#        f"Successfully extracted and processed {key_participant} variable costs data."
-#    )
-#    return dataframe
-
 
 def get_variable_cost_df(key_participant: str,
                          sim_path: Path) -> pd.DataFrame:
@@ -333,29 +300,6 @@ def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
     df_result = pd.concat(df_result, ignore_index=True)
 
     return df_result
-
-# def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
-#    if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
-#        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
-#
-#    df_result = df.copy()
-#    logger.debug("df to upsample: %s", df.head())
-#    for scenario in df['scenario'].unique():
-#        scenario_mask = df['scenario'] == scenario
-#        scenario_df = df[scenario_mask].copy()
-#        scenario_df = scenario_df.set_index('datetime')
-#
-#        for column in scenario_df.columns:
-#            if column in ['scenario']:
-#                continue
-#            scenario_df[column] = scenario_df[column].resample(
-#                'h').ffill().bfill()
-#        # Update in the original DataFrame
-#        df_result.loc[scenario_mask, scenario_df.columns] = scenario_df.values
-#
-#    logger.debug("df after upsample: %s", df.head())
-#    df_result.reset_index(inplace=True)
-#    return df_result
 
 
 def upsample_scenario_proportional(variable_cost_df: pd.DataFrame, production_df: pd.DataFrame) -> pd.DataFrame:

@@ -33,44 +33,51 @@ POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths = {}
+    base_path: Path = Path(base_path)
+    paths['main'] = base_path / "sim" / name
+    paths['temp'] = paths['main'] / 'temp'
+    paths['results'] = paths['main'] / 'results'
+    paths['raw'] = paths['results'] /name / "raw"
+
+    for path in paths.values():
+        path.mkdir(parents=True, exist_ok=True)
+
+    files_dict: dict[str, str] = {
+        'bash': 'temp/process.sh',
+        'slurm_out': 'temp/{name}.out',
+        'slurm_err': 'temp/{name}.err',
+        'investment_results': 'results/investment_results.csv',
+        'conditional_means': 'results/conditional_means.csv',
+        'master_trajectory': 'results/master_trajectory.json'
+    }
+    paths.update({key: paths['main'] / value for key, value in files_dict.items()})
+
+    return paths
+
+def initialize_paths_investment_problem(parent_folder: Path, name: str) -> dict:
+    paths: dict[str, Path] = {}
     # Folders
-    paths['main'] = Path(f"{base_path}/raw/{name}")
-    paths['results'] = Path(f"{base_path}/results/{name}")
-    paths['random_variables'] = Path(
-        f"{base_path}/results/{name}/random_variables")
+    paths['parent_folder'] = parent_folder
+    paths['folder'] = parent_folder / name
+    # Subfolders
+    paths['temp'] = paths['folder'] / 'temp'
+    paths['raw'] = paths['folder'] / 'raw'
+    paths['results'] = paths['folder'] / 'results'
 
     for path in paths.values():
         path.mkdir(parents=True, exist_ok=True)
 
     # Files
-    paths['bash'] = Path(
-        f"{base_path}/raw/{name}/process.sh")
-    paths['investment_results'] = paths['results'] / 'investment_results.csv'
-    paths['conditional_means'] = paths['results'] / 'conditional_means.csv'
-    return paths
-
-
-def initialize_paths_investment_problem(folder: Path, name: str) -> dict:
-    paths: dict[str, Path] = {}
-    # Folders
-    paths['parent_folder'] = folder
-    paths['folder'] = folder / name
-
-    # Files
-    paths['solver_trajectory'] = folder / name /\
-        f'{name}_trajectory.json'
-    paths['bash'] = folder / name / f'{name}.sh'
-
-    paths['slurm_out'] = folder / f'{name}.out'
-    paths['slurm_err'] = folder / f'{name}.err'
-
-    # create the directory
-    paths['folder'].mkdir(parents=True, exist_ok=True)
-
-    paths['random_variables'] = paths['folder'] / 'random_variables.csv'
-    paths['investment_results'] = paths['folder'] / 'investment_results.json'
-    paths['conditional_means'] = paths['folder'] / 'conditional_means.csv'
-    paths['master_trajectory'] = paths['folder'] / 'master_trajectory.json'
+    files_dict: dict[str, str] = {
+        'bash': f'temp/{name}.sh',
+        'slurm_out': f'temp/{name}.out',
+        'slurm_err': f'temp/{name}.err',
+        'solver_trajectory': f'temp/{name}_trajectory.json',
+        'investment_results': 'results/investment_results.json',
+        'conditional_means': 'results/conditional_means.csv',
+        'master_trajectory': 'results/master_trajectory.json'
+    }
+    paths.update({key: paths['folder'] / value for key, value in files_dict.items()})
     return paths
 
 
@@ -80,11 +87,8 @@ def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict
     """
     def format_windows_path(path_str):
         path_str = str(path_str)
-        # Replace forward slashes with backslashes
         windows_path = path_str.replace('/', '\\')
-        # Add Z: at the start of the path
         windows_path = 'Z:' + windows_path
-        # If the path doesn't end with a backslash, add one
         if not windows_path.endswith('\\'):
             windows_path += '\\'
         return windows_path

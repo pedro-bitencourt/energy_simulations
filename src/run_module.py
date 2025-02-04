@@ -42,7 +42,7 @@ class Run:
     """
 
     def __init__(self,
-                 parent_folder: Path,
+                 parent_folder: str,
                  general_parameters: dict,
                  variables: dict[str, float]):
         parent_folder: Path = Path(parent_folder)
@@ -286,7 +286,6 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
     def get_profits_data_dict(self, complete: bool = False):
         from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
 
-
         participants = PARTICIPANTS_LIST_ENDOGENOUS
         print(f"{self.variables=}")
 
@@ -329,7 +328,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
 
         return capacities
 
-    def get_profits(self):
+
+    def get_profits(self, complete: bool = False, resubmit: bool = False):
         """
         Computes profits for the specified endogenous variables.
 
@@ -337,7 +337,17 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             dict: A dictionary of profits.
         """
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
-        profits_data = self.get_profits_data_dict()
-        profits_dict: dict = {f"{participant}_capacity": profits_data[f'{participant}_normalized_profits']
+        try:
+            profits_dict: dict = self.get_profits_data_dict(complete=complete)
+        except FileNotFoundError:
+            if resubmit:
+                logger.error(
+                    "Run %s not successful, resubmitting and returning empty dict",)
+                self.submit(force=True)
+            else:
+                logger.error(
+                    "Run %s not successful, returning empty dict",)
+            return {}
+        profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
                               for participant in PARTICIPANTS_LIST_ENDOGENOUS}
         return profits_dict

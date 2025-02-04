@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+
 # JSON Paths
 EVENTS_CONFIG_JSON_PATH: Path = Path(
     __file__).parent.parent.parent / 'config/events.json'
@@ -38,8 +39,26 @@ def load_costs() -> dict:
     }
     return hourly_costs_dic
 
-# Load the events configuration from the config file
 
+def load_events_labels() -> dict[str, str]:
+    """
+    Parse the events configuration file and return a dictionary with the events.
+    Returns:
+        dict: Dictionary with the events.
+    """
+    events_config = load_config(EVENTS_CONFIG_JSON_PATH)
+    events_labels = {}
+
+    for event_name, event_config in events_config.items():
+        for rhs_entry in event_config['rhs']:
+            if event_config['rhs_type'] == 'value':
+                # Create label
+                event_label: str = event_config['label'].replace("$", str(rhs_entry))
+                events_labels[f"{event_name}_{rhs_entry}"] = event_label
+            elif event_config['rhs_type'] == 'index':
+                event_label: str = event_config['label']
+                events_labels[f"{event_name}"] = event_label
+    return events_labels
 
 def load_events() -> dict[str, str]:
     """
@@ -53,11 +72,12 @@ def load_events() -> dict[str, str]:
     for event_name, event_config in events_config.items():
         for rhs_entry in event_config['rhs']:
             if event_config['rhs_type'] == 'value':
+                # Create query
                 event_query: str = f"{event_config['lhs']} {event_config['operator']} {rhs_entry}"
                 events[f"{event_name}_{rhs_entry}"] = event_query
-            elif event_config['rhs_type'] == 'percentile':
-                logger.warning("Percentile not implemented yet")
-                continue
+                # Create label
+                event_label: str = event_config['label'].replace("$", str(rhs_entry))
+                events[f"{event_name}_{rhs_entry}_label"] = event_label
             elif event_config['rhs_type'] == 'index':
                 event_query: str = f"{event_config['lhs']} {event_config['operator']} {rhs_entry}"
                 events[f"{event_name}"] = event_query
@@ -70,7 +90,15 @@ def load_plots() -> dict:
     Returns:
         dict: Dictionary with the plots.
     """
-    return load_config(PLOTS_JSON_PATH)
+    return load_config(PLOTS_JSON_PATH)['conditional_means']
+
+def load_plots_r() -> dict:
+    """
+    Parse the plots configuration file and return a dictionary with the plots.
+    Returns:
+        dict: Dictionary with the plots.
+    """
+    return load_config(PLOTS_JSON_PATH)['r']
 
 
 def load_comparisons() -> dict:
@@ -80,3 +108,4 @@ def load_comparisons() -> dict:
         dict: Dictionary with the comparisons.
     """
     return load_config(COMPARISONS_JSON_PATH)
+

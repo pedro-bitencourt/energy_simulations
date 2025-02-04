@@ -43,7 +43,7 @@ from .utils.auxiliary import submit_slurm_job
 from .solver_module import Solver
 from .run_module import Run
 from .run_processor_module import RunProcessor
-from .data_analysis_module import conditional_means, full_run_df
+from .data_analysis_module import conditional_means
 from .constants import BASE_PATH, initialize_paths_comparative_statics
 
 # Get logger for current module
@@ -159,14 +159,12 @@ class ComparativeStatics:
         """
         Submit the jobs to the cluster.
         """
-        # Submit investment problems
         for solver in self.grid_points:
             solver.submit()
             logging.info(
                 'Submitted job for investment problem %s', solver.name)
 
     def _create_bash(self):
-        # create the data dictionary
         comparative_statics_data = {
             'name': self.name,
             'variables': self.variables,
@@ -179,7 +177,6 @@ class ComparativeStatics:
         else:
             email_line = ""
 
-        # write the bash script
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''#!/bin/bash
 #SBATCH --account=b1048
@@ -228,66 +225,35 @@ END
 
     ############################
     # Processing methods
-    def process_lazy(self):
+    def gather_results(self):
         investment_results_dict = {}
         conditional_means_dict = {}
         for solver in self.grid_points:
             investment_results_dict[solver.name] = solver.read_inv_results()
             conditional_means_dict[solver.name] = solver.read_conditional_means()
 
+        # Save to disk
         investment_results_df = pd.DataFrame(investment_results_dict)
         conditional_means_df = pd.DataFrame(conditional_means_dict)
-
-        # Save to disk
         investment_results_df.to_csv(
             self.paths['investment_results'], index=False)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
         
 
-
     def process(self, complete=True):
-        """
-        """
-        self.paths['random_variables'].mkdir(parents=True, exist_ok=True)
-        self.paths['investment_results'].parent.mkdir(parents=True,
-                                                      exist_ok=True)
-
-        # Get the investment results
+        self.extract_runs_dataframes(complete=complete)
         investment_results_df = self.investment_results()
-
-        # Save to disk
         investment_results_df.to_csv(
             self.paths['investment_results'], index=False)
 
-        # Save the random variables df to the random_variables folder
-        self.extract_random_variables(complete=complete)
-
-        # Construct the new results dataframe
         conditional_means_df = self.construct_results(
             results_function=conditional_means)
-
-        # Save the results to a .csv file
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
 
-        # Get daily, weekly, and yearly averages
-        # daily_results_df = construct_results(self.paths['random_variables'],
-        #                                     results_function=intra_daily_averages)
-        # weekly_results_df = construct_results(self.paths['random_variables'],
-        #                                      results_function=intra_weekly_averages)
-        # yearly_results_df = construct_results(self.paths['random_variables'],
-        #                                      results_function=intra_year_averages)
 
-        # Save to disk
-        # daily_results_df.to_csv(
-        #    self.paths['results'] / 'daily_results.csv', index=False)
-        # weekly_results_df.to_csv(
-        #    self.paths['results'] / 'weekly_results.csv', index=False)
-        # yearly_results_df.to_csv(
-        #    self.paths['results'] / 'yearly_results.csv', index=False)
-
-    def extract_random_variables(self, complete: bool = True) -> None:
+    def extract_runs_dataframes(self, complete: bool = True) -> None:
         logger.info("Extracting data from MOP's outputs...")
         for solver in self.grid_points:
             run: Run = solver.last_run()
@@ -305,14 +271,13 @@ END
 
             logger.info(
                 "Successfuly extracted data from run %s. Saving to disk...", run.name)
-            # Copy the random variables to the random_variables folder with the run name
-            run_df.to_csv(self.paths['random_variables'] / f"{solver.name}.csv",
+            run_df.to_csv(self.paths['raw'] / f"{solver.name}.csv",
                           index=False)
 
     def investment_results(self):
         rows: list = []
         for solver in self.grid_points:
-            rows.append(solver.investment_results())
+            rows.append(solver.solver_results())
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
 

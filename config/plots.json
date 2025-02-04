@@ -1,56 +1,182 @@
-{
-  "capacities": {
-    "title": "Capacities (MW)",
-    "variables": [
-      { "name": "wind_capacity", "label": "Wind" },
-      { "name": "solar_capacity", "label": "Solar" },
-      { "name": "salto_capacity", "label": "Hydro" },
-      { "name": "thermal_capacity", "label": "Thermal" }
-    ],
-    "y_label": "Capacity (MW)"
+{ "conditional_means": {
+    "frequency": {
+      "title": "Frequency",
+      "variables": [
+        { "name": "frequency", "label": "Frequency" }
+      ],
+      "y_label": "Frequency of Event"
+    },
+    "lost_load": {
+      "title": "Lost Load (MW)",
+      "variables": [
+        { "name": "lost_load", "label": "Lost Load", "color" : "#FFD600" }
+      ],
+      "y_label": "Lost Load (MW)"
+    },
+    "production": {
+      "title": "Production (MW)",
+      "variables": [
+        { "name": "production_wind", "label": "Wind", "color" : "#2CA02C" },
+        { "name": "production_solar", "label": "Solar", "color" : "#FFD600" },
+        { "name": "production_salto", "label": "Hydro", "color" : "#1F77B4" },
+        { "name": "production_thermal", "label": "Thermal", "color" : "#D62728" },
+        { "name": "production_excedentes", "label": "Excess Production", "color" : "#9467BD" },
+        { "name": "lost_load", "label": "Lost Load", "color" : "#FF7F0E" },
+        { "name": "demand", "label": "Demand", "color" :"#6A0DAD" }
+      ],
+      "y_label": "Average Production (MW)"
+    },
+    "renewables": {
+      "title": "Renewables Production (MW)",
+      "variables": [
+        { "name": "production_wind", "label": "Wind", "color" : "#2CA02C" },
+        { "name": "production_solar", "label": "Solar", "color" : "#FFD600" }
+      ],
+      "y_label": "Average Production (MW)"
+
+    },
+    "thermal_vs_hydro": {
+      "title": "Thermal vs Hydro Production (MW)",
+      "variables": [
+        { "name": "production_salto", "label": "Hydro", "color" : "#1F77B4" },
+        { "name": "production_thermal", "label": "Thermal", "color" : "#D62728" }
+      ],
+      "y_label": "Average Production (MW)"
+    },
+    "thermal_vs_hydro_utilization": {
+      "title": "Thermal vs Hydro Utilization (%)",
+      "variables": [
+        { "name": "utilization_salto", "label": "Hydro", "color" : "#1F77B4" },
+        { "name": "utilization_thermal", "label": "Thermal", "color" : "#D62728" }
+      ],
+      "y_label": "Utilization (%)"
+    },
+    "price": {
+      "title": "Price ($/MWh)",
+      "variables": [
+        { "name": "marginal_cost", "label": "Price", "color" : "#2CA02C" }
+      ],
+      "y_label": "Average Price ($/MWh)"
+    },
+    "profits": {
+      "title": "Thermal Profits ($/MW-h)",
+      "variables": [
+        { "name": "profit_thermal", "label": "Variable Profits Thermal", "color" : "#D62728" }
+      ],
+      "y_label": "Average Profits ($/MW-h)"
+    }
   },
-  "production": {
-    "title": "Production (MW)",
-    "variables": [
-      { "name": "production_wind", "label": "Wind" },
-      { "name": "production_solar", "label": "Solar" },
-      { "name": "production_salto", "label": "Hydro" },
-      { "name": "production_thermal", "label": "Thermal" },
-      { "name": "production_excedentes", "label": "Excess" },
-      { "name": "production_total", "label": "Total" },
-      { "name": "lost_load", "label": "Lost Load" },
-      { "name": "demand", "label": "Demand" }
-    ],
-    "y_label": "Average Production (MW)"
-  },
-  "thermal_vs_hydro": {
-    "title": "Thermal vs Hydro Production (MW)",
-    "variables": [
-      { "name": "production_salto", "label": "Hydro" },
-      { "name": "production_thermal", "label": "Thermal" }
-    ],
-    "y_label": "Average Production (MW)"
-  },
-  "thermal_vs_hydro_utilization": {
-    "title": "Thermal vs Hydro Utilization (%)",
-    "variables": [
-      { "name": "utilization_salto", "label": "Hydro" },
-      { "name": "utilization_thermal", "label": "Thermal" }
-    ],
-    "y_label": "Utilization (%)"
-  },
-  "price": {
-    "title": "Price ($/MWh)",
-    "variables": [
-      { "name": "marginal_cost", "label": "Price" }
-    ],
-    "y_label": "Average Price ($/MWh)"
-  },
-  "profits": {
-    "title": "Thermal Profits ($/MW-h)",
-    "variables": [
-      { "name": "profit_thermal", "label": "Variable Profits Thermal" }
-    ],
-    "y_label": "Average Profits ($/MW-h)"
+  "r" : {
+    "excess_by_source": {
+      "title": "Excess Production by Source (MW)",
+      "variables": [
+        { "name": "excess_wind", "label": "Wind", "color" : "#2CA02C" },
+        { "name": "excess_solar", "label": "Solar", "color" : "#FFD600" },
+        { "name": "excess_salto", "label": "Hydro", "color" : "#1F77B4" }
+      ],
+      "y_label": "Average Excess Production (MW)"
+    },
+    "lcoe" : {
+      "title": "Levelized Cost of Energy ($/MWh)",
+      "variables": [
+        { "name": "lcoe", "label": "LCOE", "color" : "#FFD600" }
+      ],
+      "y_label": "Average LCOE ($/MWh)"
+    },
+    "lost_load" : {
+      "title": "Lost Load (MW)",
+      "variables": [
+        { "name": "mean_lost_load", "label": "Lost Load", "color" : "#FFD600" }
+      ],
+      "y_label": "Average Lost Load (MW)"
+    },
+    "lost_load_conditional_ll_0" : {
+      "title": "Lost Load (MW) Conditional on Positive Lost Load",
+      "variables": [
+        { "name": "lost_load_cond_ll_0", "label": "Lost Load", "color" : "#FFD600" }
+      ],
+      "y_label": "Average Lost Load (MW) Conditional on Positive Lost Load"
+    },
+    "mean_thermal" : {
+      "title": "Thermal Production (MW)",
+      "variables": [
+        { "name": "mean_thermal_production", "label": "Thermal", "color" : "#D62728" }
+      ],
+      "y_label": "Average Production (MW)"
+    },
+    "prob_price_4000_blackout" : {
+      "title": "Probability of Blackout",
+      "variables": [
+        { "name": "prob_price_4000", "label": "Price = 4,000", "color" : "#FFD600" },
+        { "name": "prob_lost_load", "label": "Lost load (Total Production < Total Demand)", "color" : "#CCAA00" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "prob_blackout" : {
+      "title": "Probability of Blackout",
+      "variables": [
+        { "name": "prob_price_4000", "label": "Blackout (Price = $4,000)", "color" : "#FFD600" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "high_prices" : {
+      "title": "High Price Probabilities",
+      "variables": [
+        { "name": "prob_price_4000", "label": "Price = $4,000", "color" : "#CCAA00"}, 
+        { "name": "prob_price_193_4000", "label": "Price in ($193,$4,0000)", "color" : "#FFD600" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "marginal_technology" : {
+      "title": "Distribution of Marginal Technology",
+      "variables": [
+        { "name": "prob_hydro_marginal", "label": "Hydro", "color" : "#1F77B4" },
+        { "name": "prob_thermal_marginal", "label": "Thermal", "color" : "#D62728" },
+        { "name": "prob_renewables_marginal", "label": "Renewables", "color" : "#FFD600" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "thermal_marginal" : {
+      "title": "Thermal Marginal",
+      "variables": [
+        { "name": "prob_thermal_marginal", "label": "Thermal Marginal", "color" : "#D62728" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "marginal_technology_no_renewables" : {
+      "title": "Distribution of Marginal Technology",
+      "variables": [
+        { "name": "prob_hydro_marginal", "label": "Hydro", "color" : "#1F77B4" },
+        { "name": "prob_thermal_marginal", "label": "Thermal", "color" : "#D62728" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "profits_thermal_decomposition" : {
+      "title": "Thermal (Variable) Profits Decomposition ($/MW/h)", 
+      "variables": [
+        { "name": "thermal_profit", "label": "Total (Variable) Profits", "color" : "#FF3C3E" },
+        { "name": "thermal_profit_price_4000", "label": "Profits (Price = 4,000)", "color" : "#A91E20" },
+        { "name": "thermal_profit_price_193_4000", "label": "Profits (Price in (193,4,000)) ", "color" : "#D62728" }
+      ], 
+      "y_label": "Average Profits ($/MW/h)"
+    },
+    "prob_blackout_dist_scenarios" : {
+      "title" : "Scenario Quartiles of Probability of Blackout",
+      "variables" : [
+        { "name": "q25_prob_price_4000", "label": "0.25", "color" : "#FFD600" },
+        { "name": "q50_prob_price_4000", "label": "0.50", "color" : "#CCAB00" },
+        { "name": "q75_prob_price_4000", "label": "0.75", "color" : "#997F00" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    },
+    "prob_price_193_4000_dist_scenarios" : {
+      "title" : "Scenario Quartiles of Probability of Price in (193,4000)",
+      "variables" : [
+        { "name": "q25_prob_price_193_4000", "label": "0.25", "color" : "#FFD600" },
+        { "name": "q50_prob_price_193_4000", "label": "0.50", "color" : "#CCAB00" },
+        { "name": "q75_prob_price_193_4000", "label": "0.75", "color" : "#997F00" }
+      ],
+      "y_label": "Expected Hours Per Year"
+    }
   }
 }

@@ -28,11 +28,11 @@
         "rhs": [1, 100, 250, 500]
     },
     "negative_lost_load": {
-        "label": "Lost Load < -1 MW",
-        "lhs": "lost_load",
-        "operator": "<",
+        "label": "Excedentes > 0",
+        "lhs": "production_excedentes",
+        "operator": ">",
         "rhs_type": "value",
-        "rhs": [-1]
+        "rhs": [1]
     },
     "positive_thermal_production": {
         "label": "Thermal Production > 0 MW",

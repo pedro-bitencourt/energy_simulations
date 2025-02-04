@@ -3,16 +3,12 @@
 
 import logging
 from typing import Optional
-
 from rich.logging import RichHandler
 
 
-def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
+def setup_logging(level: Optional[str] = "DEBUG") -> None:
     """
     Configure logging with Rich handler and set up basic configuration.
-
-    Args:
-        level: The logging level to use. Defaults to logging.DEBUG.
     """
     # Configure the handler with pretty printing enabled
     rich_handler = RichHandler(
@@ -21,6 +17,9 @@ def setup_logging(level: Optional[int] = logging.DEBUG) -> None:
         show_path=True,
         markup=True
     )
+
+    # Set the logging level
+    level = getattr(logging, level.upper(), logging.DEBUG)
 
     # Configure basic logging
     logging.basicConfig(

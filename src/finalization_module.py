@@ -1,42 +1,83 @@
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
-import matplotlib.colors as mcolors
-import pandas as pd
 import logging
+from pathlib import Path
+import subprocess
+import pandas as pd
 
-from .utils.load_configs import load_events, load_plots, load_comparisons
-from .data_analysis_module import PARTICIPANTS, VARIABLES
+
+from .utils.load_configs import load_events, load_plots, load_plots_r, load_comparisons
+from .data_analysis_module import PARTICIPANTS
 from .plotting_module import event_comparison_plot, line_plot
 
 logger = logging.getLogger(__name__)
 
-# Load the events, variables, plots and comparisons
-EVENTS: dict = load_events()
-VARIABLES_TO_PLOT: dict = load_plots()
-COMPARISON_EVENTS: dict = load_comparisons()
+PATH_R_SCRIPT: Path = Path('/Users/pedrobitencourt/Projects/energy_simulations/code/r/run_analysis.R')
+GRAPHICS_FOLDER: Path = Path('/Users/pedrobitencourt/Projects/energy_simulations/figures')
 
-VARIABLES = [
-    *[f'production_{participant}' for participant in PARTICIPANTS],
-    *[f'variable_cost_{participant}' for participant in PARTICIPANTS],
-    #*[f'revenue_{participant}' for participant in PARTICIPANTS],
-    #*[f'profit_{participant}' for participant in PARTICIPANTS],
-    'marginal_cost',
-    'demand',
-    'frequency'
-]
 # TO FIX
 CAPACITY_VARIABLES = [
     *[f'{participant}_capacity' for participant in PARTICIPANTS]
 ]
 
+def finalize(simulation_folder: Path, x_variable: dict):
+    # Call the plotting functions
+    visualize(simulation_folder, x_variable)
 
-# This dictionary will store the events to be plotted, along with their labels
-# Load events from events.json
+    # Call the formatting functions
+    format_results(simulation_folder, x_variable)
 
-# Include x_variable in CAPACITY_VARIABLES
+    # Run the R script
+    finalize_r(simulation_folder, x_variable)
 
-def visualize(results_folder: Path, x_variable: dict):
+def finalize_r(simulation_folder: Path, x_variable: dict):
+    # Run the R script on the simulation folder
+    logger.info("Running R script on the simulation folder...")
+    cmd = f"Rscript {PATH_R_SCRIPT} {simulation_folder}"
+    subprocess.run(cmd, shell=True, check=True)
+
+    # Plot the results summary
+    plot_results_summary(simulation_folder, x_variable)
+
+def format_results(simulation_folder: Path, x_variable: dict):
+    # Format csv to be used in the report
+    formatted_df = format_conditional_means(simulation_folder, x_variable)
+    formatted_df.to_csv(simulation_folder / 'formatted_conditional_means.csv', index=False)
+
+    # Create and plot frequencies table
+    frequencies_table = build_frequencies_table(simulation_folder, x_variable)
+    frequencies_table.to_csv(simulation_folder / 'frequencies_table.csv', index=False)
+
+
+def build_frequencies_table(simulation_folder: Path, x_variable: dict) -> pd.DataFrame:
+    """
+    Creates a table where each event's 'frequency' column is aligned with the x_variable.
+
+    Args:
+        simulation_folder (Path): Path to the folder with simulation data (e.g., 'conditional_means.csv').
+        x_variable (dict): Dictionary with the x-axis variable, e.g., {'name': 'salto_capacity'}.
+
+    Returns:
+        pd.DataFrame: Table with columns [x_variable['name'], event_1, event_2, ...].
+    """
+    logger.info("Building frequencies table...")
+    events_data = events_data_from_csv(simulation_folder)
+
+    # Build and merge frequency columns for all events
+    combined_df = pd.concat(
+        [
+            df[[x_variable['name'], 'frequency']].rename(columns={'frequency': event_name})
+            for event_name, df in events_data.items()
+        ],
+        axis=1,
+    )
+
+    # Drop duplicate x_variable columns created during concatenation
+    combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
+    
+    # Sort by the x_variable for clarity
+    return combined_df.sort_values(by=x_variable['name'])
+
+
+def visualize(simulation_folder: Path, x_variable: dict):
     """
     Generate visualizations from the simulation results.
 
@@ -47,77 +88,55 @@ def visualize(results_folder: Path, x_variable: dict):
         #'name': 'lake_factor', 'label': 'Lake Factor'
     }
     """
-    logger.info("Starting the visualize() function at path: " + str(results_folder))
+    logger.info("Starting the visualize() function at path: " + str(simulation_folder))
 
-    paths: dict[str, Path] = {
-        'graphics': results_folder / 'graphics',
-        'conditional_means': results_folder / 'conditional_means.csv',
-        'investment_results': results_folder / 'investment_results.csv'
-    }
+    # Create a folder for the graphics
+    simulation_folder = Path(simulation_folder)
+    Path(simulation_folder / 'graphics').mkdir(parents=True, exist_ok=True)
 
-    # Create relevant folders
-    for path in paths.values():
-        # Check if path is dir
-        if path.is_dir():
-            path.mkdir(parents=True, exist_ok=True)
+    # Call plotting functions
+    plot_event_comparisons(simulation_folder, x_variable)
+    plot_optimal_capacities(simulation_folder, x_variable)
+    plot_std_revenues(simulation_folder, x_variable)
 
-    # Visualize conditional means
-    plot_event_comparisons(results_folder, x_variable)
-
-    # Format csv
-    formatted_df = format_conditional_means(results_folder, x_variable)
-
-    # Save to disk
-    formatted_df.to_csv(results_folder / 'formatted_conditional_means.csv', index=False)
-
-    # Plot optimal capacities
-    plot_optimal_capacities(results_folder, x_variable)
-
-    # Plot standard deviation of revenues
-    plot_std_revenues(results_folder, x_variable)
-    pass
-
-
-def events_dataframes(conditional_means_df: pd.DataFrame):
-    events_data: dict = {}
+def events_dataframes(conditional_means_df: pd.DataFrame) -> dict:
+    EVENTS = load_events()
+    # Derive variables dynamically from 'unconditional' columns
+    variables = [
+        col[len("unconditional_"):]
+        for col in conditional_means_df.columns
+        if col.startswith("unconditional_")
+    ]
+    
+    events_data = {}
     for event in EVENTS.keys():
-        try:
-            # Check if all columns exist for the event
-            columns = [f'{event}_{var}' for var in VARIABLES]
-            missing_columns = [col for col in columns if col not in conditional_means_df.columns]
+        # Build expected columns for this event
+        event_cols = [f"{event}_{var}" for var in variables]
+        
+        # Ensure all required columns exist
+        if all(col in conditional_means_df.columns for col in event_cols):
+            events_data[event] = conditional_means_df[event_cols]
+        else:
+            logger.warning(
+                "Event '%s' missing some columns: %s",
+                event,
+                [col for col in event_cols if col not in conditional_means_df.columns],
+            )
     
-            if missing_columns:
-                logger.warning("Event %s not found or missing columns: %s", event, missing_columns)
-                continue
-    
-            # If columns are found, add the event data to the dictionary
-            events_data[event] = conditional_means_df[columns]
-    
-        except Exception as e:
-            logger.warning("An unexpected error occurred while processing event %s: %s", event, str(e))
-            continue
     return events_data
 
-def events_data_from_csv(folder_path: Path, x_variable: dict) -> dict[str, pd.DataFrame]:
-    logger.info("Starting the events_data_from_csv() function at path: " + str(folder_path))
-    # Load the conditional means dataframe
-    conditional_means_df = pd.read_csv(folder_path / 'conditional_means.csv')
+def load_capacities(simulation_folder) -> pd.DataFrame:
+    return pd.read_csv(simulation_folder / 'conditional_means.csv')[CAPACITY_VARIABLES]
 
-    logger.info("Conditional means dataframe loaded: %s", conditional_means_df.head())
-    print(conditional_means_df)
+def load_conditional_mean(simulation_folder) -> pd.DataFrame:
+    return pd.read_csv(simulation_folder / 'conditional_means.csv')
 
-    logger.debug("EVENTS: %s", EVENTS)
-    logger.debug("VARIABLES: %s", VARIABLES)
-
-    # Create a dictionary with the data for each event
+def events_data_from_csv(simulation_folder: Path) -> dict[str, pd.DataFrame]:
+    logger.info("Starting the events_data_from_csv() function at path: " + str(simulation_folder))
+    # Load the data
+    conditional_means_df = load_conditional_mean(simulation_folder)
     events_data = events_dataframes(conditional_means_df)
-
-
-    # Merge CAPACITY_VARIABLES with x_variable
-    #capacities_df = conditional_means_df[[x_variable['name']] + CAPACITY_VARIABLES]
-    capacities_df = conditional_means_df[CAPACITY_VARIABLES]
-
-    logger.info("Events data loaded: %s", events_data)
+    capacities_df = load_capacities(simulation_folder)
 
     # Remove the prefixes
     for event, df in events_data.items():
@@ -131,27 +150,27 @@ def events_data_from_csv(folder_path: Path, x_variable: dict) -> dict[str, pd.Da
 
         logger.debug("Dataframe for event %s columns after processing: %s", event, df.columns)
         events_data[event] = df
+        
     return events_data
 
-def plot_event_comparisons(folder_path: Path, x_variable: dict):
-    logger.info("Starting the plot_event_comparisons() function at path: " + str(folder_path))
+def plot_event_comparisons(simulation_folder: Path, x_variable: dict):
+    logger.info("Starting the plot_event_comparisons() function at path: " + str(simulation_folder))
     # Load events data from csv
-    events_data = events_data_from_csv(folder_path, x_variable)
+    events_data = events_data_from_csv(simulation_folder)
 
+    # Create comparisons folder
+    (simulation_folder / 'graphics/comparisons').mkdir(parents=True, exist_ok=True)
 
     logger.info("Plotting event comparisons...")
-    for comparison_name, set_events in COMPARISON_EVENTS.items():
+    for comparison_name, set_events in load_comparisons().items():
         logger.info("Plotting comparison: %s", comparison_name)
-        for plot_name, plot_config in VARIABLES_TO_PLOT.items():
-            if plot_name == 'production':
-                # remove unconditional
+        for plot_name, plot_config in load_plots().items():
+            set_events_temp = set_events
+            if plot_name == 'frequency':
+                # remove 'unconditional' event
                 set_events_temp = [event for event in set_events if event != 'unconditional']
-                if not set_events_temp:
-                    set_events_temp = set_events
-            else:
-                set_events_temp = set_events
-            print(f"{set_events_temp=}")
-            comparison_folder = folder_path / comparison_name
+
+            comparison_folder = simulation_folder / 'graphics' / 'comparisons' / comparison_name
             # Create folder
             comparison_folder.mkdir(parents=True, exist_ok=True)
             file_path = comparison_folder /f"{plot_name}.png"
@@ -162,49 +181,95 @@ def plot_event_comparisons(folder_path: Path, x_variable: dict):
                       plot_config['y_label'], x_variable, file_path,
                       title)
 
-def load_investment_results(folder_path: Path) -> pd.DataFrame:
-    return pd.read_csv(folder_path / 'investment_results.csv')
+def load_investment_results(simulation_folder: Path) -> pd.DataFrame:
+    return pd.read_csv(simulation_folder / 'investment_results.csv')
 
-def plot_optimal_capacities(folder_path: Path, x_variable: dict):
-    # Load the investment results_folder
-    investment_results = load_investment_results(folder_path)
-    y_variables = {f'{participant}_capacity': f'{participant} Capacity (MW)' for participant in PARTICIPANTS}
+
+def plot_results_summary(simulation_folder: Path, x_variable: dict):
+    # Load investment results
+    investment_results = load_investment_results(simulation_folder)
+    # Load the results summary
+    results_summary = pd.read_csv(simulation_folder / "results_summary.csv")
+    # Merge the two on 'name'
+    results_summary = results_summary.merge(investment_results, on='name', how='outer')
+    # Order by x_variable
+    results_summary = results_summary.sort_values(by=x_variable['name'])
+
+    # Load the plots configuration
+    plots_r = load_plots_r()
+
+    # Get the graphics folder
+    graphics_folder: Path = get_graphics_folder(simulation_folder)
+
+    for plot_name, plot in plots_r.items():
+        title = ""
+        output_path = graphics_folder / f"{plot_name}.png"
+        y_variables = {variable['name']: {'label' : variable['label'], 'color': variable['color']} for variable in plot['variables']}
+        line_plot(results_summary,
+            x_variable['name'],
+            y_variables,
+            title,
+            x_variable['label'],
+            plot['y_label'],
+            output_path)
+
+
+def get_graphics_folder(simulation_folder: Path) -> Path:
+    graphics_folder: Path = GRAPHICS_FOLDER / simulation_folder.name
+    graphics_folder.mkdir(parents=True, exist_ok=True)
+    return graphics_folder
+    
+
+def plot_optimal_capacities(simulation_folder: Path, x_variable: dict):
+    # Load the investment simulation_folder
+    investment_results = load_investment_results(simulation_folder)
+    color_map = {'wind': '#2CA02C', 'solar': '#FFD600', 'salto': '#1F77B4', 'thermal': '#D62728'}
+    y_variables = {f'{participant}_capacity': {
+        'label' : f'{participant} Capacity (MW)',
+        'color': color_map[participant]} for participant in PARTICIPANTS
+    }     
     y_variable_axis = 'Capacity (MW)'
     title = 'Optimal Capacities (MW)'
-    output_path = folder_path / 'optimal_capacities.png'
+    output_path = get_graphics_folder(simulation_folder) / 'optimal_capacities.png'
     line_plot(investment_results, x_variable['name'], y_variables, title, x_variable['label'], y_variable_axis, output_path)
 
-def plot_std_revenues(folder_path: Path, x_variable: dict):
-    # Load the investment results_folder
-    investment_results = load_investment_results(folder_path)
-    y_variables = {f'{participant}_std_revenue': f'{participant} Capacity (MW)' for participant in PARTICIPANTS}
+def plot_std_revenues(simulation_folder: Path, x_variable: dict):
+    # Load the investment simulation_folder
+    investment_results = load_investment_results(simulation_folder)
+
+    capacities = load_capacities(simulation_folder)
+
+    # Divide the revenue standard deviation by the capacity
+    for participant in PARTICIPANTS:
+        if participant != 'salto':
+            investment_results[f'revenue_{participant}_std_new'] = investment_results[f'revenue_{participant}_std'] / capacities[f'{participant}_capacity']
+
+    # Define the variables to plot
+    color_map = {'wind': '#2CA02C', 'solar': '#FFD600', 'salto': '#1F77B4', 'thermal': '#D62728'}
+    y_variables = {f'revenue_{participant}_std_new': {
+        'label' : f'{participant}',
+        'color': color_map[participant]} for participant in PARTICIPANTS
+    }     
     y_variable_axis = 'Standard Deviation of Expected Profitts ($)'
     title = 'Standard Deviation of Expected Profits ($)'
-    output_path = folder_path / 'std_profits.png'
-    # Check if the columns exist
-    y_variables_new = {}
-    for y_var in y_variables.keys():
-        if y_var not in investment_results.columns:
-            logger.warning("Column %s not found in investment_results. Skipping.", y_var)
-            continue
-        y_variables_new[y_var] = y_variables[y_var]
+    output_path = get_graphics_folder(simulation_folder) / 'std_profits.png'
 
-    line_plot(investment_results, x_variable['name'], y_variables_new, title, x_variable['label'], y_variable_axis, output_path)
+    line_plot(investment_results, x_variable['name'], y_variables, title, x_variable['label'], y_variable_axis, output_path)
             
-def format_conditional_means(folder_path: Path, x_variable) -> pd.DataFrame:
+def format_conditional_means(simulation_folder: Path, x_variable) -> pd.DataFrame:
     def header(name):
         return pd.DataFrame([
             ['-' * 10 + f' {name} ' + '-' * 10],  # Header with dashes
             ['']  # Blank line
         ])
     # Load the event data
-    events_data: dict = events_data_from_csv(folder_path, x_variable)
-
+    events_data: dict = events_data_from_csv(simulation_folder)
 
     # Prepare the output DataFrame
     final_df = pd.DataFrame()
 
     # Loop through each event
+    EVENTS = load_events()
     for event in EVENTS.keys():
         # Add event header and append to final output
         if event not in events_data:
@@ -212,9 +277,6 @@ def format_conditional_means(folder_path: Path, x_variable) -> pd.DataFrame:
             continue
         event_header = header(EVENTS[event])
         event_data = events_data[event]
-        print(f"{event_data.columns=}")
-        print(f"{event_data['frequency'].head()=}")
-        print(f"{event_data.head()=}")
         # Order in salto_capacity
         event_data = event_data.sort_values(by=x_variable['name'])
         final_df = pd.concat([final_df, event_header, event_data], ignore_index=True)
