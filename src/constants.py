@@ -46,7 +46,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
         'bash': 'temp/process.sh',
         'slurm_out': 'temp/{name}.out',
         'slurm_err': 'temp/{name}.err',
-        'investment_results': 'results/investment_results.csv',
+        'solver_results': 'results/solver_results.csv',
         'conditional_means': 'results/conditional_means.csv',
         'master_trajectory': 'results/master_trajectory.json'
     }
@@ -54,11 +54,12 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
 
     return paths
 
-def initialize_paths_investment_problem(parent_folder: Path, name: str) -> dict:
+def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
     paths: dict[str, Path] = {}
     # Folders
     paths['parent_folder'] = parent_folder
     paths['folder'] = parent_folder / name
+    paths['master_trajectory'] = paths['parent_folder'] / 'results/master_trajectory.json'
     # Subfolders
     paths['temp'] = paths['folder'] / 'temp'
     paths['raw'] = paths['folder'] / 'raw'
@@ -73,9 +74,7 @@ def initialize_paths_investment_problem(parent_folder: Path, name: str) -> dict:
         'slurm_out': f'temp/{name}.out',
         'slurm_err': f'temp/{name}.err',
         'solver_trajectory': f'temp/{name}_trajectory.json',
-        'investment_results': 'results/investment_results.json',
-        'conditional_means': 'results/conditional_means.csv',
-        'master_trajectory': 'results/master_trajectory.json'
+        'solver_results': 'results/solver_results.json'
     }
     paths.update({key: paths['folder'] / value for key, value in files_dict.items()})
     return paths

@@ -39,7 +39,7 @@ from typing import Optional, Dict
 import json
 import pandas as pd
 
-from .utils.auxiliary import submit_slurm_job
+from .utils.slurm_utils import submit_slurm_job, slurm_header
 from .solver_module import Solver
 from .run_module import Run
 from .run_processor_module import RunProcessor
@@ -89,16 +89,11 @@ class ComparativeStatics:
         logger.info("Initializing the ComparativeStatics object.")
         if base_path is None:
             base_path = str(BASE_PATH)
-
         self.name: str = name
         self.general_parameters: dict = general_parameters
         self.variables: dict = variables
-
-        # Initialize relevant paths
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
-
-        # If there are endogenous variables, we need to handle investment problems first
         self.grid_points: list[Solver] = self.initialize_grid()
 
     ############################
@@ -154,7 +149,6 @@ class ComparativeStatics:
 
     ############################
     # Submission methods
-
     def submit_solvers(self):
         """
         Submit the jobs to the cluster.
@@ -172,26 +166,12 @@ class ComparativeStatics:
         }
         comparative_statics_data = json.dumps(comparative_statics_data)
 
-        if self.general_parameters.get('email', None):
-            email_line = f"#SBATCH --mail-user={self.general_parameters['email']}"
-        else:
-            email_line = ""
+        slurm_config = self.general_parameters['slurm']['processing']
+        slurm_path = self.paths['bash'].parent
+        header = slurm_header(slurm_config, f"{self.name}_processing", slurm_path)
 
         with open(self.paths['bash'], 'w') as f:
-            f.write(f'''#!/bin/bash
-#SBATCH --account=b1048
-#SBATCH --partition=b1048
-#SBATCH --time={PROCESS_TIME}
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --mem=10G
-#SBATCH --job-name={self.name}_processing
-#SBATCH --output={self.paths['main']}/{self.name}_processing.out
-#SBATCH --error={self.paths['main']}/{self.name}_processing.err
-#SBATCH --mail-type=ALL
-#SBATCH --exclude=qhimem[0207-0208]
-{email_line}
-
+            f.write(f'''{header}
 module purge
 module load python-miniconda3/4.12.0
 
@@ -225,27 +205,11 @@ END
 
     ############################
     # Processing methods
-    def gather_results(self):
-        investment_results_dict = {}
-        conditional_means_dict = {}
-        for solver in self.grid_points:
-            investment_results_dict[solver.name] = solver.read_inv_results()
-            conditional_means_dict[solver.name] = solver.read_conditional_means()
-
-        # Save to disk
-        investment_results_df = pd.DataFrame(investment_results_dict)
-        conditional_means_df = pd.DataFrame(conditional_means_dict)
-        investment_results_df.to_csv(
-            self.paths['investment_results'], index=False)
-        conditional_means_df.to_csv(
-            self.paths['conditional_means'], index=False)
-        
-
     def process(self, complete=True):
         self.extract_runs_dataframes(complete=complete)
-        investment_results_df = self.investment_results()
-        investment_results_df.to_csv(
-            self.paths['investment_results'], index=False)
+        solver_results_df = self.solver_results()
+        solver_results_df.to_csv(
+            self.paths['solver_results'], index=False)
 
         conditional_means_df = self.construct_results(
             results_function=conditional_means)
@@ -274,7 +238,7 @@ END
             run_df.to_csv(self.paths['raw'] / f"{solver.name}.csv",
                           index=False)
 
-    def investment_results(self):
+    def solver_results(self):
         rows: list = []
         for solver in self.grid_points:
             rows.append(solver.solver_results())
@@ -284,13 +248,9 @@ END
     def construct_results(self, results_function) -> pd.DataFrame:
         # Create a list to store rows
         rows = []
-
         for point in self.grid_points:
-            results_dict = point.last_run_results(results_function)
+            results_dict = point.last_run().results(results_function)
             # Append the row to our list
             rows.append(results_dict)
-
-        # Create DataFrame from all rows at once
         results_df = pd.DataFrame(rows)
-
         return results_df

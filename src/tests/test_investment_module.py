@@ -39,7 +39,7 @@ class TestInvestmentProblem(unittest.TestCase):
 
         # Get the initial investment from the first iteration
         initial_iteration = problem.optimization_trajectory[0]
-        initial_investment = initial_iteration.current_investment
+        initial_investment = initial_iteration.capacities
 
         # Compute profits and derivatives
         profits, derivatives = problem.profits_and_derivatives(initial_investment)

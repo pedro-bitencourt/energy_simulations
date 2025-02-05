@@ -14,7 +14,8 @@ import subprocess
 import json
 import pandas as pd
 
-from .utils.auxiliary import try_get_file, submit_slurm_job
+from .utils.auxiliary import try_get_file
+from .utils.slurm_utils import slurm_header, submit_slurm_job, wait_for_jobs
 from .constants import initialize_paths_run, create_run_name
 from .data_analysis_module import profits_data_dict, std_variables, full_run_df
 
@@ -200,7 +201,6 @@ class Run:
 
     ##############################
     # bash creating methods
-
     def _create_bash(self, xml_path: Path):
         """
         Creates a bash file to be submitted to the cluster.
@@ -211,35 +211,15 @@ class Run:
         job_name = f"{self.parent_name}_{self.name}"
 
         slurm_config: dict = self.general_parameters['slurm']['run']
+        slurm_path = self.paths['folder']
+        header = slurm_header(slurm_config, job_name, slurm_path)
 
-        requested_time: float = slurm_config['time']
-        hours: int = int(requested_time)
-        minutes: int = int((requested_time * 60) % 60)
-        seconds: int = int((requested_time * 3600) % 60)
-        requested_time_run: str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-        email_line = slurm_config.get('email', None)
-        mail_type = slurm_config.get('mail-type', 'NONE')
         memory = slurm_config.get('memory', MEMORY_REQUESTED)
-
         temp_folder_path = f"{self.paths['folder']}/temp"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
 
         with open(bash_path, 'w') as file:
-            file.write(f'''#!/bin/bash
-#SBATCH --account=b1048
-#SBATCH --partition=b1048
-#SBATCH --time={requested_time_run}
-#SBATCH --nodes=1 
-#SBATCH --ntasks-per-node=1 
-#SBATCH --mem={memory}G
-#SBATCH --job-name={job_name}
-#SBATCH --output={self.paths['slurm_out']}
-#SBATCH --error={self.paths['slurm_err']}
-#SBATCH --mail-type={mail_type}
-#SBATCH --exclude=qhimem[0207-0208]
-{email_line}
-
+            file.write(f'''{header}
 echo "Starting {self.name} at: $(date +'%H:%M:%S')"
 export WINEPREFIX=/projects/p32342/software/.wine
 mkdir -p {temp_folder_path}
@@ -274,7 +254,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         return output_path
 
     def run_df(self, complete: bool = False):
-        from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
+        from .run_processor_module import RunProcessor
         # Initialize the RunProcessor object
         run_processor = RunProcessor(self)
 
@@ -283,15 +263,26 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             complete=complete)
         return run_df
 
+    def full_run_df(self):
+        run_df = self.run_df()
+        capacities = self.capacities()
+        run_df = full_run_df(run_df, capacities)
+        return run_df
+
+    def results(self, results_fun):
+        run_df = self.full_run_df()
+        results_dict: dict = results_fun(run_df)
+        results_dict['name'] = self.name
+        results_dict.update(self.variables)
+        return results_dict
+
+
     def get_profits_data_dict(self, complete: bool = False):
-        from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
+        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
 
         participants = PARTICIPANTS_LIST_ENDOGENOUS
-        print(f"{self.variables=}")
 
-        # Get the run DataFrame
         run_df = self.run_df(complete=complete)
-
         capacities = self.capacities()
 
         # Compute profits data
@@ -315,7 +306,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         return profits_data
 
     def capacities(self):
-        from .run_processor_module import RunProcessor, PARTICIPANTS_LIST_ENDOGENOUS
+        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
 
         participants = PARTICIPANTS_LIST_ENDOGENOUS
         # Create a dictionary with the capacities
@@ -325,7 +316,6 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             capacities['salto'] = self.variables['salto_capacity']
         else:
             capacities['salto'] = 1620
-
         return capacities
 
 
@@ -351,3 +341,37 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
                               for participant in PARTICIPANTS_LIST_ENDOGENOUS}
         return profits_dict
+
+def submit_and_wait_for_runs(runs_dict: dict[str, Run],
+                    max_attempts: int = 6) -> None:
+    '''
+    Submits the runs in the runs_dict and waits for them to finish
+    '''
+    # Submit the runs, give up after max_attempts
+    attempts: int = 0
+    while attempts < max_attempts:
+        job_ids_list: list[str] = []
+        for run in runs_dict.values():
+            # Check if the run was successful
+            if not run.successful():
+                logger.warning("Run %s not successful", run.name)
+                # If not, submit it and append the job_id to the list
+                job_id = run.submit()
+                if job_id:
+                    job_ids_list.append(job_id)
+                if attempts == 0:
+                    logger.debug("First attempt for %s", run.name)
+                else:
+                    logger.warning("RETRYING %s, number of previous attempts = %s", run.name,
+                                   attempts)
+        if not job_ids_list:
+            return None
+        logger.info("Waiting for jobs %s", job_ids_list)
+        # Wait for the jobs to finish
+        wait_for_jobs(job_ids_list)
+        attempts += 1
+
+    if attempts == max_attempts:
+        logger.critical(
+            "Could not successfully finish all runs after %s attempts", max_attempts)
+        sys.exit(UNSUCCESSFUL_RUN)
