@@ -205,6 +205,7 @@ analyze_run <- function(run_file) {
   results$thermal_profit_price_193_4000 <- mean((data$marginal_cost - 193) * data$production_thermal * data$price_193_4000)/ capacities$thermal_capacity
   
   results$mean_thermal_production <- mean(data$production_thermal)
+  results$mean_price <- mean(data$marginal_cost)
   
   results$std_thermal_profit <- sd((data$marginal_cost - 193) * data$production_thermal) / capacities$thermal_capacity
   results$std_thermal_profit_blackout <- sd((data$marginal_cost - 193) * data$production_thermal * data$positive_lost_load) / capacities$thermal_capacity

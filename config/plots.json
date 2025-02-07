@@ -83,6 +83,14 @@
       ],
       "y_label": "Average LCOE ($/MWh)"
     },
+    "lcoe_and_prices" : {
+      "title": "Levelized Cost of Energy ($/MWh)",
+      "variables": [
+        { "name": "lcoe", "label": "LCOE", "color" : "#FFD600" },
+        { "name": "mean_price", "label": "Price", "color" : "#2CA02C" }
+      ],
+      "y_label": "Average LCOE and average price ($/MWh)"
+    },
     "lost_load" : {
       "title": "Lost Load (MW)",
       "variables": [

@@ -5,7 +5,6 @@ import sys
 import unittest
 from pathlib import Path
 import pandas as pd
-import logging
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.run_module import Run
@@ -14,14 +13,13 @@ from src.constants import DATETIME_FORMAT
 from src.utils.logging_config import setup_logging
 
 
-OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/energy_simulations/test_data/output')
-RUN_FOLDER = Path('/Users/pedrobitencourt/energy_simulations/test_data/1.25_13041_1957_480')
-
+OUTPUT_FOLDER: Path = Path('/Users/pedrobitencourt/Projects/energy_simulations/code/test_data/output')
+RUN_FOLDER = Path('/Users/pedrobitencourt/Projects/energy_simulations/code/test_data/1.25_13041_1957_480')
 
 class TestRun(unittest.TestCase):
     def setUp(self):
         # set up logging level
-        setup_logging(level=logging.INFO)
+        setup_logging(level="INFO")
 
         parent_folder = RUN_FOLDER.parent
         run_name: str = RUN_FOLDER.name
@@ -111,5 +109,5 @@ class TestRun(unittest.TestCase):
             json.dump(profits, f)
 
 if __name__ == '__main__':
-    setup_logging(level=logging.INFO)
+    setup_logging(level="INFO")
     unittest.main()
