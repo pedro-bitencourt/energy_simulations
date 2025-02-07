@@ -17,7 +17,7 @@ import pandas as pd
 from .utils.auxiliary import try_get_file
 from .utils.slurm_utils import slurm_header, submit_slurm_job, wait_for_jobs
 from .constants import initialize_paths_run, create_run_name
-from .data_analysis_module import profits_data_dict, std_variables, full_run_df
+from .data_analysis_module import profits_per_participant, std_variables, full_run_df
 
 logger = logging.getLogger(__name__)
 
@@ -286,7 +286,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         capacities = self.capacities()
 
         # Compute profits data
-        profits_data: dict = profits_data_dict(run_df, capacities)
+        profits_data: dict = profits_per_participant(run_df, capacities, self.general_parameters['cost_path'])
 
         # Save to disk using json
         self.paths['folder'].joinpath(

@@ -8,12 +8,12 @@ Description: this module implements functions to perform data analysis of the da
 """
 
 import pandas as pd
+from pathlib import Path
 from typing import Dict
 import logging
 
 from .utils.load_configs import load_events, load_costs
 
-HOURLY_FIXED_COSTS = load_costs()
 
 PARTICIPANTS = [
     'salto',
@@ -37,8 +37,9 @@ logger = logging.getLogger(__name__)
 QUERIES_DICT: dict[str, str] = load_events()
 
 
-def profits_data_dict(run_df: pd.DataFrame,
-                      capacities: dict[str, float]) -> Dict:
+def profits_per_participant(run_df: pd.DataFrame,
+                      capacities: dict[str, float],
+                      cost_path: Path) -> Dict:
     """
     Computes profits for the specified endogenous variables.
 
@@ -47,7 +48,47 @@ def profits_data_dict(run_df: pd.DataFrame,
     """
     participants: list[str] = list(capacities.keys())
 
+    hourly_fixed_costs = load_costs(cost_path)
     results_dict: dict = {}
+    def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float, fixed_costs: dict) -> dict:
+        """
+        For a given run, compute the economic metrics for a given participant.
+    
+        Arguments:
+            run_df (pd.DataFrame): DataFrame containing the data for the run.
+            participant (str): Name of the participant.
+            capacity_mw (float): Capacity of the participant in MW.
+        """
+        def revenue_hour(run_df: pd.DataFrame, participant: str) -> float:
+            # Get present value of revenues
+            revenues: float = (run_df[f'production_{participant}'] *
+                               run_df['marginal_cost']).mean()
+            return revenues
+    
+        def variable_costs_hour(run_df: pd.DataFrame, participant: str) -> float:
+            if participant != 'thermal':
+                return 0
+            # Get present value of variable costs
+            variable_costs: float = (
+                run_df[f'variable_cost_{participant}']).mean()
+            return variable_costs
+
+        revenue = revenue_hour(run_df, participant)
+        variable_costs = variable_costs_hour(run_df, participant)
+    
+        fixed_costs = hourly_fixed_costs[participant]
+        return {
+            f'{participant}_capacity_mw': capacity_mw,
+            f'{participant}_revenue_hour': revenue,
+            f'{participant}_variable_costs_hour': variable_costs,
+            f'{participant}_revenue_mw_hour': revenue / capacity_mw,
+            f'{participant}_variable_costs_mw_hour': variable_costs / capacity_mw,
+            f'{participant}_fixed_costs_mw_hour': fixed_costs,
+            f'{participant}_total_costs_mw_hour': (fixed_costs + variable_costs / capacity_mw),
+            f'{participant}_profits_mw_hw': (revenue - variable_costs)/capacity_mw - fixed_costs,
+            f'{participant}_normalized_profits': (((revenue - variable_costs)/capacity_mw - fixed_costs)
+                                                  / (fixed_costs + variable_costs / capacity_mw))
+        }
 
     # Update the results dictionary with metrics for each participant
     for participant in participants:
@@ -92,45 +133,6 @@ def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
 # Helper function to compute metrics for each participant
 
 
-def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float) -> dict:
-    """
-    For a given run, compute the economic metrics for a given participant.
-
-    Arguments:
-        run_df (pd.DataFrame): DataFrame containing the data for the run.
-        participant (str): Name of the participant.
-        capacity_mw (float): Capacity of the participant in MW.
-    """
-    def revenue_hour(run_df: pd.DataFrame, participant: str) -> float:
-        # Get present value of revenues
-        revenues: float = (run_df[f'production_{participant}'] *
-                           run_df['marginal_cost']).mean()
-        return revenues
-
-    def variable_costs_hour(run_df: pd.DataFrame, participant: str) -> float:
-        if participant != 'thermal':
-            return 0
-        # Get present value of variable costs
-        variable_costs: float = (
-            run_df[f'variable_cost_{participant}']).mean()
-        return variable_costs
-
-    revenue = revenue_hour(run_df, participant)
-    variable_costs = variable_costs_hour(run_df, participant)
-    fixed_costs = HOURLY_FIXED_COSTS[participant]
-
-    return {
-        f'{participant}_capacity_mw': capacity_mw,
-        f'{participant}_revenue_hour': revenue,
-        f'{participant}_variable_costs_hour': variable_costs,
-        f'{participant}_revenue_mw_hour': revenue / capacity_mw,
-        f'{participant}_variable_costs_mw_hour': variable_costs / capacity_mw,
-        f'{participant}_fixed_costs_mw_hour': fixed_costs,
-        f'{participant}_total_costs_mw_hour': (fixed_costs + variable_costs / capacity_mw),
-        f'{participant}_profits_mw_hw': (revenue - variable_costs)/capacity_mw - fixed_costs,
-        f'{participant}_normalized_profits': (((revenue - variable_costs)/capacity_mw - fixed_costs)
-                                              / (fixed_costs + variable_costs / capacity_mw))
-    }
 
 
 def conditional_means(run_df: pd.DataFrame) -> dict:

@@ -25,13 +25,15 @@ def load_config(config_path: Path) -> dict:
     return config
 
 
-def load_costs() -> dict:
+def load_costs(costs_path: Optional[Path]) -> dict:
     """
     Parse the costs configuration file and return a dictionary with the total fixed
     costs per hour.
     """
+    if costs_path is None:
+        costs_path = COSTS_JSON_PATH
     costs_dict: dict[str, dict[str, float | int]
-                     ] = load_config(COSTS_JSON_PATH)
+                     ] = load_config(costs_path)
     hourly_costs_dic: dict[str, float] = {
         participant: (costs_dict[participant]['installation'] / costs_dict[participant]
                       ['lifetime'] + costs_dict[participant]['oem']) / 8760

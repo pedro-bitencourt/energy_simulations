@@ -89,12 +89,20 @@ class ComparativeStatics:
         logger.info("Initializing the ComparativeStatics object.")
         if base_path is None:
             base_path = str(BASE_PATH)
+
         self.name: str = name
         self.general_parameters: dict = general_parameters
         self.variables: dict = variables
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
         self.grid_points: list[Solver] = self.initialize_grid()
+        self.validate_parameters()
+
+    def validate_parameters(self):
+        # Check if general parameters contains cost data
+        if 'cost_path' not in self.general_parameters:
+            raise ValueError(
+                "General parameters must contain the cost data path.")
 
     ############################
     # Initialization methods
