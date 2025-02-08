@@ -1,5 +1,14 @@
 # Energy Simulations
 
+## Patches
+### 08.02
+1. Included `cost_data` parameter for the ComparativeStatics class.
+2. Broke down the `slurm` configuration into `run`, `solver`, and `processing` dictionaries, that
+now can be left empty to use the default values.
+3. Slightly changed the folder strucutre, now all the simulations data is stored in the `sim` folder. 
+Inside each exercise folder, there is now a `results` folder for the final results, and a `temp` folder 
+for the temporary files.
+
 ## Introduction
 
 This repository's code is a wrapper for the software Modelo Padron de Operacion (MOP), developed by UTE. MOP takes an `.xml` file outlining the characteristics of an energy system as input, solves the optimal energy dispatch problem, and outputs the value function while simulating the energy system's operation using historical data from Uruguay. The code in this repository allows the user to perform comparative statics exercises on the energy system characteristics, enabling the determination of plant capacities endogenously based on a zero-profit condition.
@@ -34,25 +43,36 @@ from src.comparative_statics_module import ComparativeStatics
 # Input parameters
 name: str = 'expensive_blackout'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
+cost_data: str = '/projects/p32342/cost_data/original.json'
+
+# Set the slurm configurations. The settings below are the default,
+# so if any field is not provided the program will use these values.
+slurm_config: dict = {
+    'run': {
+        'email': None,
+        'mail-type': 'NONE',
+        'time': 0.8,
+        'memory': 5
+    },
+    'solver': {
+        'email': None,
+        'mail-type': 'END,FAIL',
+        'time': 12,
+        'memory': 5
+    },
+    'processing': {
+        'email': None,
+        'mail-type': 'END,FAIL',
+        'time': 5,
+        'memory': 10
+    }
+}
 
 general_parameters: dict = {
     'daily': True,
     'xml_basefile': xml_basefile,
     'annual_interest_rate': 0.0,
-    'slurm': {
-        'run': {
-            'email': 'your.email@domain.com',
-            'mail-type': 'NONE',
-            'time': 0.5,
-            'memory': 8
-            },
-    'solver': {
-        'email': 'your.email@domain.com',
-        'mail-type': 'END,FAIL',
-        'time': 16.5,
-        'memory': 8
-        }
-}
+    'slurm': slurm_config}
 
 exog_grid: list[float] = [0.6, 0.75, 1, 1.25, 1.5, 2, 3]
 exogenous_variables: dict[str, dict] = {
@@ -61,9 +81,9 @@ exogenous_variables: dict[str, dict] = {
     },
 }
 endogenous_variables: dict[str, dict] = {
-    'wind_capacity': {'initial_guess': 1000},
-    'solar_capacity': {'initial_guess': 1000},
-    'thermal_capacity': {'initial_guess': 300}
+    'wind_capacity': {'initial_guess': 2000},
+    'solar_capacity': {'initial_guess': 2000},
+    'thermal_capacity': {'initial_guess': 1300}
 }
 
 variables: dict[str, dict] = {
@@ -106,6 +126,7 @@ The script requires several parameters:
    - **slurm** (`dict`): Dictionary containing options for SLURM
      - **run** (`dict`): Options for run jobs
      - **solver** (`dict`): Options for solver Jobs
+     - **processing** (`dict`): Options for processing job
         with each of them having keys
         - `email` (`str`)
         - `mail-type` (`str`)
@@ -142,10 +163,12 @@ When `comparative_statics.submit_solver()` executes, it submits jobs for each ex
 
 ### Folder Structure
 
-Inside the main exercise folder (e.g., /p32342/comparative_statics/expensive_blackout/):
+Inside the `sim` folder (e.g., /p32342/sim/expensive_blackout/):
 
 ```
 expensive_blackout/
+├── results/                      # Folder for storing the results of the exercise
+├── temp/                         # Folder for storing the bash script, .out and .err files for the exercise
 ├── expensive_blackout_0.6/
 ├── expensive_blackout_0.75/
 ├── expensive_blackout_1/
@@ -203,32 +226,38 @@ Contains the main repository modules:
 
 #### comparative_statics_module.py
 
-    This module contains the ComparativeStatics class, which is the main class used in this project.
-    This class models a comparative statics exercise to be executed and processed, using both the 
-    other scripts in this folder as the Modelo de Operaciones Padron (MOP), which implements a 
-    solver for the problem of economic dispatch of energy for a given configuration of the energy 
-    system.
-
-        - Attributes:
-            - `name` [str]: name for the exercise, to be used for the creation of folders and files
-            - `general_parameters` [dict]: dictionary containing general options for the program, with
-            keys:
-                o xml_basefile [str]: path to the template xml file.
-                o daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
-                o annual_interest_rate [float]: annual interest rate for the investment problems.
-                o slurm [dict]: dictionary containing options for slurm, keys:
-                    - `run`:
-                    - `solver`:
-                    Each of these contains the options:
-                        - `email` [str]
-                        - `mail-type` [str]
-                        - `time` [float]: in hours
-                        - `memory` [int]: in GB
-                o `solver` [dict]: dictionary containing options for the solver
-        - Methods:
-            - `submit_solvers`: submits all Solvers for the exercise.
-            - `submit_processing`: submits a processing job for the exercise.
-
+    Description:
+        This module contains the ComparativeStatics class, which is the main class used in this project.
+        This class models a comparative statics exercise to be executed and processed, using both the
+        other scripts in this folder as the Modelo de Operaciones Padron (MOP), which implements a
+        solver for the problem of economic dispatch of energy for a given configuration of the energy
+        system.
+    
+    Classes:
+        - ComparativeStatistics
+            - Attributes:
+                - `name` [str]: name for the exercise, to be used for the creation of folders and files
+                - `general_parameters` [dict]: dictionary containing general options for the program,
+                with keys:
+                    o cost_path [str]: path to the cost data file. 
+                    o xml_basefile [str]: path to the template xml file.
+                    o daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
+                    o annual_interest_rate [float]: annual interest rate for the investment problems.
+                    o slurm [dict]: dictionary containing options for slurm, keys:
+                        - `run`:
+                        - `solver`:
+                        - `processing`:
+                        Each of these contains the options:
+                            - `email` [str]
+                            - `mail-type` [str]
+                            - `time` [float]: in hours
+                            - `memory` [str]: in GB
+                    o `solver` [dict]: dictionary containing options for the solver
+            - Methods:
+                - `submit_solvers`: submits all Solvers for the exercise.
+                - `submit_processing`: submits a processing job for the exercise.
+                - `clear_folders`: deletes the folder for all non-equilibrium runs.
+    
 #### solver_module.py
 
 Contains `Solver` class for solving zero-profit conditions.
@@ -251,6 +280,3 @@ Contains XML templates used by `ComparativeStatics`. Add new template files here
 ### old_exercises Folder
 
 Contains reference scripts from previous comparative statics exercises.
-
-
-
