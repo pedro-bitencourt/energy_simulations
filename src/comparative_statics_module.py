@@ -176,7 +176,8 @@ class ComparativeStatics:
 
         slurm_config = self.general_parameters['slurm']['processing']
         slurm_path = self.paths['bash'].parent
-        header = slurm_header(slurm_config, f"{self.name}_processing", slurm_path)
+        header = slurm_header(
+            slurm_config, f"{self.name}_processing", slurm_path)
 
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''{header}
@@ -196,6 +197,7 @@ setup_logging(level = logging.DEBUG)
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
 comparative_statics.process()
+comparative_statics.clear_folders()
 END
 ''')
 
@@ -223,7 +225,6 @@ END
             results_function=conditional_means)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
-
 
     def extract_runs_dataframes(self, complete: bool = True) -> None:
         logger.info("Extracting data from MOP's outputs...")

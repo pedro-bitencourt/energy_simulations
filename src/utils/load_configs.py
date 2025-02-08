@@ -25,7 +25,7 @@ def load_config(config_path: Path) -> dict:
     return config
 
 
-def load_costs(costs_path: Optional[Path]) -> dict:
+def load_costs(costs_path) -> dict:
     """
     Parse the costs configuration file and return a dictionary with the total fixed
     costs per hour.
