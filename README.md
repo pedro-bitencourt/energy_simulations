@@ -43,7 +43,7 @@ from src.comparative_statics_module import ComparativeStatics
 # Input parameters
 name: str = 'expensive_blackout'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
-cost_data: str = '/projects/p32342/cost_data/original.json'
+cost_path: str = '/projects/p32342/cost_data/original.json'
 
 # Set the slurm configurations. The settings below are the default,
 # so if any field is not provided the program will use these values.
@@ -71,6 +71,7 @@ slurm_config: dict = {
 general_parameters: dict = {
     'daily': True,
     'xml_basefile': xml_basefile,
+    'cost_path': cost_data,
     'annual_interest_rate': 0.0,
     'slurm': slurm_config}
 
