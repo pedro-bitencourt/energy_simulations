@@ -6,7 +6,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 # JSON Paths
 EVENTS_CONFIG_JSON_PATH: Path = Path(
     __file__).parent.parent.parent / 'config/events.json'
@@ -32,6 +31,7 @@ def load_costs(costs_path) -> dict:
     """
     if costs_path is None:
         costs_path = COSTS_JSON_PATH
+    costs_path: str = Path(costs_path)
     costs_dict: dict[str, dict[str, float | int]
                      ] = load_config(costs_path)
     hourly_costs_dic: dict[str, float] = {
@@ -55,12 +55,14 @@ def load_events_labels() -> dict[str, str]:
         for rhs_entry in event_config['rhs']:
             if event_config['rhs_type'] == 'value':
                 # Create label
-                event_label: str = event_config['label'].replace("$", str(rhs_entry))
+                event_label: str = event_config['label'].replace(
+                    "$", str(rhs_entry))
                 events_labels[f"{event_name}_{rhs_entry}"] = event_label
             elif event_config['rhs_type'] == 'index':
                 event_label: str = event_config['label']
                 events_labels[f"{event_name}"] = event_label
     return events_labels
+
 
 def load_events() -> dict[str, str]:
     """
@@ -78,7 +80,8 @@ def load_events() -> dict[str, str]:
                 event_query: str = f"{event_config['lhs']} {event_config['operator']} {rhs_entry}"
                 events[f"{event_name}_{rhs_entry}"] = event_query
                 # Create label
-                event_label: str = event_config['label'].replace("$", str(rhs_entry))
+                event_label: str = event_config['label'].replace(
+                    "$", str(rhs_entry))
                 events[f"{event_name}_{rhs_entry}_label"] = event_label
             elif event_config['rhs_type'] == 'index':
                 event_query: str = f"{event_config['lhs']} {event_config['operator']} {rhs_entry}"
@@ -93,6 +96,7 @@ def load_plots() -> dict:
         dict: Dictionary with the plots.
     """
     return load_config(PLOTS_JSON_PATH)['conditional_means']
+
 
 def load_plots_r() -> dict:
     """
@@ -110,4 +114,3 @@ def load_comparisons() -> dict:
         dict: Dictionary with the comparisons.
     """
     return load_config(COMPARISONS_JSON_PATH)
-

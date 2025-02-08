@@ -22,7 +22,7 @@ from .optimization_module import (Iteration,
                                   derivatives_from_profits,
                                   get_last_successful_iteration)
 from .utils.slurm_utils import submit_slurm_job, slurm_header
-from .constants import initialize_paths_solver, create_investment_name
+from .constants import SOLVER_SLURM_DEFAULT_CONFIG, initialize_paths_solver, create_investment_name
 
 logger = logging.getLogger(__name__)
 
@@ -337,7 +337,12 @@ class Solver:
             'log_level', 'DEBUG')
 
         slurm_path = self.paths['bash'].parent
-        header = slurm_header(self.general_parameters['slurm']['solver'], self.name, slurm_path)
+
+        solver_config = self.general_parameters['slurm'].get('solver', SOLVER_SLURM_DEFAULT_CONFIG)
+        solver_config = {
+            key: solver_config.get(key, value) for key, value in SOLVER_SLURM_DEFAULT_CONFIG.items()
+        }
+        header = slurm_header(solver_config, self.name, slurm_path)
 
         # Write the bash script without a separate data file
         with open(self.paths['bash'], 'w') as f:
@@ -367,7 +372,6 @@ solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')
 solver.solve()
 last_run = solver.last_run()
-last_run.process()
 END
 """)
 
