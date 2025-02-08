@@ -4,26 +4,32 @@ import time
 import logging
 from pathlib import Path
 
-MEMORY_DEFAULT = 5 # GB
-
-
+MEMORY_DEFAULT = 5  # GB
 
 
 def slurm_header(slurm_config: dict, job_name: str, slurm_path: Path) -> str:
     """
     Creates a bash file to be submitted to the cluster.
     """
-    slurm_path = str(slurm_path) 
+    slurm_path = str(slurm_path)
     requested_time: float = slurm_config['time']
     hours: int = int(requested_time)
     minutes: int = int((requested_time * 60) % 60)
     seconds: int = int((requested_time * 3600) % 60)
     requested_time_run: str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-    
-    email_line = slurm_config.get('email', None)
+
+    email = slurm_config.get('email', None)
+    if email:
+        email_line = f"#SBATCH --mail-user={email}"
+    else:
+        email_line = ""
     mail_type = slurm_config.get('mail-type', 'NONE')
+    if mail_type and email:
+        mail_type_line = f"#SBATCH --mail-type={mail_type}"
+    else:
+        mail_type_line = ""
     memory = slurm_config.get('memory', MEMORY_DEFAULT)
-   
+
     header = f'''#!/bin/bash
 #SBATCH --account=b1048
 #SBATCH --partition=b1048
@@ -34,11 +40,12 @@ def slurm_header(slurm_config: dict, job_name: str, slurm_path: Path) -> str:
 #SBATCH --job-name={job_name}
 #SBATCH --output={slurm_path}/slurm.out
 #SBATCH --error={slurm_path}/slurm.err
-#SBATCH --mail-type={mail_type}
 #SBATCH --exclude=qhimem[0207-0208]
 {email_line}
+{mail_type_line}
 '''
     return header
+
 
 def get_job_id_by_name(job_name: str):
     """Check if a job with given name exists and return its ID."""
@@ -83,7 +90,6 @@ def submit_slurm_job(script_path: str, job_name: str):
 
     # Submit new job if none exists
     return submit_new_job(script_path)
-
 
 
 def check_job_status(job_id: int):
