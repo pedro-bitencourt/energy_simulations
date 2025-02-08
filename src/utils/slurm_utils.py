@@ -6,6 +6,9 @@ from pathlib import Path
 
 MEMORY_DEFAULT = 5 # GB
 
+
+
+
 def slurm_header(slurm_config: dict, job_name: str, slurm_path: Path) -> str:
     """
     Creates a bash file to be submitted to the cluster.

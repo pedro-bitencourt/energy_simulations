@@ -1,7 +1,7 @@
 """
 Module: comparative_statics_module.py
 Author: Pedro Bitencourt (Northwestern University)
-Last modified: 12.17.24
+Last modified: 08.02.2025
 
 
 Description:
@@ -15,14 +15,16 @@ Classes:
     - ComparativeStatistics
         - Attributes:
             - `name` [str]: name for the exercise, to be used for the creation of folders and files
-            - `general_parameters` [dict]: dictionary containing general options for the program, with
-            keys:
+            - `general_parameters` [dict]: dictionary containing general options for the program,
+            with keys:
+                o cost_path [str]: path to the cost data file. 
                 o xml_basefile [str]: path to the template xml file.
                 o daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
                 o annual_interest_rate [float]: annual interest rate for the investment problems.
                 o slurm [dict]: dictionary containing options for slurm, keys:
                     - `run`:
                     - `solver`:
+                    - `processing`:
                     Each of these contains the options:
                         - `email` [str]
                         - `mail-type` [str]
@@ -32,6 +34,7 @@ Classes:
         - Methods:
             - `submit_solvers`: submits all Solvers for the exercise.
             - `submit_processing`: submits a processing job for the exercise.
+            - `clear_folders`: deletes the folder for all non-equilibrium runs.
 """
 
 import logging
@@ -44,12 +47,10 @@ from .solver_module import Solver
 from .run_module import Run
 from .run_processor_module import RunProcessor
 from .data_analysis_module import conditional_means
-from .constants import BASE_PATH, initialize_paths_comparative_statics
+from .constants import BASE_PATH, PROCESSING_SLURM_DEFAULT_CONFIG, initialize_paths_comparative_statics
 
 # Get logger for current module
 logger = logging.getLogger(__name__)
-
-PROCESS_TIME = '05:00:00'
 
 
 class ComparativeStatics:
@@ -65,6 +66,7 @@ class ComparativeStatics:
             o slurm [dict]: dictionary containing options for slurm, keys:
                 - `run`:
                 - `solver`:
+                - `processing`:
                 Each of these contains the options:
                     - `email`:
                     - `mail-type`:
@@ -95,10 +97,10 @@ class ComparativeStatics:
         self.variables: dict = variables
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
-        self.grid_points: list[Solver] = self.initialize_grid()
-        self.validate_parameters()
+        self.grid_points: list[Solver] = self._initialize_grid()
+        self._validate_parameters()
 
-    def validate_parameters(self):
+    def _validate_parameters(self):
         # Check if general parameters contains cost data
         if 'cost_path' not in self.general_parameters:
             raise ValueError(
@@ -106,7 +108,7 @@ class ComparativeStatics:
 
     ############################
     # Initialization methods
-    def initialize_grid(self):
+    def _initialize_grid(self):
         # Create a Solver object for each combination of exogenous variables
         grid_points = []
         grids = self.variables['exogenous'].values()
@@ -119,11 +121,11 @@ class ComparativeStatics:
                 exogenous_variable_0: {
                     'value': value}
             }
-            solver: Solver = self.create_solver(exogenous_variables_dict)
+            solver: Solver = self._create_solver(exogenous_variables_dict)
             grid_points.append(solver)
         return grid_points
 
-    def create_solver(self, exogenous_variables: dict):
+    def _create_solver(self, exogenous_variables: dict):
         """
         Create an investment problem for the given exogenous variables.
         """
@@ -174,9 +176,13 @@ class ComparativeStatics:
         }
         comparative_statics_data = json.dumps(comparative_statics_data)
 
-        slurm_config = self.general_parameters['slurm']['processing']
+        processing_config = self.general_parameters['slurm'].get('processing',
+                                                                 PROCESSING_SLURM_DEFAULT_CONFIG)
+        processing_config = {key: processing_config.get(key, default) 
+            for key, default in PROCESSING_SLURM_DEFAULT_CONFIG.items()}
+
         slurm_path = self.paths['bash'].parent
-        header = slurm_header(slurm_config, f"{self.name}_processing", slurm_path)
+        header = slurm_header(processing_config, f"{self.name}_processing", slurm_path)
 
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''{header}

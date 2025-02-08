@@ -16,7 +16,7 @@ import pandas as pd
 
 from .utils.auxiliary import try_get_file
 from .utils.slurm_utils import slurm_header, submit_slurm_job, wait_for_jobs
-from .constants import initialize_paths_run, create_run_name
+from .constants import RUN_SLURM_DEFAULT_CONFIG, initialize_paths_run, create_run_name
 from .data_analysis_module import profits_per_participant, std_variables, full_run_df
 
 logger = logging.getLogger(__name__)
@@ -210,11 +210,16 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        slurm_config: dict = self.general_parameters['slurm']['run']
-        slurm_path = self.paths['folder']
-        header = slurm_header(slurm_config, job_name, slurm_path)
+        run_config: dict = self.general_parameters['slurm'].get("run", RUN_SLURM_DEFAULT_CONFIG)
+        run_config = {
+            key: run_config.get(key, value)
+            for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
+        }
 
-        memory = slurm_config.get('memory', MEMORY_REQUESTED)
+        slurm_path = self.paths['folder']
+        header = slurm_header(run_config, job_name, slurm_path)
+
+        memory = run_config.get('memory', MEMORY_REQUESTED)
         temp_folder_path = f"{self.paths['folder']}/temp"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
 

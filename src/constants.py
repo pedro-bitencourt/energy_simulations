@@ -3,6 +3,28 @@ from pathlib import Path
 
 from .utils.auxiliary import make_name
 
+################################################################################################
+# SLURM DEFAULT CONFIGURATIONS
+RUN_SLURM_DEFAULT_CONFIG = {
+    'time': 0.8,
+    'memory': 5,
+    'email': None,
+    'mail-type': 'NONE'
+}
+SOLVER_SLURM_DEFAULT_CONFIG = {
+    'time': 12,
+    'memory': 5,
+    'email': None,
+    'mail-type': 'NONE'
+}
+PROCESSING_SLURM_DEFAULT_CONFIG = {
+    'time': 0.8,
+    'memory': 5,
+    'email': None,
+    'mail-type': 'NONE'
+}
+    
+
 
 ################################################################################################
 # NAME FUNCTIONS
