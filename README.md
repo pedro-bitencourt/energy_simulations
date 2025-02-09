@@ -9,6 +9,7 @@ now can be left empty to use the default values.
 Inside each exercise folder, there is now a `results` folder for the final results, and a `temp` folder 
 for the temporary files.
 4. Changed the logging configuration input.
+5. Added some visualization features to generate new graphs.
 
 ## Introduction
 
@@ -76,7 +77,7 @@ general_parameters: dict = {
     'daily': True,
     'email': 'pedro.bitencourt@u.northwestern.edu', 
     'xml_basefile': xml_basefile,
-    'cost_path': cost_data,
+    'cost_path': cost_path,
     'annual_interest_rate': 0.0,
     'slurm': slurm_config}
 
