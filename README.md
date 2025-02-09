@@ -8,6 +8,7 @@ now can be left empty to use the default values.
 3. Slightly changed the folder strucutre, now all the simulations data is stored in the `sim` folder. 
 Inside each exercise folder, there is now a `results` folder for the final results, and a `temp` folder 
 for the temporary files.
+4. Changed the logging configuration input.
 
 ## Introduction
 
@@ -38,12 +39,18 @@ Let's examine a specific example: `expensive_blackout.py`, which performs compar
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
 # Import modules from the src folder
+import sys
+sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
+from src.utils.logging_config import setup_logging
+
+# Set up logging
+setup_logging(level="debug") # Other options: "info", "warning", "error", "critical"
 
 # Input parameters
 name: str = 'expensive_blackout'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
-cost_path: str = '/projects/p32342/cost_data/original.json'
+cost_path: str = '/projects/p32342/data/costs_original.json'
 
 # Set the slurm configurations. The settings below are the default,
 # so if any field is not provided the program will use these values.
