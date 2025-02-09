@@ -181,9 +181,11 @@ class ComparativeStatics:
         processing_config = {key: processing_config.get(key, default)
                              for key, default in PROCESSING_SLURM_DEFAULT_CONFIG.items()}
 
+        processing_config['email'] = self.general_parameters.get(
+            'email', None)
         slurm_path = self.paths['bash'].parent
         header = slurm_header(
-            slurm_config, f"{self.name}_processing", slurm_path)
+            processing_config, f"{self.name}_processing", slurm_path)
 
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''{header}

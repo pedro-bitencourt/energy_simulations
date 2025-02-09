@@ -56,19 +56,16 @@ cost_path: str = '/projects/p32342/data/costs_original.json'
 # so if any field is not provided the program will use these values.
 slurm_config: dict = {
     'run': {
-        'email': None,
         'mail-type': 'NONE',
         'time': 0.8,
         'memory': 5
     },
     'solver': {
-        'email': None,
         'mail-type': 'END,FAIL',
         'time': 12,
         'memory': 5
     },
     'processing': {
-        'email': None,
         'mail-type': 'END,FAIL',
         'time': 5,
         'memory': 10
@@ -77,6 +74,7 @@ slurm_config: dict = {
 
 general_parameters: dict = {
     'daily': True,
+    'email': 'pedro.bitencourt@u.northwestern.edu', 
     'xml_basefile': xml_basefile,
     'cost_path': cost_data,
     'annual_interest_rate': 0.0,

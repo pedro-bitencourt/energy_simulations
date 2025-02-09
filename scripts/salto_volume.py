@@ -3,11 +3,11 @@ Comparative statics exercise for changing the volume of the lakes in the system.
 """
 
 import sys
-sys.path.append('/projects/p32342/dev')
-from src.comparative_statics_module import ComparativeStatics
+sys.path.append('/projects/p32342/code')
+from src.comparative_statics_module import comparativestatics
 from src.utils.logging_config import setup_logging
 
-setup_logging(level="DEBUG")
+setup_logging(level="debug")
 
 
 # Input parameters

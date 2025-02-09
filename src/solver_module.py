@@ -342,6 +342,7 @@ class Solver:
         solver_config = {
             key: solver_config.get(key, value) for key, value in SOLVER_SLURM_DEFAULT_CONFIG.items()
         }
+        solver_config['email'] = self.general_parameters.get('email', None)
         header = slurm_header(solver_config, self.name, slurm_path)
 
         # Write the bash script without a separate data file
