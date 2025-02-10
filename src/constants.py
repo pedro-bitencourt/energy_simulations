@@ -18,7 +18,7 @@ SOLVER_SLURM_DEFAULT_CONFIG = {
     'mail-type': 'NONE'
 }
 PROCESSING_SLURM_DEFAULT_CONFIG = {
-    'time': 0.8,
+    'time': 5,
     'memory': 5,
     'email': None,
     'mail-type': 'NONE'

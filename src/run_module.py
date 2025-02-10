@@ -215,6 +215,7 @@ class Run:
             key: run_config.get(key, value)
             for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
         }
+        run_config['email'] = self.general_parameters['slurm'].get('email', None)
 
         slurm_path = self.paths['folder']
         header = slurm_header(run_config, job_name, slurm_path)

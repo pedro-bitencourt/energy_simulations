@@ -7,7 +7,7 @@ sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 from src.utils.logging_config import setup_logging
 
-setup_logging(level="DEBUG")
+setup_logging(level="debug")
 
 
 # Input parameters
