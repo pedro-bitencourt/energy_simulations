@@ -1,5 +1,6 @@
 # Description: This file contains the constants used in the project.
 from pathlib import Path
+import sys
 
 from .utils.auxiliary import make_name
 
@@ -49,8 +50,12 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 ################################################################################################
 # PATHS
 ################################################################################################
-BASE_PATH: Path = Path('/projects/p32342')
-POSTE_FILEPATH = '/projects/p32342/aux/poste_dictionary.csv'
+
+# Base path is adjusted according whether we're in Quest or not
+if sys.platform in ["linux", "linux2"]:
+    BASE_PATH: Path = Path('/projects/p32342/')
+else:
+    BASE_PATH: Path = Path('/Users/pedrobitencourt/Projects/energy_simulations/')
 
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
@@ -59,7 +64,8 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['main'] = base_path / "sim" / name
     paths['temp'] = paths['main'] / 'temp'
     paths['results'] = paths['main'] / 'results'
-    paths['raw'] = paths['results'] /name / "raw"
+    paths['raw'] = paths['main'] / "raw"
+    paths['trajectories'] = paths['main'] / 'trajectories'
 
     for path in paths.values():
         path.mkdir(parents=True, exist_ok=True)
@@ -69,8 +75,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
         'slurm_out': 'temp/{name}.out',
         'slurm_err': 'temp/{name}.err',
         'solver_results': 'results/solver_results.csv',
-        'conditional_means': 'results/conditional_means.csv',
-        'master_trajectory': 'results/master_trajectory.json'
+        'conditional_means': 'results/conditional_means.csv'
     }
     paths.update({key: paths['main'] / value for key, value in files_dict.items()})
 
@@ -81,24 +86,26 @@ def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
     # Folders
     paths['parent_folder'] = parent_folder
     paths['folder'] = parent_folder / name
-    paths['master_trajectory'] = paths['parent_folder'] / 'results/master_trajectory.json'
     # Subfolders
     paths['temp'] = paths['folder'] / 'temp'
-    paths['raw'] = paths['folder'] / 'raw'
     paths['results'] = paths['folder'] / 'results'
 
     for path in paths.values():
         path.mkdir(parents=True, exist_ok=True)
 
     # Files
-    files_dict: dict[str, str] = {
+    files_folder_dict: dict[str, str] = {
         'bash': f'temp/{name}.sh',
         'slurm_out': f'temp/{name}.out',
         'slurm_err': f'temp/{name}.err',
-        'solver_trajectory': f'temp/{name}_trajectory.json',
         'solver_results': 'results/solver_results.json'
     }
-    paths.update({key: paths['folder'] / value for key, value in files_dict.items()})
+    paths.update({key: paths['folder'] / value for key, value in files_folder_dict.items()})
+    files_parent_folder_dict: dict[str, str] = {
+        'solver_trajectory': f'trajectories/{name}_trajectory.json',
+        'raw': f'raw/{name}.csv'
+    }
+    paths.update({key: parent_folder / value for key, value in files_parent_folder_dict.items()})
     return paths
 
 

@@ -60,6 +60,7 @@ class Run:
             parent_folder, self.name, name_subfolder)
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
+        self.folder: Path = self.paths['folder']
 
     def tear_down(self) -> None:
         """
@@ -269,14 +270,19 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             complete=complete)
         return run_df
 
-    def full_run_df(self):
-        run_df = self.run_df()
+    def full_run_df(self, run_df=None):
+        if run_df is None:
+            run_df = self.run_df(complete=True)
         capacities = self.capacities()
         run_df = full_run_df(run_df, capacities)
         return run_df
 
-    def results(self, results_fun):
-        run_df = self.full_run_df()
+    def results(self, results_fun, run_df_path: Path = None):
+        if run_df_path is not None:
+            run_df: pd.DataFrame = pd.read_csv(run_df_path)
+            run_df = self.full_run_df(run_df)
+        else:
+            run_df: pd.DataFrame = self.full_run_df(self.run_df())
         results_dict: dict = results_fun(run_df)
         results_dict['name'] = self.name
         results_dict.update(self.variables)

@@ -34,9 +34,8 @@ VARIABLES = [
 
 logger = logging.getLogger(__name__)
 
-QUERIES_DICT: dict[str, str] = load_events()
-
-
+##################################################################
+# Functions to compute the objective function of the Solver class
 def profits_per_participant(run_df: pd.DataFrame,
                       capacities: dict[str, float],
                       cost_path: Path) -> Dict:
@@ -112,6 +111,9 @@ def profits_per_participant(run_df: pd.DataFrame,
     return results_dict
 
 
+##################################################################
+# Functions to compute results
+
 def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
     for participant in PARTICIPANTS:
         run_df[f'revenue_{participant}'] = (run_df[f'production_{participant}'] *
@@ -130,16 +132,13 @@ def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
 
     return run_df
 
-# Helper function to compute metrics for each participant
-
-
-
-
 def conditional_means(run_df: pd.DataFrame) -> dict:
     # Initialize results dictionary
     results_dict: dict = {}
 
-    for query_name, query in QUERIES_DICT.items():
+    events_queries, _ = load_events()
+
+    for query_name, query in events_queries.items():
         try:
             query_frequency = run_df.query(
                 query).shape[0] / run_df.shape[0]
@@ -147,8 +146,10 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
             for variable in VARIABLES:
                 results_dict[f'{query_name}_{variable}'] = run_df.query(query)[
                     variable].mean()
-        except KeyError:
-            logger.error('Query %s not successful', query_name)
+        except KeyError as key_error:
+            logger.error('Query %s not successful, with KeyError: %s', query_name, key_error)
+            logger.debug('Keys in run_df: %s', run_df.keys())
+            logger.debug('Variables expected: %s', VARIABLES)
             continue
     return results_dict
 

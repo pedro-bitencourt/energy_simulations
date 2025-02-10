@@ -45,7 +45,6 @@ import pandas as pd
 from .utils.slurm_utils import submit_slurm_job, slurm_header
 from .solver_module import Solver
 from .run_module import Run
-from .run_processor_module import RunProcessor
 from .data_analysis_module import conditional_means
 from .constants import BASE_PATH, PROCESSING_SLURM_DEFAULT_CONFIG, initialize_paths_comparative_statics
 
@@ -224,35 +223,39 @@ END
     ############################
     # Processing methods
     def process(self, complete=True):
+        self.extract(complete=complete)
+        
+        self.compute_conditional_means()
+
+
+    def extract(self, complete=True):
         self.extract_runs_dataframes(complete=complete)
         solver_results_df = self.solver_results()
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
+    def compute_conditional_means(self):
         conditional_means_df = self.construct_results(
             results_function=conditional_means)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
 
-    def extract_runs_dataframes(self, complete: bool = True) -> None:
+    def extract_runs_dataframes(self, complete: bool = True, resubmit: bool = False) -> None:
         logger.info("Extracting data from MOP's outputs...")
         for solver in self.grid_points:
             run: Run = solver.last_run()
-            try:
-                run_processor: RunProcessor = RunProcessor(
-                    run, complete=complete)
-            except FileNotFoundError:
+
+            if resubmit and not run.successful(complete=complete):
                 logger.error(
                     "Run %s not successful. Skipping and resubmitting...", run.name)
                 run.submit()
                 continue
 
-            run_df = run_processor.construct_run_df(
-                complete=complete)
+            run_df = run.full_run_df()
 
             logger.info(
                 "Successfuly extracted data from run %s. Saving to disk...", run.name)
-            run_df.to_csv(self.paths['raw'] / f"{solver.name}.csv",
+            run_df.to_csv(solver.paths['raw'],
                           index=False)
 
     def solver_results(self):
@@ -266,7 +269,7 @@ END
         # Create a list to store rows
         rows = []
         for point in self.grid_points:
-            results_dict = point.last_run().results(results_function)
+            results_dict = point.last_run().results(results_function, run_df_path=point.paths['raw'])
             # Append the row to our list
             rows.append(results_dict)
         results_df = pd.DataFrame(rows)

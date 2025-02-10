@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 # Local imports
-from src.constants import DATETIME_FORMAT, POSTE_FILEPATH
+from src.constants import DATETIME_FORMAT
 from src.utils import auxiliary
 
 
@@ -276,42 +276,48 @@ def convert_from_poste_to_datetime(participant_df: pd.DataFrame,
 def convert_from_poste_to_datetime_weekly(participant_df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts 'poste' time format to datetime for weekly data.
+
+    Currently, we're not utilizing weekly runs, so this function is commented out.
+    
+    This function is also incorrect, as it assumes a single poste dictionary across all
+    runs. Thus, if this is needed in the future, one must first fix this issue.
     """
-    poste_dict_df = pd.read_csv(POSTE_FILEPATH)
-    scenario_columns = [col for col in poste_dict_df.columns if col.isdigit()]
-    poste_dict_long = pd.melt(
-        poste_dict_df,
-        id_vars=["paso", "paso_start", "datetime"],
-        value_vars=scenario_columns,
-        var_name="scenario",
-        value_name="poste",
-    )
+    pass
+    #poste_dict_df = pd.read_csv(POSTE_FILEPATH)
+    #scenario_columns = [col for col in poste_dict_df.columns if col.isdigit()]
+    #poste_dict_long = pd.melt(
+    #    poste_dict_df,
+    #    id_vars=["paso", "paso_start", "datetime"],
+    #    value_vars=scenario_columns,
+    #    var_name="scenario",
+    #    value_name="poste",
+    #)
 
-    poste_dict_long = poste_dict_long.astype({"paso": int, "poste": int})
-    participant_df = participant_df.astype({"paso": int, "poste": int})
-    poste_dict_long["datetime"] = pd.to_datetime(
-        poste_dict_long["datetime"], format=DATETIME_FORMAT
-    )
+    #poste_dict_long = poste_dict_long.astype({"paso": int, "poste": int})
+    #participant_df = participant_df.astype({"paso": int, "poste": int})
+    #poste_dict_long["datetime"] = pd.to_datetime(
+    #    poste_dict_long["datetime"], format=DATETIME_FORMAT
+    #)
 
-    participant_long = pd.melt(
-        participant_df, id_vars=["paso", "poste"], var_name="scenario", value_name="value"
-    )
+    #participant_long = pd.melt(
+    #    participant_df, id_vars=["paso", "poste"], var_name="scenario", value_name="value"
+    #)
 
-    result = pd.merge(
-        participant_long,
-        poste_dict_long,
-        on=["paso", "poste", "scenario"],
-        how="left",
-    )
+    #result = pd.merge(
+    #    participant_long,
+    #    poste_dict_long,
+    #    on=["paso", "poste", "scenario"],
+    #    how="left",
+    #)
 
-    result = result.dropna(subset=["datetime", "value"])
-    result = result.sort_values(["datetime", "scenario"])
-    result = result.drop_duplicates(
-        subset=["datetime", "scenario"], keep="first")
+    #result = result.dropna(subset=["datetime", "value"])
+    #result = result.sort_values(["datetime", "scenario"])
+    #result = result.drop_duplicates(
+    #    subset=["datetime", "scenario"], keep="first")
 
-    final_result = result.pivot(
-        index="datetime", columns="scenario", values="value")
-    final_result = final_result.sort_index()
-    final_result["datetime"] = final_result.index
+    #final_result = result.pivot(
+    #    index="datetime", columns="scenario", values="value")
+    #final_result = final_result.sort_index()
+    #final_result["datetime"] = final_result.index
 
-    return final_result
+    #return final_result

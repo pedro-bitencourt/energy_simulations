@@ -72,6 +72,7 @@ def load_events() -> dict[str, str]:
     """
     events_config = load_config(EVENTS_CONFIG_JSON_PATH)
     events = {}
+    events_labels = {}
 
     for event_name, event_config in events_config.items():
         for rhs_entry in event_config['rhs']:
@@ -82,11 +83,11 @@ def load_events() -> dict[str, str]:
                 # Create label
                 event_label: str = event_config['label'].replace(
                     "$", str(rhs_entry))
-                events[f"{event_name}_{rhs_entry}_label"] = event_label
+                events_labels[f"{event_name}_{rhs_entry}"] = event_label
             elif event_config['rhs_type'] == 'index':
                 event_query: str = f"{event_config['lhs']} {event_config['operator']} {rhs_entry}"
                 events[f"{event_name}"] = event_query
-    return events
+    return events, events_labels
 
 
 def load_plots() -> dict:
@@ -114,3 +115,7 @@ def load_comparisons() -> dict:
         dict: Dictionary with the comparisons.
     """
     return load_config(COMPARISONS_JSON_PATH)
+
+
+events, events_labels = load_events()
+print(events)
