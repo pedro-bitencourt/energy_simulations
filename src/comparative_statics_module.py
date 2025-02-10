@@ -183,7 +183,7 @@ class ComparativeStatics:
 
         slurm_path = self.paths['bash'].parent
         header = slurm_header(
-            slurm_config, f"{self.name}_processing", slurm_path)
+            processing_config, f"{self.name}_processing", slurm_path)
 
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''{header}
@@ -193,12 +193,11 @@ module load python-miniconda3/4.12.0
 python - <<END
 import sys
 import json
-import logging
 sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 from src.utils.logging_config import setup_logging
 
-setup_logging(level = logging.DEBUG)
+setup_logging(level = "INFO")
 
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
@@ -227,6 +226,7 @@ END
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
+        logger.info("Data extraction completed. Computing results...")
         conditional_means_df = self.construct_results(
             results_function=conditional_means)
         conditional_means_df.to_csv(

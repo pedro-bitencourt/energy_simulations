@@ -40,7 +40,7 @@ def slurm_header(slurm_config: dict, job_name: str, slurm_path: Path) -> str:
 #SBATCH --job-name={job_name}
 #SBATCH --output={slurm_path}/slurm.out
 #SBATCH --error={slurm_path}/slurm.err
-#SBATCH --exclude=qhimem[0207-0208]
+#SBATCH --exclude=qhimem[0207-0208],qnode0255,qnode0257,qnode0260
 {email_line}
 {mail_type_line}
 '''

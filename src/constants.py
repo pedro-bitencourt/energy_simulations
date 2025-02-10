@@ -23,7 +23,6 @@ PROCESSING_SLURM_DEFAULT_CONFIG = {
     'email': None,
     'mail-type': 'NONE'
 }
-    
 
 
 ################################################################################################
@@ -59,7 +58,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['main'] = base_path / "sim" / name
     paths['temp'] = paths['main'] / 'temp'
     paths['results'] = paths['main'] / 'results'
-    paths['raw'] = paths['results'] /name / "raw"
+    paths['raw'] = paths['results'] / name / "raw"
 
     for path in paths.values():
         path.mkdir(parents=True, exist_ok=True)
@@ -72,16 +71,19 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
         'conditional_means': 'results/conditional_means.csv',
         'master_trajectory': 'results/master_trajectory.json'
     }
-    paths.update({key: paths['main'] / value for key, value in files_dict.items()})
+    paths.update({key: paths['main'] / value for key,
+                 value in files_dict.items()})
 
     return paths
+
 
 def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
     paths: dict[str, Path] = {}
     # Folders
     paths['parent_folder'] = parent_folder
     paths['folder'] = parent_folder / name
-    paths['master_trajectory'] = paths['parent_folder'] / 'results/master_trajectory.json'
+    paths['master_trajectory'] = paths['parent_folder'] / \
+        'results/master_trajectory.json'
     # Subfolders
     paths['temp'] = paths['folder'] / 'temp'
     paths['raw'] = paths['folder'] / 'raw'
@@ -95,10 +97,11 @@ def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
         'bash': f'temp/{name}.sh',
         'slurm_out': f'temp/{name}.out',
         'slurm_err': f'temp/{name}.err',
-        'solver_trajectory': f'temp/{name}_trajectory.json',
+        'solver_trajectory': f'{name}_trajectory.json',
         'solver_results': 'results/solver_results.json'
     }
-    paths.update({key: paths['folder'] / value for key, value in files_dict.items()})
+    paths.update({key: paths['folder'] / value for key,
+                 value in files_dict.items()})
     return paths
 
 

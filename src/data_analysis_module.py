@@ -38,8 +38,8 @@ QUERIES_DICT: dict[str, str] = load_events()
 
 
 def profits_per_participant(run_df: pd.DataFrame,
-                      capacities: dict[str, float],
-                      cost_path: Path) -> Dict:
+                            capacities: dict[str, float],
+                            cost_path: Path) -> Dict:
     """
     Computes profits for the specified endogenous variables.
 
@@ -50,10 +50,12 @@ def profits_per_participant(run_df: pd.DataFrame,
 
     hourly_fixed_costs = load_costs(cost_path)
     results_dict: dict = {}
-    def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float, fixed_costs: dict) -> dict:
+
+    def compute_participant_metrics(run_df: pd.DataFrame, participant: str,
+                                    capacity_mw: float) -> dict:
         """
         For a given run, compute the economic metrics for a given participant.
-    
+
         Arguments:
             run_df (pd.DataFrame): DataFrame containing the data for the run.
             participant (str): Name of the participant.
@@ -64,7 +66,7 @@ def profits_per_participant(run_df: pd.DataFrame,
             revenues: float = (run_df[f'production_{participant}'] *
                                run_df['marginal_cost']).mean()
             return revenues
-    
+
         def variable_costs_hour(run_df: pd.DataFrame, participant: str) -> float:
             if participant != 'thermal':
                 return 0
@@ -75,7 +77,7 @@ def profits_per_participant(run_df: pd.DataFrame,
 
         revenue = revenue_hour(run_df, participant)
         variable_costs = variable_costs_hour(run_df, participant)
-    
+
         fixed_costs = hourly_fixed_costs[participant]
         return {
             f'{participant}_capacity_mw': capacity_mw,
@@ -124,15 +126,12 @@ def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
     run_df['production_total'] = run_df[[
         f'production_{participant}' for participant in PARTICIPANTS]].sum(axis=1)
 
-
     run_df['lost_load'] = (run_df['demand'] -
                            run_df['production_total']).clip(lower=0)
 
     return run_df
 
 # Helper function to compute metrics for each participant
-
-
 
 
 def conditional_means(run_df: pd.DataFrame) -> dict:
