@@ -268,7 +268,7 @@ class Solver:
         return profits_perturb['current'], derivatives
 
 
-    def solver_results(self, resubmit: bool = False) -> dict:
+    def solver_results(self, resubmit: bool = False, complete: bool = True) -> dict:
         """
         Returns the results of the solver for the last iteration.
 
@@ -286,19 +286,22 @@ class Solver:
                 self.submit()
             return {}
 
+        last_run: Run = self.last_run()
+
         def create_header(last_iteration: Iteration) -> dict:
             exo_vars: dict = {key: entry['value']
                               for key, entry in self.exogenous_variable.items()}
             header: dict = {
                 'name': self.name,
                 'iteration': last_iteration.iteration,
+                **last_run.capacities(),
                 **exo_vars,
                 **last_iteration.capacities
             }
             return header
 
         solver_results: dict = create_header(last_iteration)
-        solver_results.update(self.last_run().get_profits())
+        solver_results.update(self.last_run().get_profits(complete=complete))
         solver_results['convergence_reached'] = convergence_reached
 
         return solver_results

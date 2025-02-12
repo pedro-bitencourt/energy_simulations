@@ -27,7 +27,7 @@ VARIABLES = [
     *[f'revenue_{participant}' for participant in PARTICIPANTS],
     *[f'profit_{participant}' for participant in PARTICIPANTS],
     'water_level_salto',
-    'production_excedentes',
+    #    'production_excedentes',
     'marginal_cost',
     'demand'
 ]
@@ -52,7 +52,7 @@ def profits_per_participant(run_df: pd.DataFrame,
     hourly_fixed_costs = load_costs(cost_path)
     results_dict: dict = {}
 
-    def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float, fixed_costs: dict) -> dict:
+    def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float) -> dict:
         """
         For a given run, compute the economic metrics for a given participant.
 
@@ -154,6 +154,12 @@ def conditional_means(run_df: pd.DataFrame) -> dict:
                 'Query %s not successful, with KeyError: %s', query_name, key_error)
             logger.debug('Keys in run_df: %s', run_df.keys())
             logger.debug('Variables expected: %s', VARIABLES)
+            continue
+        except pd.errors.UndefinedVariableError as variable_error:
+            logger.error(
+                'Query %s not successful, with UndefinedVariableError: %s', query_name, variable_error)
+            logger.debug('Variables expected: %s', VARIABLES)
+            logger.debug('Variables in run_df: %s', run_df.keys())
             continue
     return results_dict
 

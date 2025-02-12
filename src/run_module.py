@@ -62,6 +62,7 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
         self.folder: Path = self.paths['folder']
 
+
     def tear_down(self) -> None:
         """
         Deletes the folder and its contents.
@@ -265,7 +266,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         # Initialize the RunProcessor object
         run_processor = RunProcessor(self)
 
-        # Read the run dataframe
+        # Extract the run dataframe
         run_df: pd.DataFrame = run_processor.construct_run_df(
             complete=complete)
         return run_df
@@ -277,45 +278,45 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         run_df = full_run_df(run_df, capacities)
         return run_df
 
-    def results(self, results_fun, run_df_path: Path = None):
+    def results(self, results_fun, run_df_path = None):
         if run_df_path is not None:
             run_df: pd.DataFrame = pd.read_csv(run_df_path)
             run_df = self.full_run_df(run_df)
         else:
-            run_df: pd.DataFrame = self.full_run_df(self.run_df())
+            run_df: pd.DataFrame = self.full_run_df(self.run_df(complete=True))
         results_dict: dict = results_fun(run_df)
         results_dict['name'] = self.name
         results_dict.update(self.variables)
         return results_dict
 
 
-    def get_profits_data_dict(self, complete: bool = False):
+    def get_profits_dict(self, complete: bool = False, run_df_path = None):
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
 
         participants = PARTICIPANTS_LIST_ENDOGENOUS
 
-        run_df = self.run_df(complete=complete)
+        if run_df_path is not None:
+            run_df: pd.DataFrame = pd.read_csv(run_df_path)
+        else:
+            run_df = self.run_df(complete=complete)
         capacities = self.capacities()
 
-        # Compute profits data
-        profits_data: dict = profits_per_participant(run_df, capacities, self.general_parameters['cost_path'])
+        profits_dict: dict = profits_per_participant(run_df, capacities, self.general_parameters['cost_path'])
 
         # Save to disk using json
         self.paths['folder'].joinpath(
-            'profits_data.json').write_text(json.dumps(profits_data))
+            'profits_data.json').write_text(json.dumps(profits_dict))
 
         if complete:
             run_df = full_run_df(run_df, capacities)
             revenues_variables = [f'revenue_{participant}'
                                   for participant in participants]
             std_revenues = std_variables(run_df, revenues_variables)
-
-            # update the profits data with the standard deviations
-            profits_data.update(std_revenues)
+            profits_dict.update(std_revenues)
 
         logger.debug("profits_data for %s:", self.name)
-        logger.debug(profits_data)
-        return profits_data
+        logger.debug(profits_dict)
+        return profits_dict
 
     def capacities(self):
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
@@ -340,7 +341,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         """
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
         try:
-            profits_dict: dict = self.get_profits_data_dict(complete=complete)
+            profits_dict: dict = self.get_profits_dict(complete=complete)
         except FileNotFoundError:
             if resubmit:
                 logger.error(

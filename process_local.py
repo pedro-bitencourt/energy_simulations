@@ -72,5 +72,4 @@ comparative_statics = ComparativeStatics(
 )
 
 
-comparative_statics.compute_conditional_means()
-
+comparative_statics.profits_results()

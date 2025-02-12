@@ -75,6 +75,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
         'slurm_out': 'temp/{name}.out',
         'slurm_err': 'temp/{name}.err',
         'solver_results': 'results/solver_results.csv',
+        'profits': 'results/profits.csv',
         'conditional_means': 'results/conditional_means.csv'
     }
     paths.update({key: paths['main'] / value for key, value in files_dict.items()})
