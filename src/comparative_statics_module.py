@@ -228,9 +228,10 @@ END
         self.compute_conditional_means()
 
 
-    def extract(self, complete=True):
-        self.extract_runs_dataframes(complete=complete)
+
+    def compute_solver_results(self):
         solver_results_df = self.solver_results()
+        print(solver_results_df)
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
@@ -240,7 +241,7 @@ END
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
 
-    def extract_runs_dataframes(self, complete: bool = True, resubmit: bool = False) -> None:
+    def extract(self, complete: bool = True, resubmit: bool = False) -> None:
         logger.info("Extracting data from MOP's outputs...")
         for solver in self.grid_points:
             run: Run = solver.last_run()
@@ -257,6 +258,15 @@ END
                 "Successfuly extracted data from run %s. Saving to disk...", run.name)
             run_df.to_csv(solver.paths['raw'],
                           index=False)
+
+    def profits_results(self):
+        rows: list = []
+        for solver in self.grid_points:
+            run_df_path = solver.paths['raw']
+            rows.append(solver.last_run().get_profits_dict(run_df_path=run_df_path))
+        results_df: pd.DataFrame = pd.DataFrame(rows)
+        results_df.to_csv(self.paths['profits'], index=False)
+
 
     def solver_results(self):
         rows: list = []

@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 PARTICIPANTS_LIST_ALL: list = ['wind', 'solar',
-                               'thermal', 'salto', 'demand']  # , 'excedentes']
+                               'thermal', 'salto', 'demand']#, 'excedentes']
 PARTICIPANTS_LIST_ENDOGENOUS: list = ['wind', 'solar', 'thermal']
 PARTICIPANTS: Dict[str, Dict[str, str]] = {
     "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},

@@ -10,7 +10,8 @@ library(ggplot2)
 if(interactive()) {
   experiment_name <- "qturbmax"
   experiment_name <- "factor_compartir"
-  simulation_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/simulations/", experiment_name)
+  experiment_name <- "salto_volume"
+  simulation_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/sim/", experiment_name)
 } else{
   args <- commandArgs(trailingOnly = TRUE)
   simulation_folder <- args[1]
@@ -23,7 +24,7 @@ graphics_folder <- paste0(simulation_folder, "/figures/runs/")
 
 
 # Read investment results
-investment_results <- read.csv(paste0(simulation_folder, "/investment_results.csv"))
+investment_results <- read.csv(paste0(simulation_folder, "/results/profits.csv"))
 
 
 
@@ -227,13 +228,13 @@ analyze_run <- function(run_file) {
     summarise(prob_price_4000 = mean(price_4000),
               prob_price_193_4000 = mean(price_193_4000))
   
-  results$q25_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.25) * 8760
-  results$q50_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.50) * 8760
-  results$q75_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.75) * 8760
+  results$q25_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.25, names=FALSE) * 8760
+  results$q50_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.50, names=FALSE) * 8760
+  results$q75_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.75, names=FALSE) * 8760
   
-  results$q25_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.25) * 8760
-  results$q50_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.50) * 8760
-  results$q75_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.75) * 8760
+  results$q25_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.25, names=FALSE) * 8760
+  results$q50_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.50, names=FALSE) * 8760
+  results$q75_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.75, names=FALSE) * 8760
   
   # LCOE
   results$lcoe <- (
@@ -243,15 +244,15 @@ analyze_run <- function(run_file) {
     capacities$thermal_variable_costs_hour) / mean(data$production_demand)
   
     
-  message("Finished ", run_name, " summary statistics:")
+  message("Finished ", run_name, " summary statistics:", results)
   return(results)
-}
+  }
 
 run_files <- list.files(raw_folder, full.names = TRUE)
 all_results <- list()
 for(run_file in run_files) {
   run_results <- analyze_run(run_file)
-  all_results <- append(all_results, list(run_results))
+  all_results <- append(all_results, run_results)
 }
 # Convert the list of results to a dataframe
 results_df <- do.call(rbind, lapply(all_results, as.data.frame))  # Each run becomes a row
@@ -260,3 +261,6 @@ results_df <- data.frame(results_df, row.names = NULL)  # Ensure a clean datafra
 # Save to a CSV file
 output_file <- file.path(simulation_folder, "results_summary.csv")
 write.csv(results_df, output_file)
+
+
+
