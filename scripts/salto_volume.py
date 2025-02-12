@@ -1,19 +1,19 @@
 """
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
-
 import sys
 sys.path.append('/projects/p32342/code')
-from src.comparative_statics_module import comparativestatics
+
 from src.utils.logging_config import setup_logging
+from src.comparative_statics_module import ComparativeStatics
 
 setup_logging(level="debug")
 
 
 # Input parameters
 name: str = 'salto_volume'
-xml_basefile: str = f'/projects/p32342/dev/xml/{name}.xml'
-costs_path: str = f'/projects/p32342/dev/cost_data/original.json'
+xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
+costs_path: str = f'/projects/p32342/code/cost_data/original.json'
 
 slurm_configs: dict = {
     'run': {
@@ -46,6 +46,7 @@ general_parameters: dict = {
 }
 
 exog_grid: list[float] = [0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 2, 3, 5]
+exog_grid: list[float] = [0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 2, 3, 5]
 exogenous_variables: dict[str, dict] = {
     'lake_factor': {'grid': exog_grid},
 }
@@ -69,7 +70,7 @@ comparative_statics = ComparativeStatics(
 
 
 # Submit the solver jobs
-#comparative_statics.prototype()
-#comparative_statics.submit_solvers()
+# comparative_statics.prototype()
+# comparative_statics.submit_solvers()
 # Submit the processing job
 comparative_statics.submit_processing()

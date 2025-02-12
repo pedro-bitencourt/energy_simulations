@@ -199,11 +199,12 @@ sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 from src.utils.logging_config import setup_logging
 
-setup_logging(level = logging.DEBUG)
+setup_logging(level = "debug")
 
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
-comparative_statics.process()
+comparative_statics.extract()
+#comparative_statics.compute_conditional_means()
 comparative_statics.clear_folders()
 END
 ''')
@@ -224,9 +225,8 @@ END
     # Processing methods
     def process(self, complete=True):
         self.extract(complete=complete)
-        
-        self.compute_conditional_means()
 
+        self.compute_conditional_means()
 
     def extract(self, complete=True):
         self.extract_runs_dataframes(complete=complete)
@@ -269,7 +269,8 @@ END
         # Create a list to store rows
         rows = []
         for point in self.grid_points:
-            results_dict = point.last_run().results(results_function, run_df_path=point.paths['raw'])
+            results_dict = point.last_run().results(
+                results_function, run_df_path=point.paths['raw'])
             # Append the row to our list
             rows.append(results_dict)
         results_df = pd.DataFrame(rows)
