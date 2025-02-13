@@ -1,0 +1,40 @@
+{'unconditional': 'index == index', 'water_level_31': 'water_level_salto < 31', 'water_level_32': 'water_level_salto < 32', 'water_level_33': 'water_level_salto < 33', 'water_level_34': 'water_level_salto < 34', 'low_wind_0.01': 'utilization_wind < 0.01', 'low_wind_0.05': 'utilization_wind < 0.05', 'low_wind_0.1': 'utilization_wind < 0.1', 'low_wind_0.25': 'utilization_wind < 0.25', 'lost_load_1': 'lost_load > 1', 'lost_load_100': 'lost_load > 100', 'lost_load_250': 'lost_load > 250', 'lost_load_500': 'lost_load > 500', 'negative_lost_load_1': 'production_excedentes > 1', 'positive_thermal_production_0.01': 'production_thermal > 0.01', 'positive_hydro_production_0.01': 'production_salto > 0.01'}
+[10:18:23] INFO     Initializing the ComparativeStatics object.                                                                                                             comparative_statics_module.py:90
+[0.05]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.05_trajectory.json.                           solver_module.py:81
+[0.1]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.1_trajectory.json.                            solver_module.py:81
+[0.2]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.2_trajectory.json.                            solver_module.py:81
+[0.3]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.3_trajectory.json.                            solver_module.py:81
+[0.4]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.4_trajectory.json.                            solver_module.py:81
+[0.5]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.5_trajectory.json.                            solver_module.py:81
+[0.7]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.7_trajectory.json.                            solver_module.py:81
+[0.9]
+           INFO     Successfully loaded optimization trajectory from /projects/p32342/sim/salto_volume_new/trajectories/salto_volume_new_0.9_trajectory.json.                            solver_module.py:81
+[1]
+           INFO     Initializing optimization trajectory at the initial guess.                                                                                                           solver_module.py:86
+[1.25]
+           INFO     Initializing optimization trajectory at the initial guess.                                                                                                           solver_module.py:86
+[1.5]
+           INFO     Initializing optimization trajectory at the initial guess.                                                                                                           solver_module.py:86
+[2]
+           INFO     Initializing optimization trajectory at the initial guess.                                                                                                           solver_module.py:86
+[3]
+           INFO     Initializing optimization trajectory at the initial guess.                                                                                                           solver_module.py:86
+[5]
+           INFO     Initializing optimization trajectory at the initial guess.                                                                                                           solver_module.py:86
+           INFO     Extracting data from MOP's outputs...                                                                                                                  comparative_statics_module.py:245
+[0.05, 2094.0, 1887.0, 4589.0]
+[0.05, 2094.0, 1887.0, 4589.0]
+           DEBUG    No sim folder found for run 0.05_2094_1887_4589 in folder /projects/p32342/sim/salto_volume_new/salto_volume_new_0.05/0.05_2094_1887_4589/CAD-2024-DIARIA              run_module.py:114
+           DEBUG    None does not contain file resumen*                                                                                                                                    run_module.py:142
+           DEBUG    None does not contain file EOLO_eoloDeci/potencias*.xlt                                                                                                                run_module.py:142
+           DEBUG    None does not contain file FOTOV_solarDeci/potencias*.xlt                                                                                                              run_module.py:142
+           DEBUG    None does not contain file DEM_demand/potencias*.xlt                                                                                                                   run_module.py:142
+           ERROR    Run 0.05_2094_1887_4589 was not successful.                                                                                                                   run_processor_module.py:85
+           ERROR    Missing files: ['resumen*', 'EOLO_eoloDeci/potencias*.xlt', 'FOTOV_solarDeci/potencias*.xlt', 'DEM_demand/potencias*.xlt']                                    run_processor_module.py:86

@@ -92,7 +92,7 @@ class RunProcessor(Run):
         else:
             participants: list = PARTICIPANTS_LIST_ENDOGENOUS
 
-        logging.info('Extracting random variables dataframes...')
+        logging.info(f'Extracting dataframes for run {self.name}')
 
         # Extract marginal cost data
         random_variables_df = self.marginal_cost_df()

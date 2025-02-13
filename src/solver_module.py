@@ -129,6 +129,7 @@ class Solver:
                                    variable in self.exogenous_variable.items()}
         variables: dict = {**exogenous_variable_temp, **capacities}
         # create the Run object
+        logger.debug("Creating run with variables: %s", variables)
         run: Run = Run(self.paths['folder'],
                        self.general_parameters,
                        variables)
@@ -174,7 +175,8 @@ class Solver:
                     'Convergence reached. Current iteration %s', current_iteration)
 
                 solver_results_dict = self.solver_results()
-                json.dump(solver_results_dict, open(self.paths['solver_results'], 'w'), indent=4)
+                json.dump(solver_results_dict, open(
+                    self.paths['solver_results'], 'w'), indent=4)
                 return
 
             # Compute the new investment
@@ -197,7 +199,8 @@ class Solver:
         # save results
         self._save_trajectory()
         solver_results_dict = self.solver_results()
-        json.dump(solver_results_dict, open(self.paths['solver_results'], 'w'), indent=4)
+        json.dump(solver_results_dict, open(
+            self.paths['solver_results'], 'w'), indent=4)
         return
 
     def clear_runs_folders(self, capacities=None, force=False):
@@ -224,8 +227,7 @@ class Solver:
                     logger.info("Successfully deleted directory %s", directory)
                 except OSError:
                     logger.warning("Could not delete directory %s",
-                                    directory)
-
+                                   directory)
 
     def perturbed_runs(self, capacities: dict) -> dict[str, Run]:
         # Create a dict of the perturbed runs to compute the derivatives
@@ -236,7 +238,6 @@ class Solver:
             investment[var] += self.solver_options['delta']
             perturbed_runs_dict[var] = self.run_factory(investment)
         return perturbed_runs_dict
-
 
     def profits_and_derivatives(self, capacities: dict) -> tuple[dict, dict]:
         '''
@@ -267,7 +268,6 @@ class Solver:
             profits_perturb, self.solver_options['delta'], list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
-
     def solver_results(self, resubmit: bool = False, complete: bool = True) -> dict:
         """
         Returns the results of the solver for the last iteration.
@@ -280,7 +280,8 @@ class Solver:
             self.solver_trajectory)
         convergence_reached: bool = last_iteration.check_convergence()
         if not convergence_reached:
-            logger.error("Convergence not reached, current iteration: %s", last_iteration)
+            logger.error(
+                "Convergence not reached, current iteration: %s", last_iteration)
             if resubmit:
                 logger.info("Resubmitting the solver")
                 self.submit()
@@ -342,7 +343,8 @@ class Solver:
 
         slurm_path = self.paths['bash'].parent
 
-        solver_config = self.general_parameters['slurm'].get('solver', SOLVER_SLURM_DEFAULT_CONFIG)
+        solver_config = self.general_parameters['slurm'].get(
+            'solver', SOLVER_SLURM_DEFAULT_CONFIG)
         solver_config = {
             key: solver_config.get(key, value) for key, value in SOLVER_SLURM_DEFAULT_CONFIG.items()
         }
@@ -369,9 +371,8 @@ investment_data = json.loads('''{investment_data_str}''')
 sys.path.append('/projects/p32342/code')
 from src.solver_module import Solver
 from src.utils.logging_config import setup_logging
-import logging
 
-setup_logging(level=logging.{logging_level})
+setup_logging(level="logging_level")
 
 solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')

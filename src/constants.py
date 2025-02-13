@@ -24,13 +24,14 @@ PROCESSING_SLURM_DEFAULT_CONFIG = {
     'email': None,
     'mail-type': 'NONE'
 }
-    
 
 
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
 def create_run_name(variables: dict):
+    # Order the variables alphabetically
+    variables: dict = dict(sorted(variables.items()))
     # Extract the values directly, assuming they are floats
     var_values: list[float] = list(variables.values())
 
@@ -55,7 +56,8 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 if sys.platform in ["linux", "linux2"]:
     BASE_PATH: Path = Path('/projects/p32342/')
 else:
-    BASE_PATH: Path = Path('/Users/pedrobitencourt/Projects/energy_simulations/')
+    BASE_PATH: Path = Path(
+        '/Users/pedrobitencourt/Projects/energy_simulations/')
 
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
@@ -78,9 +80,11 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
         'profits': 'results/profits.csv',
         'conditional_means': 'results/conditional_means.csv'
     }
-    paths.update({key: paths['main'] / value for key, value in files_dict.items()})
+    paths.update({key: paths['main'] / value for key,
+                 value in files_dict.items()})
 
     return paths
+
 
 def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
     paths: dict[str, Path] = {}
@@ -101,12 +105,14 @@ def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
         'slurm_err': f'temp/{name}.err',
         'solver_results': 'results/solver_results.json'
     }
-    paths.update({key: paths['folder'] / value for key, value in files_folder_dict.items()})
+    paths.update({key: paths['folder'] / value for key,
+                 value in files_folder_dict.items()})
     files_parent_folder_dict: dict[str, str] = {
         'solver_trajectory': f'trajectories/{name}_trajectory.json',
         'raw': f'raw/{name}.csv'
     }
-    paths.update({key: parent_folder / value for key, value in files_parent_folder_dict.items()})
+    paths.update({key: parent_folder / value for key,
+                 value in files_parent_folder_dict.items()})
     return paths
 
 
@@ -135,8 +141,7 @@ def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict
     paths['slurm_err'] = folder / f'{name}.err'
 
     # Add paths for results and price distribution files
-    paths['random_variables'] = paths['folder'] / \
-        'random_variables.csv'
+    paths['random_variables'] = paths['folder'] / 'random_variables.csv'
     return paths
 
 

@@ -223,11 +223,10 @@ END
 
     ############################
     # Processing methods
-    def process(self, complete=True):
-        self.extract(complete=complete)
+    def process(self, complete=True, resubmit=True):
+        self.extract(complete=complete, resubmit=resubmit)
 
         self.compute_conditional_means()
-
 
     def compute_solver_results(self):
         solver_results_df = self.solver_results()
@@ -263,10 +262,10 @@ END
         rows: list = []
         for solver in self.grid_points:
             run_df_path = solver.paths['raw']
-            rows.append(solver.last_run().get_profits_dict(run_df_path=run_df_path))
+            rows.append(solver.last_run().get_profits_dict(
+                run_df_path=run_df_path))
         results_df: pd.DataFrame = pd.DataFrame(rows)
         results_df.to_csv(self.paths['profits'], index=False)
-
 
     def solver_results(self):
         rows: list = []

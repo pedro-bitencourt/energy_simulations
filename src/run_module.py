@@ -62,6 +62,22 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
         self.folder: Path = self.paths['folder']
 
+        self.log_run()
+
+    def log_run(self):
+        logger.debug("Run %s", self.name)
+        logger.debug("=" * 40)
+        logger.debug(f"Parent Folder: {self.folder}")
+        logger.debug(f"Parent Name: {self.parent_name}")
+        logger.debug(f"Run Name: {self.name}")
+        logger.debug(f"General Parameters: {self.general_parameters}")
+        logger.debug(f"Variables:")
+        for key, value in self.variables.items():
+            logger.debug(f"  {key}: {value}")
+        logger.debug(f"Paths:")
+        for key, path in self.paths.items():
+            logger.debug(f"  {key}: {path}")
+        logger.debug("=" * 40)
 
     def tear_down(self) -> None:
         """
@@ -212,12 +228,14 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        run_config: dict = self.general_parameters['slurm'].get("run", RUN_SLURM_DEFAULT_CONFIG)
+        run_config: dict = self.general_parameters['slurm'].get(
+            "run", RUN_SLURM_DEFAULT_CONFIG)
         run_config = {
             key: run_config.get(key, value)
             for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
         }
-        run_config['email'] = self.general_parameters['slurm'].get('email', None)
+        run_config['email'] = self.general_parameters['slurm'].get(
+            'email', None)
 
         slurm_path = self.paths['folder']
         header = slurm_header(run_config, job_name, slurm_path)
@@ -278,7 +296,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         run_df = full_run_df(run_df, capacities)
         return run_df
 
-    def results(self, results_fun, run_df_path = None):
+    def results(self, results_fun, run_df_path=None):
         if run_df_path is not None:
             run_df: pd.DataFrame = pd.read_csv(run_df_path)
             run_df = self.full_run_df(run_df)
@@ -289,8 +307,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         results_dict.update(self.variables)
         return results_dict
 
-
-    def get_profits_dict(self, complete: bool = False, run_df_path = None):
+    def get_profits_dict(self, complete: bool = False, run_df_path=None):
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
 
         participants = PARTICIPANTS_LIST_ENDOGENOUS
@@ -301,7 +318,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             run_df = self.run_df(complete=complete)
         capacities = self.capacities()
 
-        profits_dict: dict = profits_per_participant(run_df, capacities, self.general_parameters['cost_path'])
+        profits_dict: dict = profits_per_participant(
+            run_df, capacities, self.general_parameters['cost_path'])
 
         # Save to disk using json
         self.paths['folder'].joinpath(
@@ -331,7 +349,6 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             capacities['salto'] = 1620
         return capacities
 
-
     def get_profits(self, complete: bool = False, resubmit: bool = False):
         """
         Computes profits for the specified endogenous variables.
@@ -342,21 +359,20 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
         try:
             profits_dict: dict = self.get_profits_dict(complete=complete)
-        except FileNotFoundError:
+        except FileNotFoundError as file_error:
+            logger.error(
+                "Run %s not successful, resubmitting and returning empty dict", self.name)
+            logger.error("File error: %s", file_error)
             if resubmit:
-                logger.error(
-                    "Run %s not successful, resubmitting and returning empty dict",)
                 self.submit(force=True)
-            else:
-                logger.error(
-                    "Run %s not successful, returning empty dict",)
             return {}
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
                               for participant in PARTICIPANTS_LIST_ENDOGENOUS}
         return profits_dict
 
+
 def submit_and_wait_for_runs(runs_dict: dict[str, Run],
-                    max_attempts: int = 6) -> None:
+                             max_attempts: int = 6) -> None:
     '''
     Submits the runs in the runs_dict and waits for them to finish
     '''
