@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
   <corrida>
   	<parametrosGenerales>
   		<nombre>CAD-2024-DIARIA</nombre>
@@ -356,24 +356,26 @@
 			    <saltoMinimo>10.0</saltoMinimo>
 			    <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>
 			    <cotaInundacionAguasArriba>40.0</cotaInundacionAguasArriba>
+			    <!-- Removed the <ev> wrapper around the porRangos funcion -->
 			    <fCoVo>
 			      <funcion tipo="porRangos">
 			        <fueraRango>
 			          <funcion tipo="poli">0.0</funcion>
 			        </fueraRango>
-			        <rangos>(0.0;${lake_factor * 3800.0}),(${lake_factor * 3800.0};${lake_factor * 30000.0})</rangos>
-			        <funcion tipo="poli">30.0, ${lake_factor ** (-1) * 0.0024}, ${lake_factor ** (-2) * (-2e-07)}</funcion>
-			        <funcion tipo="poli">33.96, ${lake_factor **(-1) * 6.67e-04}</funcion>
+			        <rangos>(0.0;3800.0),(3800.0;30000.0)</rangos>
+			        <funcion tipo="poli">30.0, 0.0024, -2E-07</funcion>
+			        <funcion tipo="poli">33.96, 6.67E-04</funcion>
 			      </funcion>
 			    </fCoVo>
+			    <!-- Removed <ev> wrapper and changed <function> to <funcion> -->
 			    <fVoCo>
 			      <funcion tipo="porRangos">
 			        <fueraRango>
 			          <funcion tipo="poli">0.0</funcion>
 			        </fueraRango>
 			        <rangos>(0.0;36.5),(36.5;50.0)</rangos>
-			        <funcion tipo="poli">${lake_factor * 17571.5}, ${lake_factor * -1550.6}, ${lake_factor * 32.164}</funcion>
-			        <funcion tipo="poli">${lake_factor * -50924.0}, ${lake_factor * 1500.0}</funcion>
+			        <funcion tipo="poli">17571.5, -1550.6, 32.164</funcion>
+			        <funcion tipo="poli">-50924.0, 1500.0</funcion>
 			      </funcion>
 			    </fVoCo>
 			    <fQEroMin>
@@ -383,9 +385,9 @@
 			            <funcion tipo="poli">140.0</funcion>
 			          </fueraRango>
 			          <rangos>(29.0;31.0),(31.0;35.5),(35.5;39.0)</rangos>
-                <funcion tipo="poli">${lake_factor * 140.0}</funcion>
-                <funcion tipo="poli">${lake_factor * 300.0}</funcion>
-                <funcion tipo="poli">${lake_factor * -688400.0}, ${lake_factor * 19400.0}</funcion>
+			          <funcion tipo="poli">140.0</funcion>
+			          <funcion tipo="poli">300.0</funcion>
+			          <funcion tipo="poli">-688400.0, 19400.0</funcion>
 			        </funcion>
 			      </ev>
 			    </fQEroMin>
@@ -445,7 +447,7 @@
 			    <salidaDetallada>true</salidaDetallada>
 			    <hayReservaEstrategica>false</hayReservaEstrategica>
 			    <volumenReservaEstrategica>
-			      <ev tipo="const">${lake_factor * 900.0}</ev>
+			      <ev tipo="const">900.0</ev>
 			    </volumenReservaEstrategica>
 			    <valorMinReserva>
 			      <ev tipo="const">65000.0</ev>
@@ -460,7 +462,7 @@
 			    </penalidadControlMinimo>
 			    <hayControldeCotasMaximas>false</hayControldeCotasMaximas>
 			    <volumenControlMaximo>
-			      <ev tipo="const">${lake_factor * 7008.0}</ev>
+			      <ev tipo="const">7008.0</ev>
 			    </volumenControlMaximo>
 			    <penalidadControlMaximo>
 			      <ev tipo="const">0.801</ev>
@@ -468,17 +470,17 @@
 			    <vertimientoConstante>false</vertimientoConstante>
 			    <hayVolumenObjetivoVertimiento>false</hayVolumenObjetivoVertimiento>
 			    <volumenObjetivoVertimiento>
-			      <ev tipo="const">${lake_factor * 4000}</ev>
+			      <ev tipo="const">4000</ev>
 			    </volumenObjetivoVertimiento>
 			  </datosParticipante>
 			  <variablesEstado>
 			    <variableEstado>
 			      <nombre>volumen</nombre>
-			      <estadoInicial unidad="hm3">${lake_factor * 2439.7}</estadoInicial>
+			      <estadoInicial unidad="hm3">2439.7</estadoInicial>
 			      <ev tipo="const">
 			        <discretizacion tipo="equiespaciada">
 			          <minimo>0.0</minimo>
-			          <maximo>${lake_factor * 3000}</maximo>
+			          <maximo>3000</maximo>
 			          <cantidadPuntos>5</cantidadPuntos>
 			        </discretizacion>
 			      </ev>
@@ -692,7 +694,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;4000.0),(85.5;4000.0)</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
             <demanda>demand</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>

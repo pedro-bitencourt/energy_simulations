@@ -1,7 +1,10 @@
 __pycache__/
 old/
 *.csv
-tests/data/
+test_data/
+.DS_Store
+DS_Store
 *.log
 *.swp
-
+temp.py
+finalize.py

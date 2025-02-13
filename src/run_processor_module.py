@@ -2,36 +2,52 @@
 File name: run_processor_module.py
 
 Description:
-This module implements the RunProcessor class, which extends the Run class to process run results.
-It extracts data such as marginal costs, price distributions, production results, and profits.
+    - This module implements the RunProcessor class, which extends the Run class to extract the 
+    output data from MOP.
 
-Public methods:
-- RunProcessor: Initializes the RunProcessor with an existing Run instance.
-- process_run: Processes the run locally or submits a processing job to the cluster.
-- get_profits: Computes profits for the specified endogenous variables.
-- submit_processor_job: Submits a job to process the run on a cluster.
+Methods:
+    - RunProcessor: Initializes the RunProcessor with an existing Run instance.
+    - `construct_run_df`: extracts the dataframe with all the requested data from the 
+    MOP's output, as a pandas DataFrame with columns:
+        - `datetime` in format
+        - `scenario`: the MOP scenario for that row, from 0 to 113
+        - `demand` (in MW)
+        - `production_{participant}` (in MW)
+        - `marginal_cost` (in $/MWh)
+        - `variable_cost_{participant}` (in $)
+        - `water_level_{participant}` (in m)
+    
+
 """
-
 import logging
+from typing import Dict, Any
+import copy
 from pathlib import Path
-import json
-from typing import Optional, Dict
-import numpy as np
 import pandas as pd
 
-import src.auxiliary
-import src.processing_module as proc
-from src.participant_module import Participant
-from src.run_module import Run
-from src.constants import MARGINAL_COST_DF, DEMAND_DF, SCENARIOS
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+from .utils import parsing_module as proc
+from .run_module import Run
+from .constants import (
+    SALTO_WATER_LEVEL_DF,
+    MARGINAL_COST_DF, DEMAND_DF
 )
+
 logger = logging.getLogger(__name__)
 
-WEEK_HOURS_BIN = list(range(0, 169))  # Adjusted to include 168
+
+PARTICIPANTS_LIST_ALL: list = ['wind', 'solar',
+                               'thermal', 'salto', 'demand', 'excedentes']
+PARTICIPANTS_LIST_ENDOGENOUS: list = ['wind', 'solar', 'thermal']
+PARTICIPANTS: Dict[str, Dict[str, str]] = {
+    "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
+    "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
+    "thermal": {"folder": "TER_thermal", "type": "thermal"},
+    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
+    "demand": {"folder": "DEM_demand", "type": "demand"},
+    "salto": {"folder": "HID_salto", "type": "hydro"},
+    # FIX
+    "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
+}
 
 
 class RunProcessor(Run):
@@ -47,7 +63,7 @@ class RunProcessor(Run):
         paths (dict): Extended dictionary of relevant paths for processing
     """
 
-    def __init__(self, run: Run):
+    def __init__(self, run: Run, complete: bool = False):
         """
         Initializes RunProcessor with an existing Run instance.
 
@@ -55,7 +71,7 @@ class RunProcessor(Run):
             run (Run): An existing Run instance to process
 
         Raises:
-            ValueError: If the run was not successful
+            FileNotFoundError: If the run was not successful
         """
         super().__init__(
             parent_folder=run.paths['parent_folder'],
@@ -63,316 +79,284 @@ class RunProcessor(Run):
             variables=run.variables
         )
 
-        if not self.successful(log=True):
+        if not self.successful(complete=complete):
+            missing_files = Run.get_missing_files(sim_path=self.paths['sim'],
+                                                  complete=complete)
             logger.error(f'Run {self.name} was not successful.')
-            raise ValueError(f'Run {self.name} was not successful.')
+            logger.error(f'Missing files: {missing_files}')
+            raise FileNotFoundError(f'Run {self.name} was not successful.')
 
-        self._update_paths()
-        # Create dict of participants
-        list_participants = ['wind', 'solar', 'thermal']
-        self.participants_dict: dict[str, Participant] = {var: Participant(var,
-                                                                           self.variables[var]['value'],
-                                                                           self.paths,
-                                                                           run.general_parameters)
-                                                          for var in list_participants}
-
-    def production_participant(self, participant_key: str) -> pd.DataFrame:
-        production_df: pd.DataFrame = self.participants_dict[participant_key].production_df(
-        )
-        return production_df
-
-    def variable_costs_participant(self, participant_key: str) -> pd.DataFrame:
-        costs_df: pd.DataFrame = self.participants_dict[participant_key].variable_costs_df(
-        )
-        return costs_df
-
-    def water_level_participant(self, participant_key: str) -> pd.DataFrame:
-        water_level_df: pd.DataFrame = self.participants_dict[participant_key].water_level_df(
-        )
-        return water_level_df
-
-    def _update_paths(self) -> None:
-        """
-        Updates the paths dictionary with additional paths needed for processing.
-        """
-        self.paths['marginal_cost'] = self.paths['folder'] / \
-            'marginal_cost.csv'
-        self.paths['bash_script'] = self.paths['folder'] / \
-            f'{self.name}_proc.sh'
-        self.paths['price_distribution'] = self.paths['folder'] / \
-            'price_distribution.csv'
-        self.paths['results_json'] = self.paths['folder'] / 'results.json'
-
-    def process(self, process_locally: bool = True) -> None:
-        """
-        Processes the run and extracts results, saving them to a JSON file.
-        If process_locally is False, submits a job to process the run on the cluster.
-
-        Args:
-            process_locally (bool): If True, processes the run locally. If False, submits a job to the cluster.
-
-        Returns:
-            dict or None: The results dictionary if processed locally and successful, None otherwise.
-        """
-        if process_locally:
-            logger.info(f'Processing run {self.name} locally.')
-            try:
-                # Get variable values
-                variable_values = {var: var_dict['value']
-                                   for var, var_dict in self.variables.items()}
-
-                # Create a header for the results
-                header = {'run_name': self.name, **variable_values}
-
-                logger.debug("Getting price results for run %s", self.name)
-                # Get price results
-                price_results = self._get_price_results()
-
-                logger.debug("Saving price distribution for run %s", self.name)
-                # Get price distribution
-                price_distribution = self._intraweek_price_distribution()
-                # Save price distribution
-                price_distribution.to_csv(
-                    self.paths['price_distribution'], index=False)
-                logger.debug(
-                    "Getting production results for run %s", self.name)
-                # Get production results
-                production_results = self._get_production_results()
-
-                # Concatenate results
-                results = {**header, **price_results, **production_results}
-
-                # Convert numpy types to native Python types for JSON serialization
-                results = src.auxiliary.convert_numpy_types(results)
-
-                # Save results to JSON
-                with open(self.paths['results_json'], 'w') as file:
-                    json.dump(results, file, indent=4)
-
-                logger.info(
-                    f'Results for run {self.name} saved successfully.')
-            except Exception as e:
-                logger.error(
-                    f'Error processing results for run {self.name}: {e}')
+    def construct_run_df(self, complete: bool = True) -> pd.DataFrame:
+        if complete:
+            participants: list = PARTICIPANTS_LIST_ALL
         else:
-            logger.info(
-                f'Submitting processing job for run {self.name} to the cluster.')
-            self.submit_processor_job()
+            participants: list = PARTICIPANTS_LIST_ENDOGENOUS
 
-    def results(self):
-        """
-        Loads the results from the JSON file.
-        """
-        with open(self.paths['results_json'], 'r') as file:
-            results = json.load(file)
-        return results
+        logging.info('Extracting random variables dataframes...')
+
+        # Extract marginal cost data
+        random_variables_df = self.marginal_cost_df()
+        # Extract demand data
+        demand_df = self.demand_df()
+        random_variables_df = pd.merge(random_variables_df, demand_df, on=[
+                                       'datetime', 'scenario'], how='left')
+
+        for participant in participants:
+            logger.debug(f'Extracting data for participant: {participant}')
+            original_length = len(random_variables_df)
+            logger.debug(f'Length before participant %s: %s', participant,
+                         original_length)
+            # Extract production data
+            df = get_production_df(participant, self.paths['sim'])
+            logger.debug("Production data for %s: %s", participant, df.head())
+            random_variables_df = pd.merge(random_variables_df, df, on=[
+                'datetime', 'scenario'], how='left')
+
+            # Extract variable costs
+            participant_type = PARTICIPANTS[participant]['type']
+            if participant_type == 'thermal':
+                # Extract variable costs data
+                df = get_variable_cost_df(participant, self.paths['sim'])
+                random_variables_df = pd.merge(random_variables_df, df, on=[
+                    'datetime', 'scenario'], how='left')
+            elif participant not in ['demand', 'excedentes']:
+                random_variables_df[f'variable_cost_{participant}'] = 0
+
+            # Extract water level data
+            if participant_type == 'hydro' or participant == 'salto':
+                df = get_water_level_df(participant, self.paths['sim'])
+                random_variables_df = pd.merge(random_variables_df, df, on=[
+                    'datetime', 'scenario'], how='left')
+
+            random_variables_df = random_variables_df.dropna()
+            removed_rows = original_length - len(random_variables_df)
+            logger.debug(f'Removed {removed_rows} rows with NA values.')
+
+        # Remove NA's and log the number of rows removed
+
+        original_length = len(random_variables_df)
+        random_variables_df = random_variables_df.dropna()
+        removed_rows = original_length - len(random_variables_df)
+        logger.debug(f'Removed {removed_rows} rows with NA values.')
+        if removed_rows > 3_000:
+            logger.warning(f'Over 3,000 rows were removed due to NA values.')
+
+        logger.debug("Columns of run_df: %s", random_variables_df.columns)
+        logger.debug("Head of run_df: %s", random_variables_df.head())
+
+        # Save to disk
+        random_variables_df.to_csv(self.paths['random_variables'], index=False)
+
+        return random_variables_df
+
+    def demand_df(self) -> pd.DataFrame:
+        demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
+        demand_df = melt_df(demand_df, 'demand')
+        return demand_df
 
     def marginal_cost_df(self) -> pd.DataFrame:
-        """
-        Extracts the marginal cost DataFrame from the simulation folder.
-
-        Returns:
-            pd.DataFrame or None: The marginal cost DataFrame, or None if extraction fails.
-        """
-        # Extract marginal cost DataFrame
         marginal_cost_df = proc.open_dataframe(
             MARGINAL_COST_DF, self.paths['sim'])
-
-        # Save marginal cost DataFrame
-        marginal_cost_df.to_csv(self.paths['marginal_cost'], index=False)
-        logger.info(
-            f'Marginal cost DataFrame saved to {self.paths["marginal_cost"]}')
+        marginal_cost_df = melt_df(marginal_cost_df, 'marginal_cost')
         return marginal_cost_df
 
-    def _intraweek_price_distribution(self) -> pd.DataFrame:
-        """
-        Computes and returns the price distribution DataFrame.
 
-        Returns:
-            pd.DataFrame or None: The price distribution DataFrame, or None if computation fails.
-        """
-        price_df = self.marginal_cost_df()
-        # Compute average price across scenarios
-        price_df['price_avg'] = price_df[SCENARIOS].mean(axis=1)
+def _initialize_df_configuration(key_participant: str, sim_folder: Path) -> Dict[str, Any]:
+    """
+    Initializes the dataframe configuration for data extraction for the given participant.
+    """
+    participant_folder = PARTICIPANTS[key_participant]["folder"]
+    dataframe_template = {
+        "table_pattern": {"start": "CANT_POSTE", "end": None},
+        "columns_options": {
+            "drop_columns": ["PROMEDIO_ESC"],
+            "rename_columns": {
+                **{f"ESC{i}": f"{i}" for i in range(0, 114)},
+                "": "paso_start"
+            },
+            "numeric_columns": [f"{i}" for i in range(0, 114)],
+        },
+        "delete_first_row": True,
+    }
+    dataframe_configuration = copy.deepcopy(dataframe_template)
+    dataframe_configuration["name"] = f"{key_participant}_production"
+    dataframe_configuration["filename"] = f"{sim_folder}/{participant_folder}/potencias*.xlt"
+    return dataframe_configuration
 
-        # Add hour of the week
-        price_df['hour_of_week'] = price_df['datetime'].dt.dayofweek * \
-            24 + price_df['datetime'].dt.hour
 
-        # Bin hours into weekly bins
-        price_df['hour_of_week_bin'] = pd.cut(price_df['hour_of_week'],
-                                              bins=WEEK_HOURS_BIN, right=False)
+def get_production_df(key_participant: str,
+                      sim_path: Path
+                      ) -> pd.DataFrame:
+    """
+    Extracts and processes the production data for the participant.
+    """
+    df_config = _initialize_df_configuration(key_participant, sim_path)
+    dataframe = proc.open_dataframe(
+        df_config,
+        sim_path)
 
-        # Compute average price per bin
-        price_distribution = price_df.groupby('hour_of_week_bin', as_index=False)[
-            'price_avg'].mean()
+    dataframe = melt_df(dataframe, f"production_{key_participant}")
 
-        # Save price distribution
-        price_distribution.to_csv(
-            self.paths['price_distribution'], index=False)
-        logger.info(
-            f'Price distribution saved to {self.paths["price_distribution"]}')
-        return price_distribution
+    if key_participant == 'thermal':
+        df_config = _initialize_df_configuration('thermal_remainder', sim_path)
+        remainder_dataframe = proc.open_dataframe(
+            df_config,
+            sim_path)
+        remainder_dataframe = melt_df(
+            remainder_dataframe, f"production_{key_participant}")
 
-    def _get_production_results(self) -> Dict[str, float]:
-        """
-        Extracts production results from the simulation data.
+        dataframe[f"production_{key_participant}"] = dataframe[f"production_{key_participant}"] + \
+            remainder_dataframe[f"production_{key_participant}"]
 
-        Returns:
-            dict: A dictionary containing total production by resource and new thermal production.
-        """
-        production_results: dict = {}
+    # FIX ME
 
-        # Get total production by resource
-        production_by_resource = proc.total_production_by_resource(
-            self.paths['sim'])
-        production_results.update({
-            f'total_production_{resource}': production_by_resource.get(resource, 0.0)
-            for resource in production_by_resource
-        })
-
-        return production_results
-
-    def _get_price_results(self) -> Dict[str, float]:
-        """
-        Computes price results from marginal cost and demand data.
-
-        Returns:
-            dict or None: A dictionary containing price averages, or None if computation fails.
-        """
-        price_df = self.marginal_cost_df()
-        demand_df = proc.open_dataframe(DEMAND_DF, self.paths['sim'])
-
-        # Compute simple average price
-        price_avg = price_df[SCENARIOS].mean().mean()
-
-        # Compute weighted average price
-        price_times_demand = price_df[SCENARIOS] * demand_df[SCENARIOS]
-        price_weighted_avg = price_times_demand.values.sum() / \
-            demand_df[SCENARIOS].values.sum()
-
-        return {'price_avg': price_avg, 'price_weighted_avg': price_weighted_avg}
-
-    def submit_processor_job(self) -> Optional[str]:
-        """
-        Submits a job to process the run on a cluster.
-
-        Returns:
-            int or None: The job ID if submission is successful, None otherwise.
-        """
-        bash_script = self._create_bash_script()
-        job_id = src.auxiliary.submit_slurm_job(bash_script)
-        if job_id:
-            logger.info(
-                f'Processing job for run {self.name} submitted with job ID {job_id}')
-        else:
-            logger.error(
-                f'Failed to submit processing job for run {self.name}')
-        return job_id
-
-    def get_profits(self) -> Dict[str, float]:
-        """
-        Computes profits for the specified endogenous variables.
-
-        Args:
-            endogenous_variables_names (list): List of endogenous variable names.
-
-        Returns:
-            dict: A dictionary of profits.
-        """
-        # Extract marginal cost
-        marginal_cost_df: pd.DataFrame = self.marginal_cost_df()
-
-        profits = {}
-        for participant in self.participants_dict.values():
-            logger.debug(
-                f"Computing profits for {participant.key} participant.")
-            # Compute profit for the participant
-            profit: float = participant.profit(marginal_cost_df)
-
-            logger.debug('Profit for participant %s: %s',
-                         participant.key, profit)
-
-            # Add profit to the dictionary
-            profits[participant.key] = profit
-        return profits
-
-    def processed_status(self):
-        if self.paths['results_json'].exists():
-            return True
-        return False
-
-    def _create_bash_script(self) -> Path:
-        """
-        Creates a bash script to process the run on a cluster.
-
-        Returns:
-            Path: The path to the created bash script.
-        """
-        script_path = self.paths['bash_script']
-        run_data = {
-            'folder': str(self.paths['folder']),
-            'general_parameters': self.general_parameters,
-            'variables': self.variables
-        }
-        run_data_json = json.dumps(run_data)
-
-        requested_time = '0:30:00'
-
-        script_content = f'''#!/bin/bash
-#SBATCH --account=b1048
-#SBATCH --partition=b1048
-#SBATCH --time={requested_time}
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --mem=12G
-#SBATCH --job-name=proc_{self.name}
-#SBATCH --output={self.paths['folder']}/{self.name}_proc.out
-#SBATCH --error={self.paths['folder']}/{self.name}_proc.err
-#SBATCH --mail-user=pedro.bitencourt@u.northwestern.edu
-#SBATCH --mail-type=ALL
-#SBATCH --exclude=qhimem[0207-0208]
-
-module purge
-module load python-miniconda3/4.12.0
-
-python - <<END
-
-import sys
-import json
-from pathlib import Path
-sys.path.append('/projects/p32342/code')
-from run_processor_module import RunProcessor
-
-print('Processing run {self.name}...')
-sys.stdout.flush()
-sys.stderr.flush()
-
-# Load the run data
-run_data = {run_data_json}
-# Create RunProcessor object
-run_processor = RunProcessor(
-    run=Run(
-        folder=Path(run_data['folder']),
-        general_parameters=run_data['general_parameters'],
-        variables=run_data['variables']
+    logger.debug(
+        f"Successfully extracted and processed {key_participant} production data."
     )
-)
-# Process run
-results = run_processor.process_run(process_locally=True)
+    return dataframe
 
-# Extract price distribution
-price_distribution = run_processor._intraweek_price_distribution()
-price_distribution.to_csv(run_processor.paths['price_distribution'], index=False)
 
-sys.stdout.flush()
-sys.stderr.flush()
-END
-'''
+def get_variable_cost_df(key_participant: str,
+                         sim_path: Path) -> pd.DataFrame:
+    """
+    Extracts and processes the variable costs data for the participant.
+    """
+    participant_type = PARTICIPANTS[key_participant]["type"]
+    if participant_type != "thermal":
+        logger.error(
+            "Variable costs are only available for thermal participants.")
+        raise ValueError(
+            "Variable costs are only available for thermal participants.")
 
-        # Write the bash script
-        with open(script_path, 'w') as f:
-            f.write(script_content)
+    # Get the production data
+    production_df = get_production_df(key_participant, sim_path)
 
-        logger.info(f'Bash script created at {script_path}')
-        return script_path
+    # Create the variable costs column
+    dataframe = production_df.copy()
+
+    # HARD CODED
+    dataframe[f'variable_cost_{key_participant}'] = 192.3 * \
+        dataframe[f'production_{key_participant}']
+
+    dataframe.drop(columns=[f'production_{key_participant}'], inplace=True)
+
+    logger.debug(
+        f"Successfully extracted and processed {key_participant} variable costs data."
+    )
+    return dataframe
+
+
+def get_water_level_df(key_participant: str,
+                       sim_path: Path) -> pd.DataFrame:
+    """
+    Extracts and processes the water level data for the participant.
+    """
+    participant_type = PARTICIPANTS[key_participant]["type"]
+    if participant_type != "hydro":
+        logger.error(
+            "Water level data is only available for hydro participants.")
+        raise ValueError(
+            "Water level data is only available for hydro participants.")
+
+    dataframe = proc.open_dataframe(
+        SALTO_WATER_LEVEL_DF,
+        sim_path
+    )
+    dataframe = melt_df(dataframe, f"water_level_{key_participant}")
+    dataframe = upsample_ffill(dataframe)
+    logger.debug(
+        f"Successfully extracted and processed {key_participant} water level data."
+    )
+    logger.debug("Head of water_level_df: %s", dataframe.head())
+    return dataframe
+
+
+def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
+    # Ensure 'datetime' is in datetime format
+    if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
+        df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
+
+    # Create a DataFrame to hold the result
+    df_result = []
+
+    # Iterate through each scenario
+    for scenario in df['scenario'].unique():
+        # Filter by the scenario
+        scenario_df = df[df['scenario'] == scenario].copy()
+
+        # Set datetime as the index for resampling
+        scenario_df.set_index('datetime', inplace=True)
+
+        # Resample to hourly and forward-fill missing values
+        scenario_resampled = scenario_df.resample('h').ffill()
+
+        # Reset the index to include datetime as a column again
+        scenario_resampled.reset_index(inplace=True)
+
+        # Append the result to the final list
+        df_result.append(scenario_resampled)
+
+    # Concatenate all the resampled scenario DataFrames
+    df_result = pd.concat(df_result, ignore_index=True)
+
+    return df_result
+
+
+def upsample_scenario_proportional(variable_cost_df: pd.DataFrame, production_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function upsamples the variable costs (which are reported on a daily frequency by MOP) to hourly frequency,
+    distributing the daily costs proportionally to the hourly production.
+
+    Args:
+        variable_cost_df (pd.DataFrame): DataFrame containing the variable costs for each scenario.
+            Should have columns: 'datetime','scenario', 'variable_cost'
+        production_df (pd.DataFrame): DataFrame containing the production for each scenario
+            Should have columns: 'datetime','scenario', 'production'
+    """
+    if not pd.api.types.is_datetime64_any_dtype(variable_cost_df['datetime']):
+        variable_cost_df['datetime'] = pd.to_datetime(
+            variable_cost_df['datetime'], errors='coerce')
+    if not pd.api.types.is_datetime64_any_dtype(production_df['datetime']):
+        production_df['datetime'] = pd.to_datetime(
+            production_df['datetime'], errors='coerce')
+
+    # Merge the two dataframes
+    df = pd.merge(variable_cost_df, production_df, on=[
+                  'datetime', 'scenario'], how='outer')
+
+    results = []
+    # Loop over scenarios
+    for scenario in df['scenario'].unique():
+        # Filter df on that scenario
+        s_df = df[df['scenario'] == scenario].copy().set_index('datetime')
+        s_df = s_df.reindex(pd.date_range(
+            s_df.index.min(), s_df.index.max(), freq='H'))
+
+        # Fill in the missing values for variable costs
+        s_df['variable_cost'] = s_df['variable_cost'].ffill()
+        s_df['production'] = s_df['production'].fillna(0)
+
+        # Get the daily totals; if 0, replace with NA temporarily to avoid division by 0
+        daily_totals = s_df['production'].groupby(
+            pd.Grouper(freq='D')).transform('sum').replace(0, pd.NA)
+
+        # Get the proportional hourly costs
+        s_df['hourly_variable_cost'] = s_df['variable_cost'] * \
+            (s_df['production'] / daily_totals)
+
+        # Fill NAs with 0
+        s_df['hourly_variable_cost'] = s_df['hourly_variable_cost'].fillna(0)
+        s_df['scenario'] = scenario
+        results.append(s_df)
+
+    hourly_df = pd.concat(results).reset_index().rename(
+        columns={'index': 'datetime'})
+    # Remove the production column
+    hourly_df.drop(columns='production', inplace=True)
+    return hourly_df
+
+
+def melt_df(df: pd.DataFrame, name: str) -> pd.DataFrame:
+    df = df.melt(id_vars=['datetime'],
+                 var_name='scenario', value_name=name)
+    return df

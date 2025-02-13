@@ -1,22 +1,27 @@
 """
 File name: run_module.py
-Author: Pedro Bitencourt
-Email: pedro.bitencourt@u.northwestern.edu
+Author: Pedro Bitencourt (Northwestern University)
+
 Description: this file implements the Run class and related methods.
 """
 
 import os
 import re
-import json
 import shutil
 from pathlib import Path
-from typing import Optional
 import logging
+import subprocess
+import json
 import pandas as pd
 
-from src.auxiliary import make_name, try_get_file, submit_slurm_job
+from .utils.auxiliary import try_get_file
+from .utils.slurm_utils import slurm_header, submit_slurm_job, wait_for_jobs
+from .constants import RUN_SLURM_DEFAULT_CONFIG, initialize_paths_run, create_run_name
+from .data_analysis_module import profits_per_participant, std_variables, full_run_df
 
 logger = logging.getLogger(__name__)
+
+MEMORY_REQUESTED = '5'  # GB
 
 
 class Run:
@@ -24,83 +29,51 @@ class Run:
     Represents a run and implements some general purpose methods for it.
 
     Args:
-        - folder: Path determining the folder where the run is stored.
+        - parent_folder: Path determining the folder where the run is stored.
         - general_parameters: Dictionary containing general parameters for the run.
             o xml_basefile: Path to the basefile for the .xml file.
             o name_subfolder: Name of the subfolder where the run is stored.
             o requested_time_run: Time requested for the run in the cluster.
         - variables: Dictionary containing the variables for the run. Each entry is 
-        a variable, which is a dictionary containing:
-            o value: Value of the variable.
-            o pattern: Pattern to be substituted in the .xml file.
-    Attributes:
+        a variable, with the key being the variable name and the value being the variable
+        value.
+        Attributes:
         - name: Name of the run, determined by the folder name.
         - paths: Dictionary containing relevant paths for the run.
     """
 
     def __init__(self,
-                 parent_folder: Path,
+                 parent_folder: str,
                  general_parameters: dict,
-                 variables: dict[str, dict]):
+                 variables: dict[str, float]):
         parent_folder: Path = Path(parent_folder)
-        self.variables: dict[str, dict] = variables
+        self.variables: dict[str, float] = variables
         self.general_parameters: dict = general_parameters
 
-        self.name: str = self._create_name()
+        self.name: str = create_run_name(variables)
         self.parent_name: str = parent_folder.parts[-1]
 
+        name_subfolder = self.general_parameters.get('name_subfolder',
+                                                     'CAD-2024-DIARIA')
         # Initialize relevant paths
-        self.paths: dict = self._initialize_paths(
-            parent_folder, general_parameters)
-
+        self.paths: dict = initialize_paths_run(
+            parent_folder, self.name, name_subfolder)
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
+        self.folder: Path = self.paths['folder']
 
-    def tear_down(self):
+
+    def tear_down(self) -> None:
         """
         Deletes the folder and its contents.
         """
         if self.paths['folder'].exists():
-            shutil.rmtree(self.paths['folder'])
+            logger.info("Deleting folder %s...", self.paths['folder'])
+            try:
+                shutil.rmtree(self.paths['folder'])
+            except FileNotFoundError:
+                logger.warning("Could not delete folder properly")
             logger.info("Deleted folder %s", self.paths['folder'])
-
-    def _create_name(self):
-        exog_var_values: list[float] = [variable['value'] for variable in
-                                        self.variables.values()]
-        name: str = make_name(exog_var_values)
-        return name
-
-    def _initialize_paths(self, parent_folder: Path, general_parameters: dict):
-        """
-        Initialize a dictionary with relevant paths for the run.
-        """
-        def format_windows_path(path_str):
-            path_str = str(path_str)
-            # Replace forward slashes with backslashes
-            windows_path = path_str.replace('/', '\\')
-            # Add Z: at the start of the path
-            windows_path = 'Z:' + windows_path
-            # If the path doesn't end with a backslash, add one
-            if not windows_path.endswith('\\'):
-                windows_path += '\\'
-            return windows_path
-
-        paths = {}
-        paths['parent_folder'] = parent_folder
-        folder = parent_folder / self.name
-        paths['folder'] = folder
-        # Convert the output path to a Windows path, for use in the .xml file
-        paths['folder_windows'] = format_windows_path(paths['folder'])
-
-        # Subfolder is PRUEBA or CAD-2024
-        subfolder = general_parameters.get('name_subfolder', '')
-        paths['subfolder'] = folder / subfolder
-
-        # Add paths for results and price distribution files
-        paths['results_json'] = folder / 'results.json'
-        paths['price_distribution'] = folder / 'price_distribution.csv'
-
-        return paths
 
     def _get_opt_and_sim_folders(self):
         '''
@@ -122,61 +95,85 @@ class Run:
                         continue
         return opt_sim_paths
 
-    def successful(self, log: bool = False):
+    def successful(self, complete: bool = False):
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
-
-        If it was not successful, deletes the folder.
         """
         # Get opt and sim folders
         self.paths.update(self._get_opt_and_sim_folders())
 
         # Check if SIM folder exists
-        sim_folder = self.paths.get('sim', False)
-        if sim_folder:
-            # Check if the resumen file exists
-            resumen_file_found = try_get_file(sim_folder, r'resumen*')
-
-            # Check if there is a production file
-            production_file_found = try_get_file(
-                sim_folder, r'EOLO_eoloDeci/potencias*.xlt')
-
-            if resumen_file_found and production_file_found:
-                return True
-
-            # If no resumen file found, delete the sim folder
-            import shutil
-            try:
-                shutil.rmtree(sim_folder)
-                if log:
-                    logger.error('No resumen file found for run %s in folder %s. Deleting sim folder.',
-                                 self.name,
-                                 self.paths['subfolder'])
-            except Exception as e:
-                if log:
-                    logger.error('Error deleting sim folder for run %s: %s',
-                                 self.name,
-                                 str(e))
+        if self.paths.get('sim', False):
+            # Check if files exist
+            missing_files = self.get_missing_files(self.paths['sim'], complete)
+            if missing_files:
+                logger.debug(
+                    "Run %s is missing files: %s", self.name, missing_files)
+                return False
         else:
-            if log:
-                logger.error('No sim folder found for run %s in folder %s',
-                             self.name,
-                             self.paths['subfolder'])
+            logger.debug('No sim folder found for run %s in folder %s',
+                         self.name,
+                         self.paths['subfolder'])
+            return False
 
-        return False
+        return True
 
-    def submit(self):
+    @staticmethod
+    def get_missing_files(sim_path: Path, complete: bool = False):
+        """
+        Check if the run is missing files.
+        """
+        files_to_check = [r'resumen*',
+                          r'EOLO_eoloDeci/potencias*.xlt',
+                          r'FOTOV_solarDeci/potencias*.xlt',
+                          r'DEM_demand/potencias*.xlt'
+                          ]
+        # Add hydro files if complete
+        if complete:
+            files_to_check.append(r'HID_salto/cota*.xlt')
+            files_to_check.append(r'HID_salto/potencias*.xlt')
+
+        missing_files: list[str] = []
+        # Check if files exist
+        for file_name in files_to_check:
+            file_found = try_get_file(sim_path, file_name)
+            if not file_found:
+                missing_files.append(file_name)
+                logger.debug("%s does not contain file %s",
+                             sim_path, file_name)
+        return missing_files
+
+    def prototype(self):
+        # Create the directory
+        self.paths['folder'].mkdir(parents=True, exist_ok=True)
+
+        xml_path: Path = self.create_xml(
+            template_path=self.general_parameters['xml_basefile'],
+            name=self.name,
+            folder=self.paths['folder'],
+            variables=self.variables
+        )
+        # Create the bash file
+        bash_path: Path = self._create_bash(xml_path)
+
+        # Print bash path
+        print("Bash path:")
+        print(bash_path)
+        subprocess.run(['bash', bash_path])
+
+    def submit(self, force: bool = False):
         """
         Submits a run to the cluster.
         """
         # Break if already successful
-        if self.successful():
+        if self.successful() and not force:
             logger.info(f"Run {self.name} already successful, skipping.")
             return None
 
-        logger.info(f"""Preparing to submit run {self.name}""")
+        logger.info("Preparing to submit run %s", self.name)
 
+        logger.warning("Warning: this will overwrite the folder %s",)
         # Tear down the folder
         self.tear_down()
 
@@ -184,13 +181,17 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
         # Create the xml file
-        xml_path: Path = self._create_xml()
-
+        xml_path: Path = self.create_xml(
+            template_path=self.general_parameters['xml_basefile'],
+            name=self.name,
+            folder=self.paths['folder'],
+            variables=self.variables
+        )
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
 
         # Submit the slurm job
-        job_id = submit_slurm_job(bash_path)
+        job_id = submit_slurm_job(bash_path, job_name=self.name)
 
         # Check if the job was submitted successfully
         if job_id:
@@ -200,78 +201,8 @@ class Run:
         logger.error(f"Some error occurred while submitting run {self.name}")
         return job_id
 
-    def _create_xml(self):
-        """
-        Creates a .xml file from the .xml template.
-        """
-
-        xml_path: Path = self.paths['folder'] / f"{self.name}.xml"
-        # Open the experiment's .xml basefile
-        with open(self.general_parameters['xml_basefile'], 'r') as file:
-            content = file.read()
-
-            def escape_for_regex(path):
-                return path.replace('\\', '\\\\')
-
-            # Change output path
-            content = re.sub(
-                r'<rutaSalidas>.*?</rutaSalidas>',
-                f'<rutaSalidas>{escape_for_regex(self.paths["folder_windows"])}</rutaSalidas>',
-                content
-            )
-
-            # Substitute variables values
-            content = self._substitute_variables(content)
-
-        # Write the new settings to the .xml file path
-        with open(xml_path, 'w') as file:
-            file.write(content)
-
-        return xml_path
-
-    def _substitute_variables(self, content):
-        """
-        Substitutes patterns in the content with the variable values.
-        """
-        DEGREES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5]
-
-        def substitute_pattern(content, pattern, value):
-            """
-            Substitutes a pattern in the content with a given value.
-            """
-            def replace_func(match):
-                if '*' in match.group():
-                    # Get the captured multiplier
-                    multiplier = float(match.group(2))
-                    # Changed from int() to float()
-                    new_value = float(value * multiplier)
-                    return str(new_value)
-                return str(value)
-
-            # First try to match pattern with multiplier
-            content = re.sub(
-                f'({pattern})(?:\*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?))', replace_func, content)
-
-            # Then match pattern without multiplier
-            content = re.sub(
-                f'({pattern})<', replace_func, content)
-
-            return content
-
-        for variable in self.variables.values():
-            for degree in DEGREES:
-                pattern = variable['pattern'] + f"_{degree}"
-                if variable['value'] > 0:
-                    value = variable['value']**degree
-                else:
-                    logger.info("Inputting 0 for %s at degree %s due to value  %s",
-                                variable['pattern'], degree, variable['value'])
-                    value = 0
-                content = substitute_pattern(content, pattern, value)
-            content = substitute_pattern(
-                content, variable['pattern'], variable['value'])
-        return content
-
+    ##############################
+    # bash creating methods
     def _create_bash(self, xml_path: Path):
         """
         Creates a bash file to be submitted to the cluster.
@@ -281,65 +212,179 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        hours = self.general_parameters['requested_time_run']
-        requested_time_run = f"{int(hours):02d}:{int((hours * 60) % 60):02d}:{int((hours * 3600) % 60):02d}"
+        run_config: dict = self.general_parameters['slurm'].get("run", RUN_SLURM_DEFAULT_CONFIG)
+        run_config = {
+            key: run_config.get(key, value)
+            for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
+        }
+        run_config['email'] = self.general_parameters['slurm'].get('email', None)
+
+        slurm_path = self.paths['folder']
+        header = slurm_header(run_config, job_name, slurm_path)
+
+        memory = run_config.get('memory', MEMORY_REQUESTED)
+        temp_folder_path = f"{self.paths['folder']}/temp"
+        temp_folder_path_windows = temp_folder_path.replace('/', '\\')
 
         with open(bash_path, 'w') as file:
-            file.write(f'''#!/bin/bash
-#SBATCH --account=b1048
-#SBATCH --partition=b1048
-#SBATCH --time={requested_time_run}
-#SBATCH --nodes=1 
-#SBATCH --ntasks-per-node=1 
-#SBATCH --mem=5G 
-#SBATCH --job-name={job_name}
-#SBATCH --output={self.paths['folder']}/{self.name}.out
-#SBATCH --error={self.paths['folder']}/{self.name}.err
-#SBATCH --mail-user={self.general_parameters['email']}
-#SBATCH --mail-type=FAIL,TIMEOUT
-#SBATCH --exclude=qhimem[0207-0208]
-
-export WINEPREFIX=/home/pdm6134/rcs_wine_test
+            file.write(f'''{header}
+echo "Starting {self.name} at: $(date +'%H:%M:%S')"
+export WINEPREFIX=/projects/p32342/software/.wine
+mkdir -p {temp_folder_path}
 module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3
-sleep $((RANDOM%60 + 10)) 
-wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Xmx5G -jar MOP_Mingo.JAR "Z:{xml_path}"
+sleep $((RANDOM%60 + 10))
+wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{memory}G -jar MOP_Mingo.JAR "Z:{xml_path}"
 ''')
         return bash_path
 
-    def load_results(self) -> Optional[dict]:
-        """
-        Loads the results from the results.json file.
-        """
-        if self.paths['results_json'].exists():
-            with open(self.paths['results_json'], 'r') as file:
-                results = json.load(file)
-            return results
-        logger.error(
-            f"Results file {self.paths['results_json']} does not exist for run {self.name}")
-        return None
+    ##############################
+    # xml creating methods
+    @staticmethod
+    def create_xml(template_path: Path, name: str, folder: Path, variables: dict) -> Path:
+        """Creates a .xml file from template with variable substitution."""
+        output_path = folder / f"{name}.xml"
+        # Add folder path to variables for substitution
+        variables = {**variables,
+                     'output_folder': str(folder).replace('\\', '\\\\')}
+        # Read template and substitute all expressions
+        with open(template_path, 'r') as f:
+            content = f.read()
 
-    def load_price_distribution(self) -> Optional[pd.DataFrame]:
+        def replace_expr(match):
+            expr = match.group(1)
+            return str(eval(expr, {}, variables))
+        content = re.sub(r'\${([^}]+)}', replace_expr, content)
+        # Write output
+        with open(output_path, 'w') as f:
+            f.write(content)
+        return output_path
+
+    def run_df(self, complete: bool = False):
+        from .run_processor_module import RunProcessor
+        # Initialize the RunProcessor object
+        run_processor = RunProcessor(self)
+
+        # Extract the run dataframe
+        run_df: pd.DataFrame = run_processor.construct_run_df(
+            complete=complete)
+        return run_df
+
+    def full_run_df(self, run_df=None):
+        if run_df is None:
+            run_df = self.run_df(complete=True)
+        capacities = self.capacities()
+        run_df = full_run_df(run_df, capacities)
+        return run_df
+
+    def results(self, results_fun, run_df_path = None):
+        if run_df_path is not None:
+            run_df: pd.DataFrame = pd.read_csv(run_df_path)
+            run_df = self.full_run_df(run_df)
+        else:
+            run_df: pd.DataFrame = self.full_run_df(self.run_df(complete=True))
+        results_dict: dict = results_fun(run_df)
+        results_dict['name'] = self.name
+        results_dict.update(self.variables)
+        return results_dict
+
+
+    def get_profits_dict(self, complete: bool = False, run_df_path = None):
+        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
+
+        participants = PARTICIPANTS_LIST_ENDOGENOUS
+
+        if run_df_path is not None:
+            run_df: pd.DataFrame = pd.read_csv(run_df_path)
+        else:
+            run_df = self.run_df(complete=complete)
+        capacities = self.capacities()
+
+        profits_dict: dict = profits_per_participant(run_df, capacities, self.general_parameters['cost_path'])
+
+        # Save to disk using json
+        self.paths['folder'].joinpath(
+            'profits_data.json').write_text(json.dumps(profits_dict))
+
+        if complete:
+            run_df = full_run_df(run_df, capacities)
+            revenues_variables = [f'revenue_{participant}'
+                                  for participant in participants]
+            std_revenues = std_variables(run_df, revenues_variables)
+            profits_dict.update(std_revenues)
+
+        logger.debug("profits_data for %s:", self.name)
+        logger.debug(profits_dict)
+        return profits_dict
+
+    def capacities(self):
+        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
+
+        participants = PARTICIPANTS_LIST_ENDOGENOUS
+        # Create a dictionary with the capacities
+        capacities = {participant: self.variables[f"{participant}_capacity"]
+                      for participant in participants}
+        if 'salto_capacity' in self.variables.keys():
+            capacities['salto'] = self.variables['salto_capacity']
+        else:
+            capacities['salto'] = 1620
+        return capacities
+
+
+    def get_profits(self, complete: bool = False, resubmit: bool = False):
         """
-        Loads the price distribution from the CSV file.
+        Computes profits for the specified endogenous variables.
+
+        Returns:
+            dict: A dictionary of profits.
         """
-        if self.paths['price_distribution'].exists():
-            price_distribution: pd.DataFrame = pd.read_csv(
-                self.paths['price_distribution'])
-            # Convert 'hour_of_week_bin' to just the start hour
-            price_distribution['hour_of_week_bin'] = (
-                price_distribution['hour_of_week_bin'].str.extract(r'(\d+)'))
-            # Pivot the table to have hours as columns
-            wide_df = price_distribution.pivot_table(
-                values='price_avg',
-                index=None,
-                columns='hour_of_week_bin'
-            )
-            # Convert all column names to integers and sort
-            wide_df.columns = wide_df.columns.astype(int)
-            wide_df = wide_df.sort_index(axis=1).reset_index(drop=True)
-            return price_distribution
-        logger.error(
-            f"Price distribution file {self.paths['price_distribution']} does not exist for run {self.name}")
-        return None
+        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
+        try:
+            profits_dict: dict = self.get_profits_dict(complete=complete)
+        except FileNotFoundError:
+            if resubmit:
+                logger.error(
+                    "Run %s not successful, resubmitting and returning empty dict",)
+                self.submit(force=True)
+            else:
+                logger.error(
+                    "Run %s not successful, returning empty dict",)
+            return {}
+        profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
+                              for participant in PARTICIPANTS_LIST_ENDOGENOUS}
+        return profits_dict
+
+def submit_and_wait_for_runs(runs_dict: dict[str, Run],
+                    max_attempts: int = 6) -> None:
+    '''
+    Submits the runs in the runs_dict and waits for them to finish
+    '''
+    # Submit the runs, give up after max_attempts
+    attempts: int = 0
+    while attempts < max_attempts:
+        job_ids_list: list[str] = []
+        for run in runs_dict.values():
+            # Check if the run was successful
+            if not run.successful():
+                logger.warning("Run %s not successful", run.name)
+                # If not, submit it and append the job_id to the list
+                job_id = run.submit()
+                if job_id:
+                    job_ids_list.append(job_id)
+                if attempts == 0:
+                    logger.debug("First attempt for %s", run.name)
+                else:
+                    logger.warning("RETRYING %s, number of previous attempts = %s", run.name,
+                                   attempts)
+        if not job_ids_list:
+            return None
+        logger.info("Waiting for jobs %s", job_ids_list)
+        # Wait for the jobs to finish
+        wait_for_jobs(job_ids_list)
+        attempts += 1
+
+    if attempts == max_attempts:
+        logger.critical(
+            "Could not successfully finish all runs after %s attempts", max_attempts)
+        sys.exit(UNSUCCESSFUL_RUN)

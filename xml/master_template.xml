@@ -335,7 +335,7 @@
 			      <ev tipo="const">0.0</ev>
 			    </potMin>
 			    <potMax>
-			      <ev tipo="const">135</ev>
+				  <ev tipo="const">${salto_capacity / 12}</ev>
 			    </potMax>
 			    <rendMin>
 			      <ev tipo="const">0.9</ev>
@@ -356,6 +356,7 @@
 			    <saltoMinimo>10.0</saltoMinimo>
 			    <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>
 			    <cotaInundacionAguasArriba>40.0</cotaInundacionAguasArriba>
+			    <!-- Removed the <ev> wrapper around the porRangos funcion -->
 			    <fCoVo>
 			      <funcion tipo="porRangos">
 			        <fueraRango>
@@ -366,6 +367,7 @@
 			        <funcion tipo="poli">33.96, ${lake_factor **(-1) * 6.67e-04}</funcion>
 			      </funcion>
 			    </fCoVo>
+			    <!-- Removed <ev> wrapper and changed <function> to <funcion> -->
 			    <fVoCo>
 			      <funcion tipo="porRangos">
 			        <fueraRango>
@@ -383,9 +385,9 @@
 			            <funcion tipo="poli">140.0</funcion>
 			          </fueraRango>
 			          <rangos>(29.0;31.0),(31.0;35.5),(35.5;39.0)</rangos>
-                <funcion tipo="poli">${lake_factor * 140.0}</funcion>
-                <funcion tipo="poli">${lake_factor * 300.0}</funcion>
-                <funcion tipo="poli">${lake_factor * -688400.0}, ${lake_factor * 19400.0}</funcion>
+			          <funcion tipo="poli">140.0</funcion>
+			          <funcion tipo="poli">300.0</funcion>
+			          <funcion tipo="poli">-688400.0, 19400.0</funcion>
 			        </funcion>
 			      </ev>
 			    </fQEroMin>
@@ -692,7 +694,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;4000.0),(85.5;4000.0)</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
             <demanda>demand</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>
