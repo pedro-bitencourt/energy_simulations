@@ -230,11 +230,11 @@ END
 
     def compute_solver_results(self):
         solver_results_df = self.solver_results()
-        print(solver_results_df)
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
     def compute_conditional_means(self):
+        logger.info("Computing conditional means...")
         conditional_means_df = self.construct_results(
             results_function=conditional_means)
         conditional_means_df.to_csv(
