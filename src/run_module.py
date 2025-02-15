@@ -243,11 +243,12 @@ class Run:
         memory = run_config.get('memory', MEMORY_REQUESTED)
         temp_folder_path = f"{self.paths['folder']}/temp"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
+        wine_path = self.general_parameters.get('wine_path', '/projects/p32342/software/.wine')
 
         with open(bash_path, 'w') as file:
             file.write(f'''{header}
 echo "Starting {self.name} at: $(date +'%H:%M:%S')"
-export WINEPREFIX=/projects/p32342/software/.wine
+export WINEPREFIX={wine_path}
 mkdir -p {temp_folder_path}
 module purge
 module load wine/6.0.1
