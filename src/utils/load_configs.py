@@ -117,5 +117,3 @@ def load_comparisons() -> dict:
     return load_config(COMPARISONS_JSON_PATH)
 
 
-events, events_labels = load_events()
-print(events)

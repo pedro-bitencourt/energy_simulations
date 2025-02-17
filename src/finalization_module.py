@@ -31,7 +31,7 @@ def finalize(simulation_folder: Path, x_variable: dict):
 def finalize_r(simulation_folder: Path, x_variable: dict):
     # Run the R script on the simulation folder
     logger.info("Running R script on the simulation folder...")
-    cmd = f"Rscript {PATH_R_SCRIPT} {simulation_folder}"
+    cmd = f"Rscript {PATH_R_SCRIPT} {simulation_folder.name}"
     subprocess.run(cmd, shell=True, check=True)
 
     # Plot the results summary
@@ -122,7 +122,8 @@ def events_dataframes(conditional_means_df: pd.DataFrame) -> dict:
     return events_data
 
 def load_capacities(simulation_folder) -> pd.DataFrame:
-    return pd.read_csv(simulation_folder / 'results'/'conditional_means.csv')[CAPACITY_VARIABLES]
+    print(pd.read_csv(simulation_folder / 'results'/'solver_results.csv').columns)
+    return pd.read_csv(simulation_folder / 'results'/'solver_results.csv')[CAPACITY_VARIABLES]
 
 def load_conditional_mean(simulation_folder) -> pd.DataFrame:
     return pd.read_csv(simulation_folder / 'results'/'conditional_means.csv')
@@ -275,7 +276,7 @@ def format_conditional_means(simulation_folder: Path, x_variable: dict) -> pd.Da
             continue
         event_header = header(EVENTS[event])
         event_data = events_data[event]
-        # Order in salto_capacity
+        # Order in the x variable
         event_data = event_data.sort_values(by=x_variable['name'])
         final_df = pd.concat([final_df, event_header, event_data], ignore_index=True)
         # Add a blank row as separator

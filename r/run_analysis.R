@@ -8,23 +8,21 @@ library(lubridate)
 library(ggplot2)
 
 if(interactive()) {
-  experiment_name <- "qturbmax"
-  experiment_name <- "factor_compartir"
-  experiment_name <- "salto_volume"
-  simulation_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/sim/", experiment_name)
+  experiment_name <- "salto_volume_new"
 } else{
   args <- commandArgs(trailingOnly = TRUE)
-  simulation_folder <- args[1]
+  experiment_name <- args[1]
 }
 
+simulation_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/sim/", experiment_name)
 
 # Define paths
 raw_folder <- paste0(simulation_folder, "/raw/")
-graphics_folder <- paste0(simulation_folder, "/figures/runs/")
+graphics_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/figures/",experiment_name,"/runs/")
 
 
 # Read investment results
-investment_results <- read.csv(paste0(simulation_folder, "/results/profits.csv"))
+investment_results <- read.csv(paste0(simulation_folder, "/results/solver_results.csv"))
 
 
 
@@ -236,14 +234,28 @@ analyze_run <- function(run_file) {
   results$q50_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.50, names=FALSE) * 8760
   results$q75_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.75, names=FALSE) * 8760
   
-  # LCOE
-  results$lcoe <- (
-    capacities$thermal_capacity_mw * capacities$thermal_fixed_costs_mw_hour +
-    capacities$wind_capacity_mw * capacities$wind_fixed_costs_mw_hour +
-    capacities$solar_capacity_mw * capacities$solar_fixed_costs_mw_hour +
-    capacities$thermal_variable_costs_hour) / mean(data$production_demand)
   
-    
+  # LCOE: E[Total cost]/E[demand]
+  wind_fixed_costs_mw_hour <- 8.22
+  solar_fixed_costs_mw_hour <- 4.62
+  thermal_fixed_costs_mw_hour <- 6.93
+  
+  a <- capacities$thermal_capacity * thermal_fixed_costs_mw_hour 
+  b <- capacities$wind_capacity * wind_fixed_costs_mw_hour
+  
+  results$lcoe <- (capacities$thermal_capacity * thermal_fixed_costs_mw_hour +
+    capacities$wind_capacity * wind_fixed_costs_mw_hour +
+    capacities$solar_capacity * solar_fixed_costs_mw_hour +
+    results$mean_variable_cost) / mean(data$production_demand)
+  
+  # Capture rates: E[pq]/E[q]
+  results$thermal_capture_rate <- mean(data$marginal_cost * data$production_thermal)/mean(data$production_thermal)
+  results$wind_capture_rate <- mean(data$marginal_cost * data$production_wind)/mean(data$production_wind)
+  results$solar_capture_rate <- mean(data$marginal_cost * data$production_solar)/mean(data$production_solar)
+  
+  # Avg capture rate: E[p]/E[q]
+  results$avg_capture_rate <- mean(data$marginal_cost * data$production_demand)/mean(data$production_demand)
+  
   message("Finished ", run_name, " summary statistics:", results)
   return(results)
   }
@@ -252,15 +264,14 @@ run_files <- list.files(raw_folder, full.names = TRUE)
 all_results <- list()
 for(run_file in run_files) {
   run_results <- analyze_run(run_file)
-  all_results <- append(all_results, run_results)
+  all_results <- rbind(all_results, run_results)
+  print(all_results)
 }
-# Convert the list of results to a dataframe
-results_df <- do.call(rbind, lapply(all_results, as.data.frame))  # Each run becomes a row
-results_df <- data.frame(results_df, row.names = NULL)  # Ensure a clean dataframe
 
 # Save to a CSV file
 output_file <- file.path(simulation_folder, "results_summary.csv")
-write.csv(results_df, output_file)
+write.csv(all_results, output_file)
+
 
 
 

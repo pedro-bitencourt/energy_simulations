@@ -96,7 +96,7 @@ class ComparativeStatics:
         self.variables: dict = variables
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
-        self.grid_points: list[Solver] = self._initialize_grid()
+        self.list_of_solvers: list[Solver] = self._initialize_grid()
         self._validate_parameters()
 
     def _validate_parameters(self):
@@ -138,7 +138,7 @@ class ComparativeStatics:
     # Utility methods
     def prototype(self):
         # Get first investment problem
-        investment_problem_0: Solver = self.grid_points[0]
+        investment_problem_0: Solver = self.list_of_solvers[0]
         investment_problem_0.prototype()
 
     def redo_runs(self):
@@ -147,13 +147,13 @@ class ComparativeStatics:
 
         WARNING: This method will delete the results of the runs.
         """
-        for solver in self.grid_points:
+        for solver in self.list_of_solvers:
             run = solver.last_run()
             logger.info("Redoing equilibrium run %s", run.name)
             run.submit(force=True)
 
     def clear_folders(self):
-        for solver in self.grid_points:
+        for solver in self.list_of_solvers:
             solver.clear_runs_folders()
 
     ############################
@@ -162,7 +162,7 @@ class ComparativeStatics:
         """
         Submit the jobs to the cluster.
         """
-        for solver in self.grid_points:
+        for solver in self.list_of_solvers:
             solver.submit()
             logging.info(
                 'Submitted job for investment problem %s', solver.name)
@@ -242,7 +242,7 @@ END
 
     def extract(self, complete: bool = True, resubmit: bool = False) -> None:
         logger.info("Extracting data from MOP's outputs...")
-        for solver in self.grid_points:
+        for solver in self.list_of_solvers:
             run: Run = solver.last_run()
 
             if resubmit and not run.successful(complete=complete):
@@ -260,7 +260,7 @@ END
 
     def profits_results(self):
         rows: list = []
-        for solver in self.grid_points:
+        for solver in self.list_of_solvers:
             run_df_path = solver.paths['raw']
             rows.append(solver.last_run().get_profits_dict(
                 run_df_path=run_df_path))
@@ -269,7 +269,7 @@ END
 
     def solver_results(self):
         rows: list = []
-        for solver in self.grid_points:
+        for solver in self.list_of_solvers:
             rows.append(solver.solver_results())
         results_df: pd.DataFrame = pd.DataFrame(rows)
         return results_df
@@ -277,7 +277,7 @@ END
     def construct_results(self, results_function) -> pd.DataFrame:
         # Create a list to store rows
         rows = []
-        for point in self.grid_points:
+        for point in self.list_of_solvers:
             results_dict = point.last_run().results(
                 results_function, run_df_path=point.paths['raw'])
             # Append the row to our list

@@ -26,7 +26,7 @@ from pathlib import Path
 import pandas as pd
 
 from .utils import parsing_module as proc
-from .run_module import Run
+from .run_module import Run, PARTICIPANTS_DEFAULT, PARTICIPANTS_ENDOGENOUS_DEFAULT
 from .constants import (
     SALTO_WATER_LEVEL_DF,
     MARGINAL_COST_DF, DEMAND_DF
@@ -35,10 +35,8 @@ from .constants import (
 logger = logging.getLogger(__name__)
 
 
-PARTICIPANTS_LIST_ALL: list = ['wind', 'solar',
-                               'thermal', 'salto', 'demand', 'excedentes']
-PARTICIPANTS_LIST_ENDOGENOUS: list = ['wind', 'solar', 'thermal']
-PARTICIPANTS: Dict[str, Dict[str, str]] = {
+# This should include all the participants that we have implemented so far
+PARTICIPANTS_DICT: Dict[str, Dict[str, str]] = {
     "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
     "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
     "thermal": {"folder": "TER_thermal", "type": "thermal"},
@@ -88,9 +86,11 @@ class RunProcessor(Run):
 
     def construct_run_df(self, complete: bool = True) -> pd.DataFrame:
         if complete:
-            participants: list = PARTICIPANTS_LIST_ALL
+            participants: list[str] = self.general_parameters.get(
+                "participants", PARTICIPANTS_DEFAULT)
         else:
-            participants: list = PARTICIPANTS_LIST_ENDOGENOUS
+            participants: list[str] = self.general_parameters.get(
+                "endogenous_participants", PARTICIPANTS_ENDOGENOUS_DEFAULT)
 
         logging.info(f'Extracting dataframes for run {self.name}')
 
@@ -113,7 +113,7 @@ class RunProcessor(Run):
                 'datetime', 'scenario'], how='left')
 
             # Extract variable costs
-            participant_type = PARTICIPANTS[participant]['type']
+            participant_type = PARTICIPANTS_DICT[participant]['type']
             if participant_type == 'thermal':
                 # Extract variable costs data
                 df = get_variable_cost_df(participant, self.paths['sim'])
@@ -165,7 +165,7 @@ def _initialize_df_configuration(key_participant: str, sim_folder: Path) -> Dict
     """
     Initializes the dataframe configuration for data extraction for the given participant.
     """
-    participant_folder = PARTICIPANTS[key_participant]["folder"]
+    participant_folder = PARTICIPANTS_DICT[key_participant]["folder"]
     dataframe_template = {
         "table_pattern": {"start": "CANT_POSTE", "end": None},
         "columns_options": {
@@ -221,7 +221,7 @@ def get_variable_cost_df(key_participant: str,
     """
     Extracts and processes the variable costs data for the participant.
     """
-    participant_type = PARTICIPANTS[key_participant]["type"]
+    participant_type = PARTICIPANTS_DICT[key_participant]["type"]
     if participant_type != "thermal":
         logger.error(
             "Variable costs are only available for thermal participants.")
@@ -251,7 +251,7 @@ def get_water_level_df(key_participant: str,
     """
     Extracts and processes the water level data for the participant.
     """
-    participant_type = PARTICIPANTS[key_participant]["type"]
+    participant_type = PARTICIPANTS_DICT[key_participant]["type"]
     if participant_type != "hydro":
         logger.error(
             "Water level data is only available for hydro participants.")

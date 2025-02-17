@@ -105,10 +105,6 @@ class Solver:
                       file, indent=4, sort_keys=True)
         logger.info('Saved optimization trajectory to %s',
                     self.paths["solver_trajectory"])
-#        with open(self.paths['master_trajectory'], 'a') as file:
-#            last_entry = self.solver_trajectory[-1].to_dict()
-#            last_entry['name'] = self.name
-#            file.write(json.dumps(last_entry) + '\n')
 
     def prototype(self):
         # Create run at the initial guesses
@@ -329,7 +325,7 @@ class Solver:
         return job_id
 
     def _create_bash(self):
-        # Convert the investment data to JSON directly
+        # Convert the investment data to JSON to input in the bash script
         investment_data = {
             "parent_folder": str(self.paths['parent_folder']),
             "exogenous_variable": self.exogenous_variable,
@@ -372,7 +368,7 @@ sys.path.append('/projects/p32342/code')
 from src.solver_module import Solver
 from src.utils.logging_config import setup_logging
 
-setup_logging(level="logging_level")
+setup_logging(level={logging_level})
 
 solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')

@@ -22,6 +22,9 @@ from .data_analysis_module import profits_per_participant, std_variables, full_r
 logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5'  # GB
+PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
+                               'thermal', 'salto', 'demand', 'excedentes']
+PARTICIPANTS_ENDOGENOUS_DEFAULT: list = ['wind', 'solar', 'thermal']
 
 
 class Run:
@@ -63,6 +66,19 @@ class Run:
         self.folder: Path = self.paths['folder']
 
         self.log_run()
+
+    def capacities(self):
+        participants: list[str] = self.general_parameters.get(
+            'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT
+        )
+        # Create a dictionary with the capacities
+        capacities = {participant: self.variables[f"{participant}_capacity"]
+                      for participant in participants}
+        if 'salto_capacity' in self.variables.keys():
+            capacities['salto'] = self.variables['salto_capacity']
+        else:
+            capacities['salto'] = 810
+        return capacities
 
     def log_run(self):
         logger.debug("Run %s", self.name)
@@ -279,6 +295,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             f.write(content)
         return output_path
 
+    ##############################
+    # Processing methods
     def run_df(self, complete: bool = False):
         from .run_processor_module import RunProcessor
         # Initialize the RunProcessor object
@@ -296,21 +314,36 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         run_df = full_run_df(run_df, capacities)
         return run_df
 
-    def results(self, results_fun, run_df_path=None):
+    def results(self, results_fun, run_df_path=None, complete=True):
+        """
+        Computes results according to 'results_fun' on the run_df.
+        Args:
+            - results_fun: should be a function that takes full_run_df and the
+            capacities dictionary as input and outputs a dictionary.
+            - run_df_path: (optional) should be the path to the run_df.
+            - complete: (optional) should describe if the full run_df is needed.
+        """
         if run_df_path is not None:
             run_df: pd.DataFrame = pd.read_csv(run_df_path)
             run_df = self.full_run_df(run_df)
+            if complete:
+                run_df: pd.DataFrame = self.full_run_df(run_df)
         else:
-            run_df: pd.DataFrame = self.full_run_df(self.run_df(complete=True))
-        results_dict: dict = results_fun(run_df)
+            run_df: pd.DataFrame = self.run_df(complete=complete)
+
+        capacities = self.capacities()
+        results_dict: dict = results_fun(run_df, capacities)
         results_dict['name'] = self.name
         results_dict.update(self.variables)
         return results_dict
 
+    # Refactor
     def get_profits_dict(self, complete: bool = False, run_df_path=None):
-        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
-
-        participants = PARTICIPANTS_LIST_ENDOGENOUS
+        """
+        To do: refactor this so it uses the results() method.
+        """
+        participants = self.general_parameters.get(
+            'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT)
 
         if run_df_path is not None:
             run_df: pd.DataFrame = pd.read_csv(run_df_path)
@@ -336,19 +369,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         logger.debug(profits_dict)
         return profits_dict
 
-    def capacities(self):
-        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
-
-        participants = PARTICIPANTS_LIST_ENDOGENOUS
-        # Create a dictionary with the capacities
-        capacities = {participant: self.variables[f"{participant}_capacity"]
-                      for participant in participants}
-        if 'salto_capacity' in self.variables.keys():
-            capacities['salto'] = self.variables['salto_capacity']
-        else:
-            capacities['salto'] = 1620
-        return capacities
-
+    # Refactor
     def get_profits(self, complete: bool = False, resubmit: bool = False):
         """
         Computes profits for the specified endogenous variables.
@@ -356,7 +377,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         Returns:
             dict: A dictionary of profits.
         """
-        from .run_processor_module import PARTICIPANTS_LIST_ENDOGENOUS
+        participants = self.general_parameters.get(
+            'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT)
         try:
             profits_dict: dict = self.get_profits_dict(complete=complete)
         except FileNotFoundError as file_error:
@@ -367,7 +389,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
                 self.submit(force=True)
             return {}
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
-                              for participant in PARTICIPANTS_LIST_ENDOGENOUS}
+                              for participant in participants}
         return profits_dict
 
 
@@ -403,4 +425,4 @@ def submit_and_wait_for_runs(runs_dict: dict[str, Run],
     if attempts == max_attempts:
         logger.critical(
             "Could not successfully finish all runs after %s attempts", max_attempts)
-        sys.exit(UNSUCCESSFUL_RUN)
+        sys.exit()

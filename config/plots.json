@@ -67,6 +67,16 @@
     }
   },
   "r" : {
+    "capture_rate_by_source": {
+      "title": "Capture Rate by Source (USD/MWh)",
+      "variables": [
+        { "name": "wind_capture_rate", "label": "Wind", "color" : "#2CA02C" },
+        { "name": "solar_capture_rate", "label": "Solar", "color" : "#FFD600" },
+        {"name": "thermal_capture_rate", "label": "Thermal", "color" : "#D62728" },
+        { "name": "salto_capture_rate", "label": "Hydro", "color" : "#1F77B4" }
+      ],
+      "y_label": "Capture Rate by Source (USD/MWh)"
+    },
     "excess_by_source": {
       "title": "Excess Production by Source (MW)",
       "variables": [
@@ -88,6 +98,14 @@
       "variables": [
         { "name": "lcoe", "label": "LCOE", "color" : "#FFD600" },
         { "name": "mean_price", "label": "Price", "color" : "#2CA02C" }
+      ],
+      "y_label": "Average LCOE and average price ($/MWh)"
+    },
+    "lcoe_and_weighted_prices" : {
+      "title": "Levelized Cost of Energy ($/MWh)",
+      "variables": [
+        { "name": "lcoe", "label": "LCOE", "color" : "#FFD600" },
+        { "name": "avg_capture_rate", "label": "Price", "color" : "#2CA02C" }
       ],
       "y_label": "Average LCOE and average price ($/MWh)"
     },

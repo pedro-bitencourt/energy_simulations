@@ -3,28 +3,29 @@ from typing import List, Dict, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-import re
-from typing import List, Dict, Tuple
-import matplotlib.pyplot as plt
-import numpy as np
-
-def create_piecewise_function(xml_input: str):
+def parse_xml_function(xml_input: str):
     # Check function type
     if "poliConCotas" in xml_input:
-        return create_poly_with_bounds_function(xml_input)
+        return parse_poly_with_bounds_function(xml_input)
     elif "porRangos" in xml_input:
-        return create_by_ranges_function(xml_input)
+        return parse_by_ranges_function(xml_input)
     else:
         raise ValueError("Unknown function type in XML input")
 
-def create_poly_with_bounds_function(xml_input: str):
+def grab_xml_field(xml_input: str, field_name: str) -> str:
+    match = re.search(f'<{field_name}>(.*?)</{field_name}>', xml_input)
+    if match:
+        return match.group(1)
+    else:
+        raise ValueError(f"Field '{field_name}' not found in XML input")
+
+def parse_poly_with_bounds_function(xml_input: str):
     # Parse bounds and coefficients
-    xmin = float(re.search(r'<xmin>(.*?)</xmin>', xml_input).group(1))
-    xmax = float(re.search(r'<xmax>(.*?)</xmax>', xml_input).group(1))
-    valmin = float(re.search(r'<valmin>(.*?)</valmin>', xml_input).group(1))
-    valmax = float(re.search(r'<valmax>(.*?)</valmax>', xml_input).group(1))
-    coefs = list(map(float, re.search(r'<coefs>(.*?)</coefs>', xml_input).group(1).split(',')))
+    xmin = float(grab_xml_field(xml_input, 'xmin'))
+    xmax = float(grab_xml_field(xml_input, 'xmax'))
+    valmin = float(grab_xml_field(xml_input, 'valmin'))
+    valmax = float(grab_xml_field(xml_input, 'valmax'))
+    coefs = list(map(float, grab_xml_field(xml_input, 'coefs').split(',')))
 
     def poly_with_bounds_function(x: float) -> float:
         if x < xmin:
@@ -32,36 +33,55 @@ def create_poly_with_bounds_function(xml_input: str):
         elif x > xmax:
             return valmax
         else:
-            value = sum(coef * x**i for i, coef in enumerate(coefs[::-1]))
+            value = sum(coef * x**i for i, coef in coefs)
             return max(valmin, min(valmax, value))
-
     return poly_with_bounds_function
 
-def create_by_ranges_function(xml_input: str):
+def parse_by_ranges_function(xml_input: str):
     # Parse ranges
-    ranges_match = re.search(r'<rangos>(.*?)</rangos>', xml_input)
+    ranges_match = grab_xml_field(xml_input, 'rangos')
+    print(ranges_match)
+    print(type(ranges_match))
+
     if ranges_match:
-        ranges_str = ranges_match.group(1)
-        ranges = [tuple(map(float, r.strip('()').split(';'))) for r in ranges_str.split(',')]
+        ranges = [tuple(map(float, r.strip('()').split(';'))) for r in ranges_match.split(',')]
     else:
         ranges = []
+        
+    ranges = [tuple(map(float, r.strip('()').split(';'))) for r in ranges_match.split(',')]
 
     # Parse polynomials
     poly_matches = re.findall(r'<funcion tipo="poli">(.*?)</funcion>', xml_input)
     polynomials = [list(map(float, poly.split(','))) for poly in poly_matches]
 
+    print("Polynomials found:")
+    print(polynomials)
+    print("Ranges found:")
+    print(ranges)
+
+    default_polynomial = polynomials[0]
+    # Remove default polynomial from the list
+    polynomials = polynomials[1:]
+    
     def by_ranges_function(x: float) -> float:
         if ranges:
-            for (lower, upper), poly in zip(ranges, polynomials[1:]):
+            for (lower, upper), poly in zip(ranges, polynomials):
                 if lower <= x < upper:
-                    return sum(coef * x**i for i, coef in enumerate(poly[::-1]))
-        
-        # Use the first polynomial as the default (outside defined ranges)
-        return sum(coef * x**i for i, coef in enumerate(polynomials[0][::-1]))
+                    return polynomial_from_list(x, poly)
+
+        return polynomial_from_list(x, default_polynomial)
 
     return by_ranges_function
 
-def plot_multiple_functions(function_data: List[Dict]):
+def polynomial_from_list(x: float, poly: list[float]):
+    idx = 0
+    output = 0
+    for coef in poly:
+        output += coef * x**idx
+        idx += 1
+    return output
+
+def plot_multiple_functions(function_data: List[Dict], output_path: str ):
     num_functions = len(function_data)
     fig, axes = plt.subplots(num_functions, 1, figsize=(10, 6 * num_functions), squeeze=False)
     
@@ -71,18 +91,18 @@ def plot_multiple_functions(function_data: List[Dict]):
         y_label = data['y_label']
         title = data['title']
         
-        f = create_piecewise_function(xml_input)
+        parsed_function = parse_xml_function(xml_input)
         
         # Determine x_range from the XML if not provided
         if 'x_range' in data:
             x_range = data['x_range']
         else:
-            xmin = float(re.search(r'<xmin>(.*?)</xmin>', xml_input).group(1))
-            xmax = float(re.search(r'<xmax>(.*?)</xmax>', xml_input).group(1))
+            xmin = float(grab_xml_field(xml_input, 'xmin'))
+            xmax = float(grab_xml_field(xml_input, 'xmax'))
             x_range = (xmin - 1, xmax + 1)  # Add some padding
         
         x = np.linspace(x_range[0], x_range[1], 1000)
-        y = [f(xi) for xi in x]
+        y = [parsed_function(xi) for xi in x]
         
         ax = axes[i, 0]
         ax.plot(x, y)
@@ -90,9 +110,13 @@ def plot_multiple_functions(function_data: List[Dict]):
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
         ax.grid(True)
+        
     
-    plt.tight_layout()
-    plt.show()
+#    plt.tight_layout()
+#    plt.show()
+    plt.savefig(output_path)
+    print("Plot saved to", output_path)
+
 
     
 # Example usage
@@ -137,7 +161,6 @@ function_data = [
     }
 ]
 
-#plot_multiple_functions(function_data)
 
 
 
