@@ -112,6 +112,7 @@ class ComparativeStatics:
         grid_points = []
         grids = self.variables['exogenous'].values()
 
+        # Currently assuming only one variable
         exogenous_variable_0 = list(self.variables['exogenous'].keys())[0]
         grid_0 = list(grids)[0]['grid']
         # Iterate over exogenous variables
@@ -194,12 +195,15 @@ module load python-miniconda3/4.12.0
 python - <<END
 import sys
 import json
-import logging
 sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 from src.utils.logging_config import setup_logging
 
+<<<<<<< HEAD
 setup_logging(level = "debug")
+=======
+setup_logging(level = "INFO")
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
 
 comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
@@ -233,8 +237,12 @@ END
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
+<<<<<<< HEAD
     def compute_conditional_means(self):
         logger.info("Computing conditional means...")
+=======
+        logger.info("Data extraction completed. Computing results...")
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
         conditional_means_df = self.construct_results(
             results_function=conditional_means)
         conditional_means_df.to_csv(

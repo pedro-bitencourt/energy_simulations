@@ -10,10 +10,14 @@
   		<finCorrida>01 01 2029 00:00:00</finCorrida>
   		<cantEscenarios>114</cantEscenarios>
   		<tasaAnual>0.1</tasaAnual>
+  		<!-- tasa por 1 -->
   		<topeSpot>250.0</topeSpot>
+  		<!-- En USD/MWh -->
   		<despachoSinExportacion>
   			<despSinExp>false</despSinExp>
+  			<!-- Si es true en la simulación se obtiene el despacho sin exportacion en la iteración especificada abajo -->
   			<iteracionSinExp>1</iteracionSinExp>
+  			<!-- Se usa la primera iteración sin exportación -->
   			<paisesACortar>Argentina,Brasil</paisesACortar>
   		</despachoSinExportacion>
   		<lineaTiempo unidad="segundos">
@@ -24,6 +28,7 @@
   			</periodoIntegracion>
   			<listaBloques>
   				<bloque>
+  					<!-- From 2024-01-01 to 2029-01-01 is 5 years including two leap years (2024 & 2028), totaling 1827 days -->
   					<cantPasos>1827</cantPasos>
   					<durPaso unidad="segundos">86400</durPaso>
   					<intervaloMuestreo unidad="segundos">3600</intervaloMuestreo>
@@ -100,6 +105,16 @@
 			<discretoExhaustivo>true</discretoExhaustivo>
 			<muestreado>false</muestreado>
 		</pEstocastico>
+		<!--
+	<pEstocastico>
+			<nombre>eoloSolBootstrap_serie5anos</nombre>
+			<tipo>bootstrapDiscreto</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+			<estadosIniciales>(EOLOSOL;1)</estadosIniciales>
+		</pEstocastico>
+		-->
 		<pEstocastico>
 			<nombre>upm1Bootstrap</nombre>
 			<tipo>bootstrapDiscreto</tipo>
@@ -155,6 +170,15 @@
 			<discretoExhaustivo>false</discretoExhaustivo>
 			<muestreado>true</muestreado>
 		</pEstocastico>
+		<!--
+ <pEstocastico>
+			<nombre>anioBaseTranspElecMayo22</nombre>
+			<tipo>demandaAnioBase</tipo>
+			<tipoSoporte>archivo</tipoSoporte>
+			<discretoExhaustivo>false</discretoExhaustivo>
+			<muestreado>true</muestreado>
+		</pEstocastico>
+		-->
 		<pEstocastico>
 			<nombre>eoloSolMayo2023</nombre>
 			<tipo>bootstrapDiscreto</tipo>
@@ -186,7 +210,7 @@
               <propietario>UTE</propietario>
               <barra>barraPrueba1</barra>
               <cantModInst>
-                <ev tipo="const">${int(thermal_capacity // 50)}</ev>
+                <ev tipo="const">${thermal_capacity // 50}</ev>
               </cantModInst>
               <listaCombustibles>gasOil</listaCombustibles>
               <listaBarrasComb>barraGasOil1</listaBarrasComb>
@@ -285,9 +309,192 @@
           </compCoefEnergetico>
         </compsPorDefecto>
         <listaAtributos>energias,potencias,cotaAguasArriba</listaAtributos>
-		<listaUtilizados></listaUtilizados>
-        <listaGHidraulico>
-        </listaGHidraulico>
+        <listaUtilizados>salto</listaUtilizados>
+      <listaGHidraulico>
+          <compsGenerales>
+            <compLago>
+              <ev tipo="const">ConLago</ev>
+            </compLago>
+            <compCoefEnergetico>
+              <ev tipo="const">CoefEnergConstantes</ev>
+            </compCoefEnergetico>
+          </compsGenerales>
+          <datosParticipante>
+            <nombre>salto</nombre>
+            <propietario>UTE</propietario>
+            <barra>barraPrueba1</barra>
+            <cantModInst>
+              <ev tipo="const">12</ev>
+            </cantModInst>
+            <factorCompartir>0.5</factorCompartir>
+            <epsilonCaudalErogadoIteracion unidad="m3/s">50.0</epsilonCaudalErogadoIteracion>
+            <listaGHAguasArriba/>
+            <generadorAguasAbajo/>
+            <potMin>
+              <ev tipo="const">0.0</ev>
+            </potMin>
+            <potMax>
+              <ev tipo="const">135</ev>
+            </potMax>
+            <rendMin>
+              <ev tipo="const">0.9</ev>
+            </rendMin>
+            <rendMax>
+              <ev tipo="const">0.9</ev>
+            </rendMax>
+            <fCotaAguasAbajo>
+              <ev tipo="const">
+                <funcion tipo="poli">5.1, 7.1051E-4, -1.41235E-8, 2.037E-13</funcion>
+              </ev>
+            </fCotaAguasAbajo>
+            <volFijo>
+              <ev tipo="const">2100.0</ev>
+            </volFijo>
+            <qTur1Max>
+              <ev tipo="const">600</ev>
+            </qTur1Max>
+            <saltoMinimo>10.0</saltoMinimo>
+            <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>
+            <cotaInundacionAguasArriba>40.0</cotaInundacionAguasArriba>
+            <fCoVo>
+              <ev tipo="const">
+                <funcion tipo="porRangos">
+                  <fueraRango>
+                    <funcion tipo="poli">0.0</funcion>
+                  </fueraRango>
+                  <rangos>(0.0;3800.0),(3800.0;30000.0)</rangos>
+                  <funcion tipo="poli">30.0, 0.0024, -2e-07</funcion>
+                  <funcion tipo="poli">33.96, 6.67e-04</funcion>
+                </funcion>
+              </ev>
+            </fCoVo>
+            <fVoCo>
+              <ev tipo="const">
+                <funcion tipo="porRangos">
+                  <fueraRango>
+                    <funcion tipo="poli">0.0</funcion>
+                  </fueraRango>
+                  <rangos>(0.0;36.5),(36.5;50.0)</rangos>
+                  <function tipo="poli">17571.5, -1550.6, 32.164</function>
+                  <function tipo="poli">-50924.0, 1500.0</function>
+                </funcion>
+              </ev>
+            </fVoCo>
+            <fQEroMin>
+              <ev tipo="const">
+                <funcion tipo="porRangos">
+                  <fueraRango>
+                    <funcion tipo="poli">140.0</funcion>
+                  </fueraRango>
+                  <rangos>(29.0;31.0),(31.0;35.5),(35.5;39.0)</rangos>
+                  <funcion tipo="poli">140.0</funcion>
+                  <funcion tipo="poli">300.0</funcion>
+                  <funcion tipo="poli">-688400.0, 19400.0</funcion>
+                </funcion>
+              </ev>
+            </fQEroMin>
+            <coefEvaporacion>
+              <ev tipo="periodica">
+                <definicionPeriodo>(01 01 2018;230.0),(01 02 2018;170.0),(01 03 2018;154.0),(01 04 2018;90.0),(01 05 2018;65.0),(01 06 2018;40.0),(01 07 2018;45.0),(01 08 2018;65.0),(01 09 2018;80.0),(01 10 2018;120.0),(01 11 2018;160.0),(01 12 2018;230.0)</definicionPeriodo>
+                <periodo>año</periodo>
+                <cantPeriodo>40</cantPeriodo>
+              </ev>
+            </coefEvaporacion>
+            <fEvaporacion>
+              <ev tipo="const">
+                <funcion tipo="poli">0.048677, -0.004062, 1.03E-4</funcion>
+              </ev>
+            </fEvaporacion>
+            <fFiltracion>
+              <ev tipo="const">
+                <funcion tipo="poli">-25.8925, 0.753168</funcion>
+              </ev>
+            </fFiltracion>
+            <fQVerMax unidad="m3/s">
+              <ev tipo="const">
+                <funcion tipo="poliConCotas">
+                  <xmin>29.0</xmin>
+                  <xmax>37.0</xmax>
+                  <valmin>0.0</valmin>
+                  <valmax>40000.0</valmax>
+                  <coefs>-108462.0, 3615.4</coefs>
+                </funcion>
+              </ev>
+            </fQVerMax>
+            <aporte unidad="m3/s">
+              <variableAleat>
+                <procSimulacion>historicoMarkovC20Abr2023</procSimulacion>
+                <procOptimizacion>markovSemC20Abr2023</procOptimizacion>
+                <nombre>APORTE-SALTO</nombre>
+              </variableAleat>
+            </aporte>
+            <dispModulos tipo="exponencial">
+              <cantModIni>12</cantModIni>
+              <dispMedia>
+                <ev tipo="const">0.99</ev>
+              </dispMedia>
+              <tMedioArreglo unidad="dias">
+                <ev tipo="const">0.0</ev>
+              </tMedioArreglo>
+            </dispModulos>
+            <mantProgramado>
+              <ev tipo="const">0</ev>
+            </mantProgramado>
+            <costoFijo>
+              <ev tipo="const">0.0</ev>
+            </costoFijo>
+            <costoVariable>
+              <ev tipo="const">0.0</ev>
+            </costoVariable>
+            <salidaDetallada>true</salidaDetallada>
+            <hayReservaEstrategica>false</hayReservaEstrategica>
+            <volumenReservaEstrategica>
+              <ev tipo="const">900.0</ev>
+            </volumenReservaEstrategica>
+            <valorMinReserva>
+              <ev tipo="const">65000.0</ev>
+            </valorMinReserva>
+            <valorAplicaEnOptim>true</valorAplicaEnOptim>
+            <hayControldeCotasMinimas>true</hayControldeCotasMinimas>
+            <volumenControlMinimo>
+              <ev tipo="const">888.0</ev>
+            </volumenControlMinimo>
+            <penalidadControlMinimo>
+              <ev tipo="const">0.485</ev>
+            </penalidadControlMinimo>
+            <hayControldeCotasMaximas>false</hayControldeCotasMaximas>
+            <volumenControlMaximo>
+              <ev tipo="const">7008.0</ev>
+            </volumenControlMaximo>
+            <penalidadControlMaximo>
+              <ev tipo="const">0.801</ev>
+            </penalidadControlMaximo>
+            <vertimientoConstante>false</vertimientoConstante>
+            <hayVolumenObjetivoVertimiento>false</hayVolumenObjetivoVertimiento>
+            <volumenObjetivoVertimiento>
+              <ev tipo="const">4000</ev>
+            </volumenObjetivoVertimiento>
+          </datosParticipante>
+          <variablesEstado>
+            <variableEstado>
+              <nombre>volumen</nombre>
+              <estadoInicial unidad="hm3">2439.7</estadoInicial>
+              <ev tipo="const">
+                <discretizacion tipo="equiespaciada">
+                  <minimo>0.0</minimo>
+                  <maximo>3000</maximo>
+                  <cantidadPuntos>5</cantidadPuntos>
+                </discretizacion>
+              </ev>
+              <valorRecursoSuperior>
+                <ev tipo="const">0.0</ev>
+              </valorRecursoSuperior>
+              <discreta>false</discreta>
+              <ordinal>false</ordinal>
+              <discretaIncremental>false</discretaIncremental>
+            </variableEstado>
+          </variablesEstado>
+      </listaGHidraulico>
       </hidraulicos>
       <eolicos>
 				<listaUtilizados>eoloDeci</listaUtilizados>
@@ -488,7 +695,7 @@
           <datosFalla>
             <nombre>fallaUnica</nombre>
             <cantEscProgram>3</cantEscProgram>
-            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;4000.0),(85.5;4000.0)</escalonesPorciento>
+            <escalonesPorciento unidad1="%" unidad2="USD/MWh">(2.0;${cost_blackout}),(85.5;${cost_blackout})</escalonesPorciento>
             <demanda>demand</demanda>
             <salidaDetallada>true</salidaDetallada>
           </datosFalla>

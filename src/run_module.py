@@ -244,13 +244,14 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        run_config: dict = self.general_parameters['slurm'].get(
+        slurm_config: dict = self.general_parameters.get("slurm", {})
+        run_config: dict = slurm_config.get(
             "run", RUN_SLURM_DEFAULT_CONFIG)
         run_config = {
             key: run_config.get(key, value)
             for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
         }
-        run_config['email'] = self.general_parameters['slurm'].get(
+        run_config['email'] = self.general_parameters.get(
             'email', None)
 
         slurm_path = self.paths['folder']
@@ -259,11 +260,13 @@ class Run:
         memory = run_config.get('memory', MEMORY_REQUESTED)
         temp_folder_path = f"{self.paths['folder']}/temp"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
+        wine_path = self.general_parameters.get(
+            'wine_path', '/projects/p32342/software/.wine')
 
         with open(bash_path, 'w') as file:
             file.write(f'''{header}
 echo "Starting {self.name} at: $(date +'%H:%M:%S')"
-export WINEPREFIX=/projects/p32342/software/.wine
+export WINEPREFIX={wine_path}
 mkdir -p {temp_folder_path}
 module purge
 module load wine/6.0.1
@@ -282,13 +285,17 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         # Add folder path to variables for substitution
         variables = {**variables,
                      'output_folder': str(folder).replace('\\', '\\\\')}
-        # Read template and substitute all expressions
+
+        # Read template
         with open(template_path, 'r') as f:
             content = f.read()
 
         def replace_expr(match):
+            # Replaces a ${expression} in the template by its values, using
+            # the input from self.variables
             expr = match.group(1)
             return str(eval(expr, {}, variables))
+
         content = re.sub(r'\${([^}]+)}', replace_expr, content)
         # Write output
         with open(output_path, 'w') as f:

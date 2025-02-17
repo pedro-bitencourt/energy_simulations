@@ -81,6 +81,9 @@ class Solver:
             logger.info("Successfully loaded optimization trajectory from %s.",
                         self.paths['solver_trajectory'])
         else:
+            # Create the path for the solver_trajectory
+            self.paths['solver_trajectory'].parent.mkdir(parents=True,
+                                                         exist_ok=True)
             # If not, initialize it with the initial guess
             solver_trajectory: list[Iteration] = []
             logger.info(
@@ -288,9 +291,12 @@ class Solver:
         def create_header(last_iteration: Iteration) -> dict:
             exo_vars: dict = {key: entry['value']
                               for key, entry in self.exogenous_variable.items()}
+            profits_dict: dict = {f"profits_{key}": value for key, value in
+                                  last_iteration.profits.items()}
             header: dict = {
                 'name': self.name,
                 'iteration': last_iteration.iteration,
+                **profits_dict,
                 **last_run.capacities(),
                 **exo_vars,
                 **last_iteration.capacities
@@ -298,7 +304,7 @@ class Solver:
             return header
 
         solver_results: dict = create_header(last_iteration)
-        solver_results.update(self.last_run().get_profits(complete=complete))
+        # solver_results.update(self.last_run().get_profits(complete=complete))
         solver_results['convergence_reached'] = convergence_reached
 
         return solver_results
@@ -333,18 +339,21 @@ class Solver:
             "general_parameters": self.general_parameters
         }
         investment_data_str = json.dumps(investment_data)
-
-        logging_level: str = self.general_parameters['slurm']['solver'].get(
-            'log_level', 'DEBUG')
-
         slurm_path = self.paths['bash'].parent
 
-        solver_config = self.general_parameters['slurm'].get(
+        # Retrieve configurations
+        slurm_config: dict = self.general_parameters.get("slurm",
+                                                         {})
+        solver_config = slurm_config.get(
             'solver', SOLVER_SLURM_DEFAULT_CONFIG)
+        logging_level: str = slurm_config.get(
+            'log_level', 'INFO')
         solver_config = {
             key: solver_config.get(key, value) for key, value in SOLVER_SLURM_DEFAULT_CONFIG.items()
         }
         solver_config['email'] = self.general_parameters.get('email', None)
+
+        # Create header
         header = slurm_header(solver_config, self.name, slurm_path)
 
         # Write the bash script without a separate data file
