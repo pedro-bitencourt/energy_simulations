@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5'  # GB
 PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
-                               'thermal', 'salto', 'demand', 'excedentes']
+                              'thermal', 'demand', 'excedentes']  # 'salto'
 PARTICIPANTS_ENDOGENOUS_DEFAULT: list = ['wind', 'solar', 'thermal']
 
 
