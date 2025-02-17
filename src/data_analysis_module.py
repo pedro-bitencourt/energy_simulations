@@ -52,7 +52,12 @@ def profits_per_participant(run_df: pd.DataFrame,
     hourly_fixed_costs = load_costs(cost_path)
     results_dict: dict = {}
 
+<<<<<<< HEAD
     def compute_participant_metrics(run_df: pd.DataFrame, participant: str, capacity_mw: float) -> dict:
+=======
+    def compute_participant_metrics(run_df: pd.DataFrame, participant: str,
+                                    capacity_mw: float) -> dict:
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
         """
         For a given run, compute the economic metrics for a given participant.
 
@@ -134,6 +139,11 @@ def full_run_df(run_df: pd.DataFrame, capacities_dict: dict) -> pd.DataFrame:
 
     return run_df
 
+<<<<<<< HEAD
+=======
+# Helper function to compute metrics for each participant
+
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
 
 def conditional_means(run_df: pd.DataFrame) -> dict:
     # Initialize results dictionary

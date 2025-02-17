@@ -66,8 +66,12 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['main'] = base_path / "sim" / name
     paths['temp'] = paths['main'] / 'temp'
     paths['results'] = paths['main'] / 'results'
+<<<<<<< HEAD
     paths['raw'] = paths['main'] / "raw"
     paths['trajectories'] = paths['main'] / 'trajectories'
+=======
+    paths['raw'] = paths['results'] / name / "raw"
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
 
     for path in paths.values():
         path.mkdir(parents=True, exist_ok=True)
@@ -91,6 +95,11 @@ def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
     # Folders
     paths['parent_folder'] = parent_folder
     paths['folder'] = parent_folder / name
+<<<<<<< HEAD
+=======
+    paths['master_trajectory'] = paths['parent_folder'] / \
+        'results/master_trajectory.json'
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
     # Subfolders
     paths['temp'] = paths['folder'] / 'temp'
     paths['results'] = paths['folder'] / 'results'
@@ -103,6 +112,7 @@ def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
         'bash': f'temp/{name}.sh',
         'slurm_out': f'temp/{name}.out',
         'slurm_err': f'temp/{name}.err',
+<<<<<<< HEAD
         'solver_results': 'results/solver_results.json'
     }
     paths.update({key: paths['folder'] / value for key,
@@ -113,6 +123,13 @@ def initialize_paths_solver(parent_folder: Path, name: str) -> dict:
     }
     paths.update({key: parent_folder / value for key,
                  value in files_parent_folder_dict.items()})
+=======
+        'solver_trajectory': f'{name}_trajectory.json',
+        'solver_results': 'results/solver_results.json'
+    }
+    paths.update({key: paths['folder'] / value for key,
+                 value in files_dict.items()})
+>>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
     return paths
 
 

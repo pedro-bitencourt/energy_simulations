@@ -1,11 +1,11 @@
 """
 Comparative statics exercise for changing the volume of the lakes in the system.
 """
+from src.utils.logging_config import setup_logging
+from src.comparative_statics_module import ComparativeStatics
 import sys
 sys.path.append('/projects/p32342/code')
 
-from src.utils.logging_config import setup_logging
-from src.comparative_statics_module import ComparativeStatics
 
 setup_logging(level="debug")
 
@@ -13,7 +13,7 @@ setup_logging(level="debug")
 # Input parameters
 name: str = 'salto_volume'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
-costs_path: str = f'/projects/p32342/code/cost_data/original.json'
+costs_path: str = f'/projects/p32342/data/cost_original.json'
 
 slurm_configs: dict = {
     'run': {
@@ -74,3 +74,4 @@ comparative_statics = ComparativeStatics(
 # comparative_statics.submit_solvers()
 # Submit the processing job
 comparative_statics.submit_processing()
+# comparative_statics.process()
