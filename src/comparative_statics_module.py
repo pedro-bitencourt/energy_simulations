@@ -228,67 +228,65 @@ END
     ############################
     # Processing methods
     def process(self, complete=True, resubmit=True):
-        self.extract(complete=complete, resubmit=resubmit)
+        extract(list_of_solvers=self.list_of_solvers,
+                complete=complete, resubmit=resubmit)
 
         self.compute_conditional_means()
 
     def compute_solver_results(self):
-        solver_results_df = self.solver_results()
+        solver_results_df = solver_results(list_of_solvers=self.list_of_solvers)
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
-<<<<<<< HEAD
     def compute_conditional_means(self):
         logger.info("Computing conditional means...")
-=======
-        logger.info("Data extraction completed. Computing results...")
->>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
-        conditional_means_df = self.construct_results(
+        conditional_means_df = construct_results(
+            list_of_solvers=self.list_of_solvers,
             results_function=conditional_means)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
 
-    def extract(self, complete: bool = True, resubmit: bool = False) -> None:
-        logger.info("Extracting data from MOP's outputs...")
-        for solver in self.list_of_solvers:
-            run: Run = solver.last_run()
+def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool = False) -> None:
+    logger.info("Extracting data from MOP's outputs...")
+    for solver in list_of_solvers:
+        run: Run = solver.last_run()
 
-            if resubmit and not run.successful(complete=complete):
-                logger.error(
-                    "Run %s not successful. Skipping and resubmitting...", run.name)
-                run.submit()
-                continue
+        if resubmit and not run.successful(complete=complete):
+            logger.error(
+                "Run %s not successful. Skipping and resubmitting...", run.name)
+            run.submit()
+            continue
 
-            run_df = run.full_run_df()
+        run_df = run.full_run_df()
 
-            logger.info(
-                "Successfuly extracted data from run %s. Saving to disk...", run.name)
-            run_df.to_csv(solver.paths['raw'],
-                          index=False)
+        logger.info(
+            "Successfuly extracted data from run %s. Saving to disk...", run.name)
+        run_df.to_csv(solver.paths['raw'],
+                      index=False)
 
-    def profits_results(self):
-        rows: list = []
-        for solver in self.list_of_solvers:
-            run_df_path = solver.paths['raw']
-            rows.append(solver.last_run().get_profits_dict(
-                run_df_path=run_df_path))
-        results_df: pd.DataFrame = pd.DataFrame(rows)
-        results_df.to_csv(self.paths['profits'], index=False)
+def profits_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
+    rows: list = []
+    for solver in list_of_solvers:
+        run_df_path = solver.paths['raw']
+        rows.append(solver.last_run().get_profits_dict(
+            run_df_path=run_df_path))
+    results_df: pd.DataFrame = pd.DataFrame(rows)
+    return results_df
 
-    def solver_results(self):
-        rows: list = []
-        for solver in self.list_of_solvers:
-            rows.append(solver.solver_results())
-        results_df: pd.DataFrame = pd.DataFrame(rows)
-        return results_df
+def solver_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
+    rows: list = []
+    for solver in list_of_solvers:
+        rows.append(solver.solver_results())
+    results_df: pd.DataFrame = pd.DataFrame(rows)
+    return results_df
 
-    def construct_results(self, results_function) -> pd.DataFrame:
-        # Create a list to store rows
-        rows = []
-        for point in self.list_of_solvers:
-            results_dict = point.last_run().results(
-                results_function, run_df_path=point.paths['raw'])
-            # Append the row to our list
-            rows.append(results_dict)
-        results_df = pd.DataFrame(rows)
-        return results_df
+def construct_results(list_of_solvers: list[Solver], results_function) -> pd.DataFrame:
+    # Create a list to store rows
+    rows = []
+    for solver in list_of_solvers:
+        results_dict = solver.last_run().results(
+            results_function, run_df_path=solver.paths['raw'])
+        # Append the row to our list
+        rows.append(results_dict)
+    results_df = pd.DataFrame(rows)
+    return results_df
