@@ -112,6 +112,7 @@ class ComparativeStatics:
         grid_points = []
         grids = self.variables['exogenous'].values()
 
+        # Currently assuming only one variable
         exogenous_variable_0 = list(self.variables['exogenous'].keys())[0]
         grid_0 = list(grids)[0]['grid']
         # Iterate over exogenous variables
