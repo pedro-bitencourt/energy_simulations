@@ -41,7 +41,7 @@ solver_results_df = pd.DataFrame([solver_results])
 solver_results_df.to_csv("/projects/p32342/sim/zero_hydro/solver_results.csv")
 
 last_run = solver.last_run()
-conditional_means = last_run.results(results_fun=conditional_means)
-conditional_means_df = pd.DataFrame(conditional_means)
-conditional_means_df.to_csv(
-    "/projects/p32342/sim/zero_hydro/conditional_means.csv")
+
+run_df = last_run.full_run_df()
+solver.paths['raw'].parent.mkdir()
+run_df.to_csv(solver.paths['raw'])

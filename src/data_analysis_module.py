@@ -96,24 +96,15 @@ def profits_per_participant(run_df: pd.DataFrame,
 
 ##################################################################
 # Functions to compute results
-def full_run_df(run_df: pd.DataFrame, capacities_dict: dict, participants: list[str]) -> pd.DataFrame:
+def full_run_df(run_df: pd.DataFrame, participants: list[str]) -> pd.DataFrame:
     for participant in participants:
-        prod_col = f"production_{participant}"
-        rev_col = f"revenue_{participant}"
-        util_col = f"utilization_{participant}"
-        profit_col = f"profit_{participant}"
-        var_cost_col = f"variable_cost_{participant}"
-        
-        production = run_df[prod_col]
-        variable_cost = run_df[var_cost_col]
-        capacity = capacities_dict[participant]
-    
-        run_df[rev_col] = production * run_df["marginal_cost"]
-        run_df[util_col] = production / capacity
-        run_df[profit_col] = run_df[rev_col] - variable_cost
+        run_df[f'revenue_{participant}'] = (run_df[f'production_{participant}'] *
+                                            run_df['marginal_cost'])
+        run_df[f'profit_{participant}'] = run_df[f'revenue_{participant}'] - \
+            run_df[f'variable_cost_{participant}']
 
-    prod_cols: list[str] = [f"production_{participant}" for participant in participants]
-    run_df['production_total'] = run_df[prod_cols].sum(axis=1)
+    run_df['production_total'] = run_df[[
+        f'production_{participant}' for participant in participants]].sum(axis=1)
     run_df['lost_load'] = (run_df['demand'] -
                            run_df['production_total']).clip(lower=0)
     return run_df

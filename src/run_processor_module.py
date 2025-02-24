@@ -94,11 +94,13 @@ class RunProcessor(Run):
 
         logging.info(f'Extracting dataframes for run {self.name}')
 
-        # Extract marginal cost data
+        # Non-partipant variables
         random_variables_df = self.marginal_cost_df()
-        # Extract demand data
         demand_df = self.demand_df()
         random_variables_df = pd.merge(random_variables_df, demand_df, on=[
+                                       'datetime', 'scenario'], how='left')
+        excedentes_df = get_production_df("excedentes", self.paths['sim'])
+        random_variables_df = pd.merge(random_variables_df, excedentes_df, on=[
                                        'datetime', 'scenario'], how='left')
 
         for participant in participants:
@@ -137,16 +139,12 @@ class RunProcessor(Run):
         original_length = len(random_variables_df)
         random_variables_df = random_variables_df.dropna()
         removed_rows = original_length - len(random_variables_df)
-        logger.debug(f'Removed {removed_rows} rows with NA values.')
         if removed_rows > 3_000:
             logger.warning(f'Over 3,000 rows were removed due to NA values.')
 
-        logger.debug("Columns of run_df: %s", random_variables_df.columns)
         logger.debug("Head of run_df: %s", random_variables_df.head())
 
-        # Save to disk
         random_variables_df.to_csv(self.paths['random_variables'], index=False)
-
         return random_variables_df
 
     def demand_df(self) -> pd.DataFrame:
