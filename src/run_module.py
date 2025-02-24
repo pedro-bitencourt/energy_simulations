@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5'  # GB
 PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
-                              'thermal', 'demand', 'excedentes']  # 'salto'
+                              'thermal']  # 'salto'
 PARTICIPANTS_ENDOGENOUS_DEFAULT: list = ['wind', 'solar', 'thermal']
 
 
@@ -318,7 +318,9 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         if run_df is None:
             run_df = self.run_df(complete=True)
         capacities = self.capacities()
-        run_df = full_run_df(run_df, capacities)
+        participants = self.general_parameters.get(
+            'participants', PARTICIPANTS_DEFAULT)
+        run_df = full_run_df(run_df, participants)
         return run_df
 
     def results(self, results_fun, run_df_path=None, complete=True):

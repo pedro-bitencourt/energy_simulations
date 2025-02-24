@@ -101,12 +101,10 @@ def profits_per_participant(run_df: pd.DataFrame,
 ##################################################################
 # Functions to compute results
 
-def full_run_df(run_df: pd.DataFrame, capacities_dict: dict, participants: list[str]) -> pd.DataFrame:
+def full_run_df(run_df: pd.DataFrame, participants: list[str]) -> pd.DataFrame:
     for participant in participants:
         run_df[f'revenue_{participant}'] = (run_df[f'production_{participant}'] *
                                             run_df['marginal_cost'])
-        run_df[f'utilization_{participant}'] = (run_df[f'production_{participant}'] /
-                                                capacities_dict[participant])
         run_df[f'profit_{participant}'] = run_df[f'revenue_{participant}'] - \
             run_df[f'variable_cost_{participant}']
 
