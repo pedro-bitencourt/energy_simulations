@@ -13,8 +13,10 @@ COMPARISONS_JSON_PATH: Path = Path(
     __file__).parent.parent.parent / 'config/comparisons.json'
 PLOTS_JSON_PATH: Path = Path(
     __file__).parent.parent.parent / 'config/plots.json'
-COSTS_JSON_PATH: Path = Path(
-    __file__).parent.parent.parent / 'config/costs_data.json'
+
+
+def main():
+    pass
 
 
 def load_config(config_path: Path) -> dict:
@@ -23,23 +25,6 @@ def load_config(config_path: Path) -> dict:
         config = json.load(f)
     return config
 
-
-def load_costs(costs_path) -> dict:
-    """
-    Parse the costs configuration file and return a dictionary with the total fixed
-    costs per hour.
-    """
-    if costs_path is None:
-        costs_path = COSTS_JSON_PATH
-    costs_path: str = Path(costs_path)
-    costs_dict: dict[str, dict[str, float | int]
-                     ] = load_config(costs_path)
-    hourly_costs_dic: dict[str, float] = {
-        participant: (costs_dict[participant]['installation'] / costs_dict[participant]
-                      ['lifetime'] + costs_dict[participant]['oem']) / 8760
-        for participant in costs_dict.keys()
-    }
-    return hourly_costs_dic
 
 
 def load_events_labels() -> dict[str, str]:
@@ -64,7 +49,7 @@ def load_events_labels() -> dict[str, str]:
     return events_labels
 
 
-def load_events() -> dict[str, str]:
+def load_events() -> tuple[dict[str, str], dict[str, str]]:
     """
     Parse the events configuration file and return a dictionary with the events.
     Returns:
@@ -117,3 +102,5 @@ def load_comparisons() -> dict:
     return load_config(COMPARISONS_JSON_PATH)
 
 
+if __name__ == '__main__':
+    main()

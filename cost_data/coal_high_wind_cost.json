@@ -1,0 +1,18 @@
+{
+    "wind": {
+        "oem": 20000,
+        "installation": 2500000,
+        "lifetime": 25
+    },
+    "solar": {
+        "oem": 7300,
+        "installation": 800,
+        "lifetime": 35
+    },
+    "thermal": {
+        "oem": 50000,
+        "installation": 3000000,
+        "lifetime": 40,
+        "marginal_cost": 76
+    }
+}

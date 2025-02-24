@@ -1,6 +1,3 @@
-gc()
-
-rm(list = ls())
 # Import libraries
 library(dplyr)
 library(mgcv)
@@ -8,7 +5,7 @@ library(lubridate)
 library(ggplot2)
 
 if(interactive()) {
-  experiment_name <- "salto_volume_new"
+  experiment_name <- "zero_hydro"
 } else{
   args <- commandArgs(trailingOnly = TRUE)
   experiment_name <- args[1]
@@ -20,9 +17,8 @@ simulation_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/
 raw_folder <- paste0(simulation_folder, "/raw/")
 graphics_folder <- paste0("/Users/pedrobitencourt/Projects/energy_simulations/figures/",experiment_name,"/runs/")
 
-
 # Read investment results
-investment_results <- read.csv(paste0(simulation_folder, "/results/solver_results.csv"))
+solver_results <- read.csv(paste0(simulation_folder, "/results/solver_results.csv"))
 
 
 
@@ -103,6 +99,21 @@ analyze_run <- function(run_file) {
   # Step 1. Read file 
   data <- read.csv(run_file)
   
+  # Step 1 and a half. Parse if needed
+  if(!"production_salto" %in% names(data)) {
+    data$production_salto <- 0
+    hydro_present <- FALSE
+  }else{
+    hydro_present <- TRUE
+  }
+  if(!"demand" %in% names(data)){
+    data$demand <- data$production_demand
+  }
+  if(!"water_level_salto" %in% names(data)){
+    data$water_level_salto <- 0
+    message("water level variable not found, inputting 0")
+  }
+  
   # Step 2. Data manipulation
   # Create variables
   data$production_total <- data$production_wind +
@@ -123,7 +134,7 @@ analyze_run <- function(run_file) {
   data$thermal_marginal <- as.integer(data$thermal_active & !data$hydro_active)
   data$renewables_marginal <- as.integer(!data$thermal_active & !data$hydro_active)
   data$price_4000 <- as.integer(data$marginal_cost >= 4000)
-  data$positive_lost_load <- as.integer(data$production_demand > data$production_total + 0.1)
+  data$positive_lost_load <- as.integer(data$demand > data$production_total + 0.1)
   data$dummy_excess <- as.integer(data$excess_production > 0.1)
   data$price_193_4000 <- as.integer(data$marginal_cost > 193.1 & data$marginal_cost < 4000)
   
@@ -144,15 +155,10 @@ analyze_run <- function(run_file) {
                "marginal_cost_positive_hydro")
   
   ## 3.a.ii) Production
-  # Net Demand
   plot_density(data, "net_demand", bw = 1)
-  # Hydro
   plot_density(data, "production_salto", bw = 1)
-  # Thermal
   plot_density(data %>% filter(production_thermal > 5), "production_thermal", bw = 1, overwrite = TRUE)
-  # Wind
   plot_density(data, "production_wind", bw = 1)
-  # Solar
   plot_density(data %>% filter(production_solar > 0), "production_solar", bw = 1)
   
   # 3.a.iii) Water level
@@ -169,13 +175,15 @@ analyze_run <- function(run_file) {
   
   # Conditional on hydro production
   # 3. Probability of lost load
-  npr_probability_lost_load()
+  if(hydro_present) {
+    npr_probability_lost_load()
+  }
   
   # Step 4. Compute some statistics
   message("Computing statistics")
  
   # Load capacities for the run 
-  capacities <- investment_results %>% filter(name == run_name)
+  capacities <- solver_results %>% filter(name == run_name)
   
   results <- list()
   
@@ -203,9 +211,19 @@ analyze_run <- function(run_file) {
   results$thermal_profit_price_4000 <- mean((data$marginal_cost - 193) * data$production_thermal * data$price_4000)/ capacities$thermal_capacity
   results$thermal_profit_price_193_4000 <- mean((data$marginal_cost - 193) * data$production_thermal * data$price_193_4000)/ capacities$thermal_capacity
   
+  # Compute means
+  # Production
   results$mean_thermal_production <- mean(data$production_thermal)
+  results$mean_wind_production <- mean(data$production_wind)
+  results$mean_solar_production <- mean(data$production_solar)
+  results$mean_salto_production <- mean(data$production_salto)
+  results$mean_lost_load <- mean(data$lost_load)
+  results$mean_excess <- mean(data$production_excedentes)
+  
+  # Price
   results$mean_price <- mean(data$marginal_cost)
   
+  # Standard deviations
   results$std_thermal_profit <- sd((data$marginal_cost - 193) * data$production_thermal) / capacities$thermal_capacity
   results$std_thermal_profit_blackout <- sd((data$marginal_cost - 193) * data$production_thermal * data$positive_lost_load) / capacities$thermal_capacity
   results$std_thermal_profit_price_193_4000 <- sd((data$marginal_cost - 193) * data$production_thermal * data$price_193_4000) / capacities$thermal_capacity
@@ -226,27 +244,24 @@ analyze_run <- function(run_file) {
     summarise(prob_price_4000 = mean(price_4000),
               prob_price_193_4000 = mean(price_193_4000))
   
+  ## Quartiles
+  # Price distribution
   results$q25_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.25, names=FALSE) * 8760
   results$q50_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.50, names=FALSE) * 8760
   results$q75_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.75, names=FALSE) * 8760
-  
   results$q25_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.25, names=FALSE) * 8760
   results$q50_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.50, names=FALSE) * 8760
   results$q75_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.75, names=FALSE) * 8760
-  
   
   # LCOE: E[Total cost]/E[demand]
   wind_fixed_costs_mw_hour <- 8.22
   solar_fixed_costs_mw_hour <- 4.62
   thermal_fixed_costs_mw_hour <- 6.93
   
-  a <- capacities$thermal_capacity * thermal_fixed_costs_mw_hour 
-  b <- capacities$wind_capacity * wind_fixed_costs_mw_hour
-  
   results$lcoe <- (capacities$thermal_capacity * thermal_fixed_costs_mw_hour +
     capacities$wind_capacity * wind_fixed_costs_mw_hour +
     capacities$solar_capacity * solar_fixed_costs_mw_hour +
-    results$mean_variable_cost) / mean(data$production_demand)
+    results$mean_variable_cost) / mean(data$demand)
   
   # Capture rates: E[pq]/E[q]
   results$thermal_capture_rate <- mean(data$marginal_cost * data$production_thermal)/mean(data$production_thermal)
@@ -254,13 +269,14 @@ analyze_run <- function(run_file) {
   results$solar_capture_rate <- mean(data$marginal_cost * data$production_solar)/mean(data$production_solar)
   
   # Avg capture rate: E[p]/E[q]
-  results$avg_capture_rate <- mean(data$marginal_cost * data$production_demand)/mean(data$production_demand)
+  results$avg_capture_rate <- mean(data$marginal_cost * data$demand)/mean(data$demand)
   
   message("Finished ", run_name, " summary statistics:", results)
   return(results)
   }
 
 run_files <- list.files(raw_folder, full.names = TRUE)
+
 all_results <- list()
 for(run_file in run_files) {
   run_results <- analyze_run(run_file)
@@ -271,7 +287,3 @@ for(run_file in run_files) {
 # Save to a CSV file
 output_file <- file.path(simulation_folder, "results_summary.csv")
 write.csv(all_results, output_file)
-
-
-
-

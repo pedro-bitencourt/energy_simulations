@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
   <corrida>
   	<parametrosGenerales>
   		<nombre>CAD-2024-DIARIA</nombre>
@@ -45,7 +45,7 @@
 			<tipoResolucionValoresBellman>incrementos</tipoResolucionValoresBellman>
 			<tipoDemanda>residual</tipoDemanda>
 		</compsGlobales>
-    <rutaSalidas>/projects/p32342/raw/salto_volume/salto_volume_1/1_1000_1000_300</rutaSalidas>
+    <rutaSalidas>${output_folder}</rutaSalidas>
 		<iteraciones>
 			<maximoIteraciones>1</maximoIteraciones>
 			<numeroIteraciones>1</numeroIteraciones>
@@ -196,7 +196,7 @@
             <ev tipo="const">SinMinTec</ev>
           </compMinimosTecnicos>
         </compsPorDefecto>
-        <listaUtilizados>thermal</listaUtilizados>
+        <listaUtilizados>thermal,thermal_remainder</listaUtilizados>
         <listaAtributos>potencias,energias,costos</listaAtributos>
         <listaGTermico>
           <gTermico>
@@ -210,7 +210,7 @@
               <propietario>UTE</propietario>
               <barra>barraPrueba1</barra>
               <cantModInst>
-                <ev tipo="const">6</ev>
+                <ev tipo="const">${int(thermal_capacity // 50)}</ev>
               </cantModInst>
               <listaCombustibles>gasOil</listaCombustibles>
               <listaBarrasComb>barraGasOil1</listaBarrasComb>
@@ -267,7 +267,7 @@
                 <ev tipo="const">5.0</ev>
               </potMin>
               <potMax>
-                <ev tipo="const">0</ev>
+                <ev tipo="const">${thermal_capacity % 50}</ev>
               </potMax>
               <rendPotMin>
                 <ev tipo="const">0.374</ev>
@@ -311,191 +311,188 @@
         <listaAtributos>energias,potencias,cotaAguasArriba</listaAtributos>
         <listaUtilizados>salto</listaUtilizados>
         <listaGHidraulico>
-          <gHidraulico>
-            <compsGenerales>
-              <compLago>
-                <ev tipo="const">ConLago</ev>
-              </compLago>
-              <compCoefEnergetico>
-                <ev tipo="const">CoefEnergConstantes</ev>
-              </compCoefEnergetico>
-            </compsGenerales>
-            <datosParticipante>
-              <nombre>salto</nombre>
-              <propietario>UTE</propietario>
-              <barra>barraPrueba1</barra>
-              <cantModInst>
-                <ev tipo="const">12</ev>
-              </cantModInst>
-              <factorCompartir>0.5</factorCompartir>
-              <epsilonCaudalErogadoIteracion unidad="m3/s">50.0</epsilonCaudalErogadoIteracion>
-              <listaGHAguasArriba/>
-              <generadorAguasAbajo/>
-              <potMin>
-                <ev tipo="const">0.0</ev>
-              </potMin>
-              <potMax>
-                <ev tipo="const">135</ev>
-              </potMax>
-              <rendMin>
-                <ev tipo="const">0.9</ev>
-              </rendMin>
-              <rendMax>
-                <ev tipo="const">0.9</ev>
-              </rendMax>
-              <fCotaAguasAbajo>
-                <ev tipo="const">
-                  <funcion tipo="poli">5.1, 7.1051E-4, -1.41235E-8, 2.037E-13</funcion>
-                </ev>
-              </fCotaAguasAbajo>
-              <volFijo>
-                <ev tipo="const">2100.0</ev>
-              </volFijo>
-              <qTur1Max>
-                <ev tipo="const">600</ev>
-              </qTur1Max>
-              <saltoMinimo>10.0</saltoMinimo>
-              <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>
-              <cotaInundacionAguasArriba>40.0</cotaInundacionAguasArriba>
-              <fCoVo>
-                <ev tipo="const">
-                  <funcion tipo="porRangos">
-                    <fueraRango>
-                      <funcion tipo="poli">0.0</funcion>
-                    </fueraRango>
-					<rangos>(0.0;3800.0),(3800.0;30000.0)</rangos>
-                    <funcion tipo="poli">30.0, 0.0024, -2e-07</funcion>
-                    <funcion tipo="poli">33.96, 0.000667</funcion>
-                  </funcion>
-                </ev>
-              </fCoVo>
-              <fVoCo>
-                <ev tipo="const">
-                  <funcion tipo="porRangos">
-                    <fueraRango>
-                      <funcion tipo="poli">0.0</funcion>
-                    </fueraRango>
-                    <rangos>(0.0;36.5),(36.5;50.0)</rangos>
-                      <function tipo="poli">17571.5, -1550.6, 32.164</function>
-                      <function tipo="poli">-50924.0, 1500.0</function>
-                  </funcion>
-                </ev>
-              </fVoCo>
-              <fQEroMin>
-                <ev tipo="const">
-                  <funcion tipo="porRangos">
-                    <fueraRango>
-                      <funcion tipo="poli">140.0</funcion>
-                    </fueraRango>
-                    <rangos>(29.0;31.0),(31.0;35.5),(35.5;39.0)</rangos>
-                    <funcion tipo="poli">140.0</funcion>
-                    <funcion tipo="poli">300.0</funcion>
-                    <funcion tipo="poli">-688400.0, 19400.0</funcion>
-                  </funcion>
-                </ev>
-              </fQEroMin>
-              <coefEvaporacion>
-                <ev tipo="periodica">
-                  <definicionPeriodo>(01 01 2018;230.0),(01 02 2018;170.0),(01 03 2018;154.0),(01 04 2018;90.0),(01 05 2018;65.0),(01 06 2018;40.0),(01 07 2018;45.0),(01 08 2018;65.0),(01 09 2018;80.0),(01 10 2018;120.0),(01 11 2018;160.0),(01 12 2018;230.0)</definicionPeriodo>
-                  <periodo>año</periodo>
-                  <cantPeriodo>40</cantPeriodo>
-                </ev>
-              </coefEvaporacion>
-              <fEvaporacion>
-                <ev tipo="const">
-                  <funcion tipo="poli">0.048677, -0.004062, 1.03E-4</funcion>
-                </ev>
-              </fEvaporacion>
-              <fFiltracion>
-                <ev tipo="const">
-                  <funcion tipo="poli">-25.8925, 0.753168</funcion>
-                </ev>
-              </fFiltracion>
-              <fQVerMax unidad="m3/s">
-                <ev tipo="const">
-                  <funcion tipo="poliConCotas">
-                    <xmin>29.0</xmin>
-                    <xmax>37.0</xmax>
-                    <valmin>0.0</valmin>
-                    <valmax>40000.0</valmax>
-                    <coefs>-108462.0, 3615.4</coefs>
-                  </funcion>
-                </ev>
-              </fQVerMax>
-              <aporte unidad="m3/s">
-                <variableAleat>
-                  <procSimulacion>historicoMarkovC20Abr2023</procSimulacion>
-                  <procOptimizacion>markovSemC20Abr2023</procOptimizacion>
-                  <nombre>APORTE-SALTO</nombre>
-                </variableAleat>
-              </aporte>
-              <dispModulos tipo="exponencial">
-                <cantModIni>12</cantModIni>
-                <dispMedia>
-                  <ev tipo="const">0.99</ev>
-                </dispMedia>
-                <tMedioArreglo unidad="dias">
-                  <ev tipo="const">0.0</ev>
-                </tMedioArreglo>
-              </dispModulos>
-              <mantProgramado>
-                <ev tipo="const">0</ev>
-              </mantProgramado>
-              <costoFijo>
-                <ev tipo="const">0.0</ev>
-              </costoFijo>
-              <costoVariable>
-                <ev tipo="const">0.0</ev>
-              </costoVariable>
-              <salidaDetallada>true</salidaDetallada>
-              <hayReservaEstrategica>false</hayReservaEstrategica>
-              <volumenReservaEstrategica>
-                <ev tipo="const">900.0</ev>
-              </volumenReservaEstrategica>
-              <valorMinReserva>
-                <ev tipo="const">65000.0</ev>
-              </valorMinReserva>
-              <valorAplicaEnOptim>true</valorAplicaEnOptim>
-              <hayControldeCotasMinimas>true</hayControldeCotasMinimas>
-              <volumenControlMinimo>
-                <ev tipo="const">888.0</ev>
-              </volumenControlMinimo>
-              <penalidadControlMinimo>
-                <ev tipo="const">0.485</ev>
-              </penalidadControlMinimo>
-              <hayControldeCotasMaximas>false</hayControldeCotasMaximas>
-              <volumenControlMaximo>
-                <ev tipo="const">7008.0</ev>
-              </volumenControlMaximo>
-              <penalidadControlMaximo>
-                <ev tipo="const">0.801</ev>
-              </penalidadControlMaximo>
-              <vertimientoConstante>false</vertimientoConstante>
-              <hayVolumenObjetivoVertimiento>false</hayVolumenObjetivoVertimiento>
-              <volumenObjetivoVertimiento>
-                <ev tipo="const">4000</ev>
-              </volumenObjetivoVertimiento>
-            </datosParticipante>
-            <variablesEstado>
-              <variableEstado>
-                <nombre>volumen</nombre>
-                <estadoInicial unidad="hm3">2439.7</estadoInicial>
-                <ev tipo="const">
-                  <discretizacion tipo="equiespaciada">
-                    <minimo>0.0</minimo>
-                    <maximo>3000</maximo>
-                    <cantidadPuntos>5</cantidadPuntos>
-                  </discretizacion>
-                </ev>
-                <valorRecursoSuperior>
-                  <ev tipo="const">0.0</ev>
-                </valorRecursoSuperior>
-                <discreta>false</discreta>
-                <ordinal>false</ordinal>
-                <discretaIncremental>false</discretaIncremental>
-              </variableEstado>
-            </variablesEstado>
-          </gHidraulico>
+			<gHidraulico>
+			  <compsGenerales>
+			    <compLago>
+			      <ev tipo="const">ConLago</ev>
+			    </compLago>
+			    <compCoefEnergetico>
+			      <ev tipo="const">CoefEnergConstantes</ev>
+			    </compCoefEnergetico>
+			  </compsGenerales>
+			  <datosParticipante>
+			    <nombre>salto</nombre>
+			    <propietario>UTE</propietario>
+			    <barra>barraPrueba1</barra>
+			    <cantModInst>
+			      <ev tipo="const">12</ev>
+			    </cantModInst>
+          <factorCompartir>${factor_compartir}</factorCompartir>
+			    <epsilonCaudalErogadoIteracion unidad="m3/s">50.0</epsilonCaudalErogadoIteracion>
+			    <listaGHAguasArriba/>
+			    <generadorAguasAbajo/>
+			    <potMin>
+			      <ev tipo="const">0.0</ev>
+			    </potMin>
+			    <potMax>
+			      <ev tipo="const">135</ev>
+			    </potMax>
+			    <rendMin>
+			      <ev tipo="const">0.9</ev>
+			    </rendMin>
+			    <rendMax>
+			      <ev tipo="const">0.9</ev>
+			    </rendMax>
+			    <!-- Removed the <ev> wrapper and keep only <funcion> -->
+			    <fCotaAguasAbajo>
+			      <funcion tipo="poli">5.1, 7.1051E-4, -1.41235E-8, 2.037E-13</funcion>
+			    </fCotaAguasAbajo>
+			    <volFijo>
+			      <ev tipo="const">2100.0</ev>
+			    </volFijo>
+			    <qTur1Max>
+			      <ev tipo="const">600</ev>
+			    </qTur1Max>
+			    <saltoMinimo>10.0</saltoMinimo>
+			    <cotaInundacionAguasAbajo>28.0</cotaInundacionAguasAbajo>
+			    <cotaInundacionAguasArriba>40.0</cotaInundacionAguasArriba>
+			    <!-- Removed the <ev> wrapper around the porRangos funcion -->
+			    <fCoVo>
+			      <funcion tipo="porRangos">
+			        <fueraRango>
+			          <funcion tipo="poli">0.0</funcion>
+			        </fueraRango>
+			        <rangos>(0.0;3800.0),(3800.0;30000.0)</rangos>
+			        <funcion tipo="poli">30.0, 0.0024, -2E-07</funcion>
+			        <funcion tipo="poli">33.96, 6.67E-04</funcion>
+			      </funcion>
+			    </fCoVo>
+			    <!-- Removed <ev> wrapper and changed <function> to <funcion> -->
+			    <fVoCo>
+			      <funcion tipo="porRangos">
+			        <fueraRango>
+			          <funcion tipo="poli">0.0</funcion>
+			        </fueraRango>
+			        <rangos>(0.0;36.5),(36.5;50.0)</rangos>
+			        <funcion tipo="poli">17571.5, -1550.6, 32.164</funcion>
+			        <funcion tipo="poli">-50924.0, 1500.0</funcion>
+			      </funcion>
+			    </fVoCo>
+			    <fQEroMin>
+			      <ev tipo="const">
+			        <funcion tipo="porRangos">
+			          <fueraRango>
+			            <funcion tipo="poli">140.0</funcion>
+			          </fueraRango>
+			          <rangos>(29.0;31.0),(31.0;35.5),(35.5;39.0)</rangos>
+			          <funcion tipo="poli">140.0</funcion>
+			          <funcion tipo="poli">300.0</funcion>
+			          <funcion tipo="poli">-688400.0, 19400.0</funcion>
+			        </funcion>
+			      </ev>
+			    </fQEroMin>
+			    <coefEvaporacion>
+			      <ev tipo="periodica">
+			        <definicionPeriodo>(01 01 2018;230.0),(01 02 2018;170.0),(01 03 2018;154.0),(01 04 2018;90.0),(01 05 2018;65.0),(01 06 2018;40.0),(01 07 2018;45.0),(01 08 2018;65.0),(01 09 2018;80.0),(01 10 2018;120.0),(01 11 2018;160.0),(01 12 2018;230.0)</definicionPeriodo>
+			        <periodo>año</periodo>
+			        <cantPeriodo>40</cantPeriodo>
+			      </ev>
+			    </coefEvaporacion>
+			    <fEvaporacion>
+			      <ev tipo="const">
+			        <funcion tipo="poli">0.048677, -0.004062, 1.03E-4</funcion>
+			      </ev>
+			    </fEvaporacion>
+			    <fFiltracion>
+			      <ev tipo="const">
+			        <funcion tipo="poli">-25.8925, 0.753168</funcion>
+			      </ev>
+			    </fFiltracion>
+			    <fQVerMax unidad="m3/s">
+			      <ev tipo="const">
+			        <funcion tipo="poliConCotas">
+			          <xmin>29.0</xmin>
+			          <xmax>37.0</xmax>
+			          <valmin>0.0</valmin>
+			          <valmax>40000.0</valmax>
+			          <coefs>-108462.0, 3615.4</coefs>
+			        </funcion>
+			      </ev>
+			    </fQVerMax>
+			    <aporte unidad="m3/s">
+			      <variableAleat>
+			        <procSimulacion>historicoMarkovC20Abr2023</procSimulacion>
+			        <procOptimizacion>markovSemC20Abr2023</procOptimizacion>
+			        <nombre>APORTE-SALTO</nombre>
+			      </variableAleat>
+			    </aporte>
+			    <dispModulos tipo="exponencial">
+			      <cantModIni>12</cantModIni>
+			      <dispMedia>
+			        <ev tipo="const">0.99</ev>
+			      </dispMedia>
+			      <tMedioArreglo unidad="dias">
+			        <ev tipo="const">0.0</ev>
+			      </tMedioArreglo>
+			    </dispModulos>
+			    <mantProgramado>
+			      <ev tipo="const">0</ev>
+			    </mantProgramado>
+			    <costoFijo>
+			      <ev tipo="const">0.0</ev>
+			    </costoFijo>
+			    <costoVariable>
+			      <ev tipo="const">0.0</ev>
+			    </costoVariable>
+			    <salidaDetallada>true</salidaDetallada>
+			    <hayReservaEstrategica>false</hayReservaEstrategica>
+			    <volumenReservaEstrategica>
+			      <ev tipo="const">900.0</ev>
+			    </volumenReservaEstrategica>
+			    <valorMinReserva>
+			      <ev tipo="const">65000.0</ev>
+			    </valorMinReserva>
+			    <valorAplicaEnOptim>true</valorAplicaEnOptim>
+			    <hayControldeCotasMinimas>true</hayControldeCotasMinimas>
+			    <volumenControlMinimo>
+			      <ev tipo="const">888.0</ev>
+			    </volumenControlMinimo>
+			    <penalidadControlMinimo>
+			      <ev tipo="const">0.485</ev>
+			    </penalidadControlMinimo>
+			    <hayControldeCotasMaximas>false</hayControldeCotasMaximas>
+			    <volumenControlMaximo>
+			      <ev tipo="const">7008.0</ev>
+			    </volumenControlMaximo>
+			    <penalidadControlMaximo>
+			      <ev tipo="const">0.801</ev>
+			    </penalidadControlMaximo>
+			    <vertimientoConstante>false</vertimientoConstante>
+			    <hayVolumenObjetivoVertimiento>false</hayVolumenObjetivoVertimiento>
+			    <volumenObjetivoVertimiento>
+			      <ev tipo="const">4000</ev>
+			    </volumenObjetivoVertimiento>
+			  </datosParticipante>
+			  <variablesEstado>
+			    <variableEstado>
+			      <nombre>volumen</nombre>
+			      <estadoInicial unidad="hm3">2439.7</estadoInicial>
+			      <ev tipo="const">
+			        <discretizacion tipo="equiespaciada">
+			          <minimo>0.0</minimo>
+			          <maximo>3000</maximo>
+			          <cantidadPuntos>5</cantidadPuntos>
+			        </discretizacion>
+			      </ev>
+			      <valorRecursoSuperior>
+			        <ev tipo="const">0.0</ev>
+			      </valorRecursoSuperior>
+			      <discreta>false</discreta>
+			      <ordinal>false</ordinal>
+			      <discretaIncremental>false</discretaIncremental>
+			    </variableEstado>
+			  </variablesEstado>
+			</gHidraulico>
         </listaGHidraulico>
       </hidraulicos>
       <eolicos>
@@ -514,7 +511,7 @@
 								<ev tipo="const">0.0</ev>
 							</potMin>
 							<potMax unidad="MW">
-              <ev tipo="const">1000</ev>
+              <ev tipo="const">${wind_capacity}</ev>
                                 </potMax>
 							<factor>
 								<variableAleat>
@@ -563,7 +560,7 @@
 								<ev tipo="const">0.0</ev>
 							</potMin>
 							<potMax unidad="MW">
-              <ev tipo="const">1000</ev>
+              <ev tipo="const">${solar_capacity}</ev>
               </potMax>
 							<factor>
 								<variableAleat>
@@ -848,7 +845,7 @@
       </ramas>
     </redElectrica>
 		<combustibles>
-			<listaUtilizados>fuelOil,gasOil,gasNat,fuelOilMotores,biomasa_nd,biomasa_d</listaUtilizados>
+			<listaUtilizados>gasOil,gasNat</listaUtilizados>
 			<listaCombustibles>
 				<combustible>
 					<datosCombustible>
@@ -1166,7 +1163,6 @@
 					<datosCombustible>
 						<nombre>fuelOilMotores</nombre>
 						<pci unidad="MWh/m3">10.57167</pci>
-						<!--10.97 según Alfonso pero dejamos el que tenemos en Simsee-->
 						<unidad>m3</unidad>
 						<densidad unidad="kg/m3">1010.0</densidad>
 						<salidaDetallada>true</salidaDetallada>
@@ -1363,8 +1359,9 @@
 										<ev tipo="const">3000</ev>
 									</caudalMax>
 									<precioComb unidad="USD/m3">
-									<ev tipo="const">726.26</ev>
+                    <ev tipo="const">287</ev>
 									</precioComb>
+  		<!-- Price of fuel, determines the marginal cost -->
 									<salidaDetallada>true</salidaDetallada>
 								</datosContratoCanioSimple>
 							</contratoCanioSimple>
