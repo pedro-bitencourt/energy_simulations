@@ -34,7 +34,6 @@ def create_run_name(variables: dict):
     variables: dict = dict(sorted(variables.items()))
     # Extract the values directly, assuming they are floats
     var_values: list[float] = list(variables.values())
-
     # Assuming make_name processes the list correctly
     name: str = make_name(var_values)
     return name

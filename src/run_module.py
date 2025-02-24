@@ -33,13 +33,11 @@ class Run:
 
     Args:
         - parent_folder: Path determining the folder where the run is stored.
-        - general_parameters: Dictionary containing general parameters for the run.
-            o xml_basefile: Path to the basefile for the .xml file.
-            o name_subfolder: Name of the subfolder where the run is stored.
-            o requested_time_run: Time requested for the run in the cluster.
+        - general_parameters: Dictionary containing general parameters for the run, with the staticmethod
+            keys as ComparativeStatic.
         - variables: Dictionary containing the variables for the run. Each entry is 
-        a variable, with the key being the variable name and the value being the variable
-        value.
+            a variable, with the key being the variable name and the value being the variable
+            value.
         Attributes:
         - name: Name of the run, determined by the folder name.
         - paths: Dictionary containing relevant paths for the run.
@@ -184,7 +182,8 @@ class Run:
             template_path=self.general_parameters['xml_basefile'],
             name=self.name,
             folder=self.paths['folder'],
-            variables=self.variables
+            variables=self.variables,
+            marginal_cost=self.general_parameters['marginal_cost_dictionary']
         )
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
@@ -279,12 +278,18 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
     ##############################
     # xml creating methods
     @staticmethod
-    def create_xml(template_path: Path, name: str, folder: Path, variables: dict) -> Path:
+    def create_xml(template_path: Path, name: str, folder: Path, variables: dict,
+                   marginal_cost: dict) -> Path:
         """Creates a .xml file from template with variable substitution."""
         output_path = folder / f"{name}.xml"
+        marginal_cost_variables = {
+            f'{participant}_marginal_cost': marginal_cost[participant]
+            for participant in marginal_cost.keys()
+        }
         # Add folder path to variables for substitution
         variables = {**variables,
-                     'output_folder': str(folder).replace('\\', '\\\\')}
+                     'output_folder': str(folder).replace('\\', '\\\\'),
+                     **marginal_cost_variables}
 
         # Read template
         with open(template_path, 'r') as f:
@@ -361,14 +366,14 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         capacities = self.capacities()
 
         profits_dict: dict = profits_per_participant(
-            run_df, capacities, self.general_parameters['cost_path'])
+            run_df, capacities, self.general_parameters['fixed_cost_dictionary'])
 
         # Save to disk using json
         self.paths['folder'].joinpath(
             'profits_data.json').write_text(json.dumps(profits_dict))
 
         if complete:
-            run_df = full_run_df(run_df, capacities)
+            run_df = full_run_df(run_df, capacities, participants)
             revenues_variables = [f'revenue_{participant}'
                                   for participant in participants]
             std_revenues = std_variables(run_df, revenues_variables)

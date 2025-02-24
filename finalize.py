@@ -1,33 +1,18 @@
 from pathlib import Path
 
-import src.finalization_module as fm
 from src.utils.logging_config import setup_logging
-
 setup_logging(level = "INFO")
+from src.finalization_module import SimulationFinalizer, visualize
+from src.constants import BASE_PATH
 
-simulations_folder: Path = Path(
-    '/Users/pedrobitencourt/Projects/energy_simulations/sim/'
-)
 
-salto_capacity_variable = {
-    'name': 'salto_capacity', 'label': 'Salto Capacity'
-}
-lake_factor_variable = {
-    'name': 'lake_factor', 'label': 'Lake Factor'
-}
-simulations: dict[str,dict] = {
-#    'qturbmax': salto_capacity_variable,
-#    'factor_compartir': salto_capacity_variable,
-#    'salto_volume': lake_factor_variable,
-    'salto_volume_new': lake_factor_variable
-}
-    
+simulation_name: str = "zero_hydro"
 
-for simulation, x_variable in simulations.items():
-    results_path: Path = simulations_folder / simulation
-    fm.finalize(results_path, x_variable)
-    #fm.plot_results_summary(results_path, x_variable)
-    #    fm.plot_optimal_capacities(results_path, x_variable)
-    #fm.finalize_r(results_path, x_variable)
-    #fm.plot_results_summary(results_path, x_variable)
-  
+simulation_folder: Path = BASE_PATH / "sim" / simulation_name
+x_variable: dict[str, str] = {"name": "hydro_factor", "label": "Hydro factor"}
+participants: list[str] = ["solar", "wind", "thermal"]
+
+simulation = SimulationFinalizer(simulation_folder, x_variable, participants)
+
+visualize(simulation)
+

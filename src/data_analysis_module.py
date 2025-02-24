@@ -12,18 +12,16 @@ from pathlib import Path
 from typing import Dict
 import logging
 
-from .utils.load_configs import load_events, load_costs
+from .utils.load_configs import load_events
 
 
 logger = logging.getLogger(__name__)
 
 ##################################################################
 # Functions to compute the objective function of the Solver class
-
-
 def profits_per_participant(run_df: pd.DataFrame,
                             capacities: dict[str, float],
-                            cost_path: Path) -> Dict:
+                            hourly_fixed_costs: dict) -> Dict:
     """
     Computes profits for the specified endogenous variables.
 
@@ -32,7 +30,6 @@ def profits_per_participant(run_df: pd.DataFrame,
     """
     participants: list[str] = list(capacities.keys())
 
-    hourly_fixed_costs = load_costs(cost_path)
     results_dict: dict = {}
 
     def compute_participant_metrics(run_df: pd.DataFrame, participant: str,
@@ -97,10 +94,8 @@ def profits_per_participant(run_df: pd.DataFrame,
 
     return results_dict
 
-
 ##################################################################
 # Functions to compute results
-
 def full_run_df(run_df: pd.DataFrame, participants: list[str]) -> pd.DataFrame:
     for participant in participants:
         run_df[f'revenue_{participant}'] = (run_df[f'production_{participant}'] *
@@ -110,17 +105,12 @@ def full_run_df(run_df: pd.DataFrame, participants: list[str]) -> pd.DataFrame:
 
     run_df['production_total'] = run_df[[
         f'production_{participant}' for participant in participants]].sum(axis=1)
-
     run_df['lost_load'] = (run_df['demand'] -
                            run_df['production_total']).clip(lower=0)
-
     return run_df
 
 # Helper function to compute metrics for each participant
-
-
 def conditional_means(run_df: pd.DataFrame, participants: list[str]) -> dict:
-
     variables = [
         *[f'production_{participant}' for participant in participants],
         *[f'variable_cost_{participant}' for participant in participants],
@@ -199,49 +189,3 @@ def std_variables(run_df: pd.DataFrame,
         results_dict[f'{variable}_std'] = scenario_std
 
     return results_dict
-
-# Not in use
-# def intra_weekly_averages(run_df: pd.DataFrame) -> dict:
-#    # Initialize results dictionary
-#    results_dict = {}
-#
-#    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
-#    # Take the mean of the variables for each hour of the week
-#    for hour in range(168):
-#        for variable in VARIABLES:
-#            run_df['hour_of_the_week'] = (run_df['datetime'].dt.hour +
-#                                          run_df['datetime'].dt.dayofweek * 24)
-#            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour_of_the_week']
-#                                                             == hour][variable].mean()
-#    return results_dict
-#
-#
-# def intra_year_averages(run_df: pd.DataFrame) -> dict:
-#    # Initialize results dictionary
-#    results_dict = {}
-#
-#    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
-#
-#    # Take the mean of the variables for each day of the year
-#    for day in range(365):
-#        for variable in VARIABLES:
-#            run_df['day_of_the_year'] = run_df['datetime'].dt.dayofyear
-#            results_dict[f'{variable}_day_{day}'] = run_df[run_df['day_of_the_year']
-#                                                           == day][variable].mean()
-#
-#    return results_dict
-#
-# def intra_daily_averages(run_df: pd.DataFrame) -> dict:
-#    # Initialize results dictionary
-#    results_dict = {}
-#
-#    run_df['datetime'] = pd.to_datetime(run_df['datetime'])
-#
-#    # Take the mean of the variables for each hour of the day
-#    for hour in range(24):
-#        for variable in VARIABLES:
-#            run_df['hour'] = run_df['datetime'].dt.hour
-#            results_dict[f'{variable}_hour_{hour}'] = run_df[run_df['hour']
-#                                                             == hour][variable].mean()
-#    return results_dict
-#
