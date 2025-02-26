@@ -82,39 +82,56 @@ class Iteration:
                 "Profits or derivatives are None. Aborting.")
             sys.exit(1)
 
-        # Compute the new investment
-        new_investment_array = newton_iteration(
+        # Compute the new capacities
+        new_capacities_array = newton_iteration(
             profits_array, profits_derivatives_array, capacities_array)
 
-        # Round new_investment to nearest unit
-        new_investment_array = np.round(new_investment_array)
+        # Adjust the iteration to avoid negative investment
+        new_capacities_array = adjust_iteration(new_capacities_array,
+                                                capacities_array)
 
-        # Get rid of negative investment
-        new_investment_array = np.maximum(new_investment_array, 1)
+        # Round new_capacities to nearest unit
+        new_capacities_array = np.round(new_capacities_array)
 
-        # Transform the new investment into a dictionary
-        new_investment_dict: dict[str, float] = {
-            var: float(new_investment_array[i]) for i, var in enumerate(self.capacities.keys())
+        if np.max(new_capacities_array) > 12000:
+            logger.critical("New iteration is off bounds: %s",
+                            new_capacities_array)
+            logger.critical("Current iteration: %s", capacities_array)
+            sys.exit(3)
+
+        # Transform the new capacities into a dictionary
+        new_capacities_dict: dict[str, float] = {
+            var: float(new_capacities_array[i]) for i, var in enumerate(self.capacities.keys())
         }
 
         # Create and return a new OptimizationPathEntry
         return Iteration(
             iteration=self.iteration + 1,
-            capacities=new_investment_dict,
+            capacities=new_capacities_dict,
             successful=False,  # This will be set to True after profits are computed
             profits=None,
             profits_derivatives=None
         )
 
 
+def adjust_iteration(new_capacities_array, capacities_array):
+    # Get rid of negative capacities
+    new_capacities_array = np.maximum(new_capacities_array, 1)
+
+    # To avoid the boundaries
+    updated_capacities_array = 0.5*(new_capacities_array +
+                                    capacities_array)
+    return updated_capacities_array
+
+
 def newton_iteration(profits_array: np.ndarray,
                      profits_derivatives_array: np.ndarray,
                      capacities_array: np.ndarray) -> np.ndarray:
-    # Compute the new investment using numpy operations
+    # Compute the new capacities using numpy operations
     try:
-        investment_change = np.linalg.solve(
+        capacities_change = np.linalg.solve(
             profits_derivatives_array, profits_array)
-        new_investment_array = capacities_array - investment_change
+        new_capacities_array = capacities_array - capacities_change
     except np.linalg.LinAlgError:
         # Handle singular matrix error
         logger.critical("Jacobian matrix: %s", profits_derivatives_array)
@@ -122,7 +139,7 @@ def newton_iteration(profits_array: np.ndarray,
             "Singular matrix encountered. Aborting.")
         sys.exit(1)
 
-    return new_investment_array
+    return new_capacities_array
 
 
 def derivatives_from_profits(profits: dict, delta: float, endogenous_variables: list[str]):

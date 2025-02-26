@@ -255,7 +255,7 @@ class Solver:
                 run.name for run in perturbed_runs_dict.values() if not run.successful()]
             logger.critical(
                 "Runs %s not successful, aborting investment solver", unsuccessful_runs_names)
-            sys.exit(UNSUCCESSFUL_RUN)
+            sys.exit()
 
         # Extract the profits from the runs
         profits_perturb = {}
@@ -377,7 +377,7 @@ sys.path.append('/projects/p32342/code')
 from src.solver_module import Solver
 from src.utils.logging_config import setup_logging
 
-setup_logging(level={logging_level})
+setup_logging(level="{logging_level}")
 
 solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')

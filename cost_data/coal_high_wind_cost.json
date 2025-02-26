@@ -6,7 +6,7 @@
     },
     "solar": {
         "oem": 7300,
-        "installation": 800,
+        "installation": 800000,
         "lifetime": 35
     },
     "thermal": {

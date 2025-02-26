@@ -16,7 +16,7 @@ general_parameters: dict = {
     'xml_basefile': xml_basefile,
     'cost_path': costs_path,
     'annual_interest_rate': 0.0,
-    'email': 'pedro.bitencourt@u.northwestern.edu'
+    'email': 'joaodossantos2030@u.northwestern.edu'
 }
 
 exog_grid: list[float] = [0.001, 0.01, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 4]
@@ -25,9 +25,9 @@ exogenous_variables: dict[str, dict] = {
     'factor_compartir': {'grid': exog_grid},
 }
 endogenous_variables: dict[str, dict] = {
-    'wind_capacity': {'initial_guess': 2000},
-    'solar_capacity': {'initial_guess': 1500},
-    'thermal_capacity': {'initial_guess': 1200}
+    'wind_capacity': {'initial_guess': 1200},
+    'solar_capacity': {'initial_guess': 1000},
+    'thermal_capacity': {'initial_guess': 1000}
 }
 
 variables: dict[str, dict] = {
@@ -44,7 +44,7 @@ comparative_statics = ComparativeStatics(
 
 
 # Submit the solver jobs
-#comparative_statics.prototype()
+comparative_statics.prototype()
 #comparative_statics.submit_solvers()
 # Submit the processing job
 #comparative_statics.submit_processing()

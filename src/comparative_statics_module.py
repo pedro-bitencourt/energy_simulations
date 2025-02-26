@@ -17,7 +17,7 @@ Classes:
             - `name` [str]: name for the exercise, to be used for the creation of folders and files
             - `general_parameters` [dict]: dictionary containing general options for the program,
             with keys:
-                - cost_path [str]: path to the cost data file. 
+                - cost_path [str]: path to the cost data file.
                 - xml_basefile [str]: path to the template xml file.
                 - daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
                 - annual_interest_rate [float]: annual interest rate for the investment problems.
@@ -45,7 +45,7 @@ from .utils.slurm_utils import submit_slurm_job, slurm_header
 from .solver_module import Solver
 from .run_module import Run
 from .data_analysis_module import conditional_means
-from .constants import BASE_PATH, PROCESSING_SLURM_DEFAULT_CONFIG, initialize_paths_comparative_statics
+from .constants import BASE_PATH, SOLVER_SLURM_DEFAULT_CONFIG, PROCESSING_SLURM_DEFAULT_CONFIG, RUN_SLURM_DEFAULT_CONFIG, initialize_paths_comparative_statics
 from .utils.load_configs import load_config
 
 # Get logger for current module
@@ -54,11 +54,11 @@ logger = logging.getLogger(__name__)
 
 class ComparativeStatics:
     """
-        - Inputs (which are also attributes): 
+        - Inputs (which are also attributes):
             - `name` [str]: name for the exercise, to be used for the creation of folders and files
             - `general_parameters` [dict]: dictionary containing general options for the program,
             with keys:
-                - cost_path [str]: path to the cost data file. 
+                - cost_path [str]: path to the cost data file.
                 - xml_basefile [str]: path to the template xml file.
                 - daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
                 - annual_interest_rate [float]: annual interest rate for the investment problems.
@@ -95,7 +95,7 @@ class ComparativeStatics:
            - `submit_processing`: submits a processing job for the exercise.
            - `clear_folders`: deletes the folder for all non-equilibrium runs.
 
-        
+
     """
 
     def __init__(self,
@@ -111,15 +111,38 @@ class ComparativeStatics:
             base_path = str(BASE_PATH)
 
         self.name: str = name
-        general_parameters.update(
-            load_costs(general_parameters['cost_path'])
-        )
         self.general_parameters: dict = general_parameters
+        self._update_general_parameters()
         self.variables: dict = variables
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
         self.list_of_solvers: list[Solver] = self._initialize_grid()
         self._validate_parameters()
+
+    def _update_general_parameters(self):
+        costs_dictionary = load_costs(self.general_parameters['cost_path'])
+        self.general_parameters.update(**costs_dictionary)
+        self._set_default_slurm_config()
+
+    def _set_default_slurm_config(self):
+        slurm_configs: dict = self.general_parameters.get("slurm", {})
+        self.general_parameters["slurm"]: dict = slurm_configs
+        email: dict = self.general_parameters.get("email", "")
+        run_config: dict = slurm_configs.get("run", RUN_SLURM_DEFAULT_CONFIG)
+        self.general_parameters["slurm"]["run"] = self._default_slurm_config(run_config.copy(),
+                                                                             RUN_SLURM_DEFAULT_CONFIG, email)
+        solver_config: dict = slurm_configs.get(
+            "solver", SOLVER_SLURM_DEFAULT_CONFIG)
+        self.general_parameters["slurm"]["solver"] = self._default_slurm_config(solver_config.copy(),
+                                                                                SOLVER_SLURM_DEFAULT_CONFIG, email)
+
+    def _default_slurm_config(self, slurm_config: dict, default_config: dict,
+                              email: str):
+        for key, value in default_config.items():
+            slurm_config.setdefault(key, value)
+        slurm_config.setdefault(
+            "email", self.general_parameters.get("email"))
+        return slurm_config
 
     def _validate_parameters(self):
         # Check if general parameters contains cost data
@@ -226,7 +249,8 @@ setup_logging(level = "debug")
 setup_logging(level = "INFO")
 >>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
 
-comparative_statics_data = {json.loads(comparative_statics_data, parse_float=float)}
+comparative_statics_data = {json.loads(
+    comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
 comparative_statics.extract()
 #comparative_statics.compute_conditional_means()
@@ -255,7 +279,8 @@ END
         self.compute_conditional_means()
 
     def compute_solver_results(self):
-        solver_results_df = solver_results(list_of_solvers=self.list_of_solvers)
+        solver_results_df = solver_results(
+            list_of_solvers=self.list_of_solvers)
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
@@ -266,6 +291,7 @@ END
             results_function=conditional_means)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
+
 
 def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool = False) -> None:
     logger.info("Extracting data from MOP's outputs...")
@@ -285,6 +311,7 @@ def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool
         run_df.to_csv(solver.paths['raw'],
                       index=False)
 
+
 def profits_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
     rows: list = []
     for solver in list_of_solvers:
@@ -294,12 +321,14 @@ def profits_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
     results_df: pd.DataFrame = pd.DataFrame(rows)
     return results_df
 
+
 def solver_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
     rows: list = []
     for solver in list_of_solvers:
         rows.append(solver.solver_results())
     results_df: pd.DataFrame = pd.DataFrame(rows)
     return results_df
+
 
 def construct_results(list_of_solvers: list[Solver], results_function) -> pd.DataFrame:
     rows = []
@@ -310,8 +339,9 @@ def construct_results(list_of_solvers: list[Solver], results_function) -> pd.Dat
     results_df = pd.DataFrame(rows)
     return results_df
 
-def load_costs(costs_path)  -> dict[str, dict]:
-#    if costs_path is None:
+
+def load_costs(costs_path) -> dict[str, dict]:
+    #    if costs_path is None:
     #        costs_path = to do: set a default
     costs_dict: dict[str, dict[str, float | int]
                      ] = load_config(costs_path)

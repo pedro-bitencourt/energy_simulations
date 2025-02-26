@@ -9,14 +9,16 @@ setup_logging(level="debug")
 # Input parameters
 name: str = 'factor_compartir_coal_hi_wind'
 xml_basefile: str = '/projects/p32342/code/xml/salto_capacity.xml'
-costs_path: str = '/projects/p32342/code/cost_data/coal_high_wind.json'
+costs_path: str = '/projects/p32342/code/cost_data/coal_high_wind_cost.json'
 
 general_parameters: dict = {
     'daily': True,
     'xml_basefile': xml_basefile,
     'cost_path': costs_path,
     'annual_interest_rate': 0.0,
-    'email': 'pedro.bitencourt@u.northwestern.edu'
+    'email': 'aschwerz@u.northwestern.edu',
+    'wine_path': '/home/xvw8173/.wine',
+    'slurm': {'run': {'time': 0.8}}
 }
 
 exog_grid: list[float] = [0.001, 0.01, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 4]
@@ -44,7 +46,7 @@ comparative_statics = ComparativeStatics(
 
 
 # Submit the solver jobs
-#comparative_statics.prototype()
+comparative_statics.prototype()
 #comparative_statics.submit_solvers()
 # Submit the processing job
 #comparative_statics.submit_processing()

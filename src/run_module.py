@@ -7,6 +7,7 @@ Description: this file implements the Run class and related methods.
 
 import os
 import re
+import sys
 import shutil
 from pathlib import Path
 import logging
@@ -216,7 +217,8 @@ class Run:
             template_path=self.general_parameters['xml_basefile'],
             name=self.name,
             folder=self.paths['folder'],
-            variables=self.variables
+            variables=self.variables,
+            marginal_cost=self.general_parameters['marginal_cost_dictionary']
         )
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
@@ -244,8 +246,7 @@ class Run:
         job_name = f"{self.parent_name}_{self.name}"
 
         slurm_config: dict = self.general_parameters.get("slurm", {})
-        run_config: dict = slurm_config.get(
-            "run", RUN_SLURM_DEFAULT_CONFIG)
+        run_config = slurm_config.get("run", RUN_SLURM_DEFAULT_CONFIG)
         run_config = {
             key: run_config.get(key, value)
             for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
@@ -283,7 +284,7 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
         """Creates a .xml file from template with variable substitution."""
         output_path = folder / f"{name}.xml"
         marginal_cost_variables = {
-            f'{participant}_marginal_cost': marginal_cost[participant]
+            f'marginal_cost_{participant}': marginal_cost[participant]
             for participant in marginal_cost.keys()
         }
         # Add folder path to variables for substitution
