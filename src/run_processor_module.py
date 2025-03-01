@@ -118,7 +118,10 @@ class RunProcessor(Run):
             participant_type = PARTICIPANTS_DICT[participant]['type']
             if participant_type == 'thermal':
                 # Extract variable costs data
-                df = get_variable_cost_df(participant, self.paths['sim'])
+                marginal_cost_thermal = self.general_parameters['marginal_cost_dictionary']['thermal']
+                # Extract variable costs data
+                df = get_variable_cost_df(
+                    participant, self.paths['sim'], marginal_cost_thermal)
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
             elif participant not in ['demand', 'excedentes']:
@@ -215,7 +218,8 @@ def get_production_df(key_participant: str,
 
 
 def get_variable_cost_df(key_participant: str,
-                         sim_path: Path) -> pd.DataFrame:
+                         sim_path: Path,
+                         marginal_cost: float) -> pd.DataFrame:
     """
     Extracts and processes the variable costs data for the participant.
     """
@@ -233,7 +237,7 @@ def get_variable_cost_df(key_participant: str,
     dataframe = production_df.copy()
 
     # HARD CODED
-    dataframe[f'variable_cost_{key_participant}'] = 192.3 * \
+    dataframe[f'variable_cost_{key_participant}'] = marginal_cost * \
         dataframe[f'production_{key_participant}']
 
     dataframe.drop(columns=[f'production_{key_participant}'], inplace=True)

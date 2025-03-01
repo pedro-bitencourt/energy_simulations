@@ -243,18 +243,12 @@ sys.path.append('/projects/p32342/code')
 from src.comparative_statics_module import ComparativeStatics
 from src.utils.logging_config import setup_logging
 
-<<<<<<< HEAD
-setup_logging(level = "debug")
-=======
-setup_logging(level = "INFO")
->>>>>>> 40429a148d02baca2721fe9db74c034b262d825b
+setup_logging(level = "info")
 
 comparative_statics_data = {json.loads(
     comparative_statics_data, parse_float=float)}
 comparative_statics = ComparativeStatics(**comparative_statics_data)
-comparative_statics.extract()
-#comparative_statics.compute_conditional_means()
-comparative_statics.clear_folders()
+comparative_statics.process()
 END
 ''')
 
@@ -273,8 +267,11 @@ END
     ############################
     # Processing methods
     def process(self, complete=True, resubmit=True):
+        print("Creating raw directory...")
+        self.paths['raw'].mkdir(exist_ok=True, parents=True)
         extract(list_of_solvers=self.list_of_solvers,
                 complete=complete, resubmit=resubmit)
+        self.compute_solver_results()
 
         self.compute_conditional_means()
 

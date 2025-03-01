@@ -25,9 +25,9 @@ exogenous_variables: dict[str, dict] = {
     'factor_compartir': {'grid': exog_grid},
 }
 endogenous_variables: dict[str, dict] = {
-    'wind_capacity': {'initial_guess': 2000},
-    'solar_capacity': {'initial_guess': 1500},
-    'thermal_capacity': {'initial_guess': 1200}
+    'wind_capacity': {'initial_guess': 1500},
+    'solar_capacity': {'initial_guess': 1000},
+    'thermal_capacity': {'initial_guess': 1000}
 }
 
 variables: dict[str, dict] = {
@@ -45,7 +45,7 @@ comparative_statics = ComparativeStatics(
 
 # Submit the solver jobs
 #comparative_statics.prototype()
-#comparative_statics.submit_solvers()
+comparative_statics.submit_solvers()
 # Submit the processing job
 #comparative_statics.submit_processing()
 #comparative_statics.process()

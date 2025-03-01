@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5'  # GB
 PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
-                              'thermal']  # 'salto'
+                              'thermal', 'salto']
 PARTICIPANTS_ENDOGENOUS_DEFAULT: list = ['wind', 'solar', 'thermal']
 
 
@@ -258,7 +258,7 @@ class Run:
         header = slurm_header(run_config, job_name, slurm_path)
 
         memory = run_config.get('memory', MEMORY_REQUESTED)
-        temp_folder_path = f"{self.paths['folder']}/temp"
+        temp_folder_path = f"/tmp/pdm6134/{self.name}"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
         wine_path = self.general_parameters.get(
             'wine_path', '/projects/p32342/software/.wine')
@@ -272,7 +272,8 @@ module purge
 module load wine/6.0.1
 cd /projects/p32342/software/Ver_2.3
 sleep $((RANDOM%60 + 10))
-wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:\{temp_folder_path_windows}" -Xmx{memory}G -jar MOP_Mingo.JAR "Z:{xml_path}"
+wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava.io.tmpdir="Z:{temp_folder_path_windows}" -Xmx{memory}G -jar MOP_Mingo.JAR "Z:{xml_path}"
+rm -r {temp_folder_path}
 ''')
         return bash_path
 
@@ -374,7 +375,8 @@ wine "Z:\\projects\\p32342\\software\\Java\\jdk-11.0.22+7\\bin\\java.exe" -Djava
             'profits_data.json').write_text(json.dumps(profits_dict))
 
         if complete:
-            run_df = full_run_df(run_df, capacities, participants)
+            # TODO : CHECK this part
+            run_df = full_run_df(run_df, participants)
             revenues_variables = [f'revenue_{participant}'
                                   for participant in participants]
             std_revenues = std_variables(run_df, revenues_variables)

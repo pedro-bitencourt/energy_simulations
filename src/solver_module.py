@@ -61,7 +61,7 @@ class Solver:
         self.folder: Path = self.paths['folder']
 
         solver_options_default: dict = {
-            'max_iter': 80,
+            'max_iter': 100,
             'delta': 10,
             'threshold_profits': 0.01,
         }
@@ -325,7 +325,6 @@ class Solver:
         """
         logger.info("Preparing to run %s on quest",
                     self.name)
-
         script_path: Path = self._create_bash()
         job_id = submit_slurm_job(script_path, job_name=self.name)
         return job_id
@@ -382,7 +381,6 @@ setup_logging(level="{logging_level}")
 solver = Solver(**investment_data)
 print('Successfully loaded the solvers data')
 solver.solve()
-last_run = solver.last_run()
 END
 """)
 

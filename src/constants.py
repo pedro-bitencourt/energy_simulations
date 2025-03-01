@@ -22,13 +22,14 @@ PROCESSING_SLURM_DEFAULT_CONFIG = {
     'time': 5,
     'memory': 5,
     'email': None,
-    'mail-type': 'NONE'
+    'mail-type': 'END,FAIL'
 }
-
 
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
+
+
 def create_run_name(variables: dict):
     # Order the variables alphabetically
     variables: dict = dict(sorted(variables.items()))
@@ -66,7 +67,7 @@ def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths['temp'] = paths['main'] / 'temp'
     paths['results'] = paths['main'] / 'results'
     paths['trajectories'] = paths['main'] / 'trajectories'
-    paths['raw'] = paths['results'] / name / "raw"
+    paths['raw'] = paths['main'] / "raw"
 
     for path in paths.values():
         path.mkdir(parents=True, exist_ok=True)
