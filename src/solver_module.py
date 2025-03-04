@@ -61,7 +61,7 @@ class Solver:
         self.folder: Path = self.paths['folder']
 
         solver_options_default: dict = {
-            'max_iter': 100,
+            'max_iter': 200,
             'delta': 10,
             'threshold_profits': 0.01,
         }
@@ -284,7 +284,6 @@ class Solver:
             if resubmit:
                 logger.info("Resubmitting the solver")
                 self.submit()
-            return {}
 
         last_run: Run = self.last_run()
 

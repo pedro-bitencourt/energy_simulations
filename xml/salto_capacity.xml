@@ -923,8 +923,8 @@
 										<ev tipo="const">3000</ev>
 									</caudalMax>
                   <precioComb unidad="USD/m3">
-                  <!-- formula: price_fuel [$/m3] = mc [$/MWh] / (pci [MWh/m3] * plant_efficiency [adimensional])-->
-									<ev tipo="const">${marginal_cost_thermal/(10.6*0.376)}</ev>
+                  <!-- formula: price_fuel [$/m3] = mc [$/MWh] * pci [MWh/m3] * plant_efficiency [adimensional]-->
+									<ev tipo="const">${marginal_cost_thermal*(10.6*0.376)}</ev>
 									</precioComb>
 									<salidaDetallada>true</salidaDetallada>
 								</datosContratoCanioSimple>

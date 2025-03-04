@@ -1,8 +1,8 @@
 import sys
 sys.path.append('/projects/p32342/code')
-
 from src.comparative_statics_module import ComparativeStatics
 from src.utils.logging_config import setup_logging
+
 
 setup_logging(level="debug")
 
@@ -17,11 +17,10 @@ general_parameters: dict = {
     'cost_path': costs_path,
     'annual_interest_rate': 0.0,
     'email': 'pedro.bitencourt@u.northwestern.edu',
-    'slurm': {'run': {'time': 0.45}}
+    'slurm': {'run': {'time': 0.55}}
 }
 
-exog_grid: list[float] = [0.001, 0.01, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 1, 1.25, 1.5, 2, 3, 4]
-exog_grid: list[float] = [0.001, 0.01, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 1]
+exog_grid: list[float] = [0.01, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 1]
 
 exogenous_variables: dict[str, dict] = {
     'factor_compartir': {'grid': exog_grid},
@@ -46,7 +45,7 @@ comparative_statics = ComparativeStatics(
 
 
 # Submit the solver jobs
-#comparative_statics.prototype()
+# comparative_statics.prototype()
 comparative_statics.submit_solvers()
 # Submit the processing job
 #comparative_statics.submit_processing()
