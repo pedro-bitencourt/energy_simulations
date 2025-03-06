@@ -13,7 +13,9 @@ for the temporary files.
 
 ## Introduction
 
-This repository's code is a wrapper for the software Modelo Padron de Operacion (MOP), developed by UTE. MOP takes an `.xml` file outlining the characteristics of an energy system as input, solves the optimal energy dispatch problem, and outputs the value function while simulating the energy system's operation using historical data from Uruguay. The code in this repository allows the user to perform comparative statics exercises on the energy system characteristics, enabling the determination of plant capacities endogenously based on a zero-profit condition.
+This repository's code is a wrapper for the software Modelo Padron de Operacion (MOP), developed by UTE.
+MOP takes an `.xml` file outlining the characteristics of an energy system as input, solves the optimal energy dispatch problem, and outputs the value function while simulating the energy system's operation using historical data from Uruguay.
+The code in this repository allows the user to perform comparative statics exercises on the energy system characteristics, enabling the determination of plant capacities endogenously based on a zero-profit condition.
 
 ## Usage Guide
 
@@ -31,9 +33,13 @@ First, you should decide the exact parameter in the `xml` configuration file to 
 
 I've included a file `template.xml` that exhibits all the fields we have already used for our comparative statics exercises. The fields to be substituted are as ${expression}, where expression is any valid Python expression.
 
-You should also define which variables will be endogenous and solved for using the zero-profit condition. Currently, this is only possible with capacity. After identifying the fields for comparative statics, create an XML template and write a Python script to execute the program.
+You should also define which variables will be endogenous and solved for using the zero-profit condition. Currently,
+this is only possible with capacity.
+After identifying the fields for comparative statics,
+create an XML template and write a Python script to execute the program.
 
-Let's examine a specific example: `expensive_blackout.py`, which performs comparative statics over the volume of the lake of Salto Grande using a penalty of $20,000 for blackouts.
+Let's examine a specific example: `expensive_blackout.py`,
+which performs comparative statics over the volume of the lake of Salto Grande using a penalty of $20,000 for blackouts.
 
 ```python
 """
@@ -53,29 +59,9 @@ name: str = 'expensive_blackout'
 xml_basefile: str = f'/projects/p32342/code/xml/{name}.xml'
 cost_path: str = '/projects/p32342/data/costs_original.json'
 
-# Set the slurm configurations. The settings below are the default,
-# so if any field is not provided the program will use these values.
-slurm_config: dict = {
-    'run': {
-        'mail-type': 'NONE',
-        'time': 0.8,
-        'memory': 5
-    },
-    'solver': {
-        'mail-type': 'END,FAIL',
-        'time': 12,
-        'memory': 5
-    },
-    'processing': {
-        'mail-type': 'END,FAIL',
-        'time': 5,
-        'memory': 10
-    }
-}
-
 general_parameters: dict = {
     'daily': True,
-    'email': 'pedro.bitencourt@u.northwestern.edu', 
+    'email': 'your.email@u.northwestern.edu', 
     'xml_basefile': xml_basefile,
     'cost_path': cost_path,
     'annual_interest_rate': 0.0,
@@ -87,6 +73,7 @@ exogenous_variables: dict[str, dict] = {
         'grid': exog_grid
     },
 }
+
 endogenous_variables: dict[str, dict] = {
     'wind_capacity': {'initial_guess': 2000},
     'solar_capacity': {'initial_guess': 2000},

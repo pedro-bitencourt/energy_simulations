@@ -16,6 +16,9 @@ PLOTS_JSON_PATH: Path = Path(
 
 
 def main():
+    plot_config = load_plots()
+    print(plot_config)
+    
     pass
 
 

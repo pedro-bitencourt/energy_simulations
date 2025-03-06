@@ -28,8 +28,6 @@ PROCESSING_SLURM_DEFAULT_CONFIG = {
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
-
-
 def create_run_name(variables: dict):
     # Order the variables alphabetically
     variables: dict = dict(sorted(variables.items()))
@@ -149,7 +147,7 @@ def initialize_paths_run(parent_folder: Path, name: str, subfolder: str) -> dict
 ################################################################################################
 # PARSING CONFIGURATIONS
 ################################################################################################
-# Extraction configurations
+# Extraction configurations, used to parse the raw data from MOP. 
 PATTERNS_LIST = [
     {
         'pattern': r'TOTAL OPTIMIZAR es de: (\d+) seg',

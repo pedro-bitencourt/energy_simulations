@@ -4,8 +4,14 @@ library(mgcv)
 library(lubridate)
 library(ggplot2)
 
+# Constants. CHANGE THIS TO ACCEPT AS INPUT!!!
+  wind_fixed_costs_mw_hour <- 9.13
+  solar_fixed_costs_mw_hour <- 3.42
+  thermal_fixed_costs_mw_hour <- 14.26
+  mc_thermal <- 76
+  
 if(interactive()) {
-  experiment_name <- "zero_hydro"
+  experiment_name <- "factor_compartir_coal"
 } else{
   args <- commandArgs(trailingOnly = TRUE)
   experiment_name <- args[1]
@@ -31,7 +37,8 @@ analyze_run <- function(run_file) {
   }
   message("starting ", run_name)
   # Set output folder for the run
-  run_output_folder <- paste0(graphics_folder, run_name)
+
+    run_output_folder <- paste0(graphics_folder, run_name)
   dir.create(run_output_folder, recursive = TRUE)
   
   # Functions
@@ -136,7 +143,7 @@ analyze_run <- function(run_file) {
   data$price_4000 <- as.integer(data$marginal_cost >= 4000)
   data$positive_lost_load <- as.integer(data$demand > data$production_total + 0.1)
   data$dummy_excess <- as.integer(data$excess_production > 0.1)
-  data$price_193_4000 <- as.integer(data$marginal_cost > 193.1 & data$marginal_cost < 4000)
+  data$price_mc_thermal_4000 <- as.integer(data$marginal_cost > mc_thermal & data$marginal_cost < 4000)
   
   # Round numeric variables to nearest .1
   data <- data %>% mutate(across(where(is.numeric), ~ round(.x,1)))
@@ -169,7 +176,7 @@ analyze_run <- function(run_file) {
   temp <- data %>% filter(data$thermal_active == 1 & data$hydro_active == 0) %>% mutate(marginal_cost_vw = marginal_cost)
   plot_density(temp, "marginal_cost_vw", bw = 1, x_from = 0, x_to = 300)
   
-  temp <- data %>% filter(marginal_cost > 195 & marginal_cost < 3000) %>% mutate(marginal_cost_vw_2 = marginal_cost)
+  temp <- data %>% filter(marginal_cost > mc_thermal & marginal_cost < 3000) %>% mutate(marginal_cost_vw_2 = marginal_cost)
   plot_density(temp, "marginal_cost_vw_2", bw = 1)
   
   
@@ -199,17 +206,17 @@ analyze_run <- function(run_file) {
   results$prob_thermal_marginal <- mean(data$thermal_marginal) * 8760
   results$prob_renewables_marginal <- mean(data$renewables_marginal) * 8760
   results$prob_price_4000 <- mean(data$price_4000) * 8760
-  results$prob_price_193_4000 <- mean(data$price_193_4000) * 8760
+  results$prob_price_mc_thermal_4000 <- mean(data$price_mc_thermal_4000) * 8760
   results$prob_lost_load_wl_31 <- mean(data %>% filter(water_level_salto < 31) %>% pull(positive_lost_load)) * 8760
   results$prob_lost_load_wl_32 <- mean(data %>% filter(water_level_salto < 32) %>% pull(positive_lost_load)) * 8760
   results$prob_lost_load <- mean(data$lost_load > 0) * 8760
   
   results$thermal_production_conditional_active <- mean(data %>% filter(thermal_active == 1) %>% pull(production_thermal))
   
-  results$thermal_profit <- mean((data$marginal_cost - 193) * data$production_thermal) / capacities$thermal_capacity
-  results$thermal_profit_positive_ll <- mean((data$marginal_cost - 193) * data$production_thermal * data$positive_lost_load) / capacities$thermal_capacity
-  results$thermal_profit_price_4000 <- mean((data$marginal_cost - 193) * data$production_thermal * data$price_4000)/ capacities$thermal_capacity
-  results$thermal_profit_price_193_4000 <- mean((data$marginal_cost - 193) * data$production_thermal * data$price_193_4000)/ capacities$thermal_capacity
+  results$thermal_profit <- mean((data$marginal_cost - mc_thermal) * data$production_thermal) / capacities$thermal_capacity
+  results$thermal_profit_positive_ll <- mean((data$marginal_cost - mc_thermal) * data$production_thermal * data$positive_lost_load) / capacities$thermal_capacity
+  results$thermal_profit_price_4000 <- mean((data$marginal_cost - mc_thermal) * data$production_thermal * data$price_4000)/ capacities$thermal_capacity
+  results$thermal_profit_price_mc_thermal_4000 <- mean((data$marginal_cost - mc_thermal) * data$production_thermal * data$price_mc_thermal_4000)/ capacities$thermal_capacity
   
   # Compute means
   # Production
@@ -224,11 +231,11 @@ analyze_run <- function(run_file) {
   results$mean_price <- mean(data$marginal_cost)
   
   # Standard deviations
-  results$std_thermal_profit <- sd((data$marginal_cost - 193) * data$production_thermal) / capacities$thermal_capacity
-  results$std_thermal_profit_blackout <- sd((data$marginal_cost - 193) * data$production_thermal * data$positive_lost_load) / capacities$thermal_capacity
-  results$std_thermal_profit_price_193_4000 <- sd((data$marginal_cost - 193) * data$production_thermal * data$price_193_4000) / capacities$thermal_capacity
+  results$std_thermal_profit <- sd((data$marginal_cost - mc_thermal) * data$production_thermal) / capacities$thermal_capacity
+  results$std_thermal_profit_blackout <- sd((data$marginal_cost - mc_thermal) * data$production_thermal * data$positive_lost_load) / capacities$thermal_capacity
+  results$std_thermal_profit_price_mc_thermal_4000 <- sd((data$marginal_cost - mc_thermal) * data$production_thermal * data$price_mc_thermal_4000) / capacities$thermal_capacity
   
-  results$price_conditional_price_193_4000 <- mean(data %>% filter(price_193_4000 == 1) %>% pull(marginal_cost))
+  results$price_conditional_price_mc_thermal_4000 <- mean(data %>% filter(price_mc_thermal_4000 == 1) %>% pull(marginal_cost))
   results$lost_load_cond_ll_0 <- mean(data %>% filter(positive_lost_load == 1) %>% pull(lost_load))
   
   results$mean_lost_load <- mean(data$lost_load)
@@ -242,22 +249,18 @@ analyze_run <- function(run_file) {
   avg_per_scenario <- data %>% 
     group_by(scenario) %>% 
     summarise(prob_price_4000 = mean(price_4000),
-              prob_price_193_4000 = mean(price_193_4000))
+              prob_price_mc_thermal_4000 = mean(price_mc_thermal_4000))
   
   ## Quartiles
   # Price distribution
   results$q25_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.25, names=FALSE) * 8760
   results$q50_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.50, names=FALSE) * 8760
   results$q75_prob_price_4000 <- quantile(avg_per_scenario$prob_price_4000, 0.75, names=FALSE) * 8760
-  results$q25_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.25, names=FALSE) * 8760
-  results$q50_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.50, names=FALSE) * 8760
-  results$q75_prob_price_193_4000 <- quantile(avg_per_scenario$prob_price_193_4000, 0.75, names=FALSE) * 8760
+  results$q25_prob_price_mc_thermal_4000 <- quantile(avg_per_scenario$prob_price_mc_thermal_4000, 0.25, names=FALSE) * 8760
+  results$q50_prob_price_mc_thermal_4000 <- quantile(avg_per_scenario$prob_price_mc_thermal_4000, 0.50, names=FALSE) * 8760
+  results$q75_prob_price_mc_thermal_4000 <- quantile(avg_per_scenario$prob_price_mc_thermal_4000, 0.75, names=FALSE) * 8760
   
   # LCOE: E[Total cost]/E[demand]
-  wind_fixed_costs_mw_hour <- 8.22
-  solar_fixed_costs_mw_hour <- 4.62
-  thermal_fixed_costs_mw_hour <- 6.93
-  
   results$lcoe <- (capacities$thermal_capacity * thermal_fixed_costs_mw_hour +
     capacities$wind_capacity * wind_fixed_costs_mw_hour +
     capacities$solar_capacity * solar_fixed_costs_mw_hour +

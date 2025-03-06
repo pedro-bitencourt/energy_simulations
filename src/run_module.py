@@ -18,7 +18,7 @@ import pandas as pd
 from .utils.auxiliary import try_get_file
 from .utils.slurm_utils import slurm_header, submit_slurm_job, wait_for_jobs
 from .constants import RUN_SLURM_DEFAULT_CONFIG, initialize_paths_run, create_run_name
-from .data_analysis_module import profits_per_participant, std_variables, full_run_df
+from .data_analysis_module import profits_per_participant, full_run_df
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class Run:
 
     Args:
         - parent_folder: Path determining the folder where the run is stored.
-        - general_parameters: Dictionary containing general parameters for the run, with the staticmethod
+        - general_parameters: Dictionary containing general parameters for the run,
             keys as ComparativeStatic.
         - variables: Dictionary containing the variables for the run. Each entry is 
             a variable, with the key being the variable name and the value being the variable
@@ -379,8 +379,6 @@ rm -r {temp_folder_path}
             run_df = full_run_df(run_df, participants)
             revenues_variables = [f'revenue_{participant}'
                                   for participant in participants]
-            std_revenues = std_variables(run_df, revenues_variables)
-            profits_dict.update(std_revenues)
 
         logger.debug("profits_data for %s:", self.name)
         logger.debug(profits_dict)

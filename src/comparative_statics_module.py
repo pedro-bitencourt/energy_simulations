@@ -8,8 +8,7 @@ Description:
     This module contains the ComparativeStatics class, which is the main class used in this project.
     This class models a comparative statics exercise to be executed and processed, using both the
     other scripts in this folder as the Modelo de Operaciones Padron (MOP), which implements a
-    solver for the problem of economic dispatch of energy for a given configuration of the energy
-    system.
+    solver for the problem of economic dispatch of 
 
 Classes:
     - ComparativeStatistics
@@ -45,7 +44,11 @@ from .utils.slurm_utils import submit_slurm_job, slurm_header
 from .solver_module import Solver
 from .run_module import Run
 from .data_analysis_module import conditional_means
-from .constants import BASE_PATH, SOLVER_SLURM_DEFAULT_CONFIG, PROCESSING_SLURM_DEFAULT_CONFIG, RUN_SLURM_DEFAULT_CONFIG, initialize_paths_comparative_statics
+from .constants import (BASE_PATH,
+    SOLVER_SLURM_DEFAULT_CONFIG,
+    PROCESSING_SLURM_DEFAULT_CONFIG,
+    RUN_SLURM_DEFAULT_CONFIG,
+    initialize_paths_comparative_statics)
 from .utils.load_configs import load_config
 
 # Get logger for current module
@@ -103,20 +106,18 @@ class ComparativeStatics:
                  variables: Dict[str, Dict],
                  general_parameters: Dict,
                  base_path: Optional[str] = None):
-        """
-        Initialize the ComparativeStatics object.
-        """
         logger.info("Initializing the ComparativeStatics object.")
         if base_path is None:
             base_path = str(BASE_PATH)
 
         self.name: str = name
         self.general_parameters: dict = general_parameters
-        self._update_general_parameters()
         self.variables: dict = variables
+
+        self._update_general_parameters()
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
-        self.list_of_solvers: list[Solver] = self._initialize_grid()
+        self.solvers: list[Solver] = self._initialize_grid()
         self._validate_parameters()
 
     def _update_general_parameters(self):
@@ -125,12 +126,15 @@ class ComparativeStatics:
         self._set_default_slurm_config()
 
     def _set_default_slurm_config(self):
-        slurm_configs: dict = self.general_parameters.get("slurm", {})
-        self.general_parameters["slurm"]: dict = slurm_configs
         email: dict = self.general_parameters.get("email", "")
+        slurm_configs: dict = self.general_parameters.get("slurm", {})
+
+        self.general_parameters["slurm"] = slurm_configs
+
         run_config: dict = slurm_configs.get("run", RUN_SLURM_DEFAULT_CONFIG)
         self.general_parameters["slurm"]["run"] = self._default_slurm_config(run_config.copy(),
                                                                              RUN_SLURM_DEFAULT_CONFIG, email)
+
         solver_config: dict = slurm_configs.get(
             "solver", SOLVER_SLURM_DEFAULT_CONFIG)
         self.general_parameters["slurm"]["solver"] = self._default_slurm_config(solver_config.copy(),
@@ -141,7 +145,7 @@ class ComparativeStatics:
         for key, value in default_config.items():
             slurm_config.setdefault(key, value)
         slurm_config.setdefault(
-            "email", self.general_parameters.get("email"))
+            email, self.general_parameters.get("email"))
         return slurm_config
 
     def _validate_parameters(self):
@@ -183,7 +187,7 @@ class ComparativeStatics:
     ############################
     # Utility methods
     def prototype(self):
-        investment_problem_0: Solver = self.list_of_solvers[0]
+        investment_problem_0: Solver = self.solvers[0]
         investment_problem_0.prototype()
 
     def redo_runs(self):
@@ -192,13 +196,13 @@ class ComparativeStatics:
 
         WARNING: This method will delete the results of the runs.
         """
-        for solver in self.list_of_solvers:
+        for solver in self.solvers:
             run = solver.last_run()
             logger.info("Redoing equilibrium run %s", run.name)
             run.submit(force=True)
 
     def clear_folders(self):
-        for solver in self.list_of_solvers:
+        for solver in self.solvers:
             solver.clear_runs_folders()
 
     ############################
@@ -207,7 +211,7 @@ class ComparativeStatics:
         """
         Submit the jobs to the cluster.
         """
-        for solver in self.list_of_solvers:
+        for solver in self.solvers:
             solver.submit()
             logging.info(
                 'Submitted job for investment problem %s', solver.name)
@@ -269,7 +273,7 @@ END
     def process(self, complete=True, resubmit=True):
         print("Creating raw directory...")
         self.paths['raw'].mkdir(exist_ok=True, parents=True)
-        extract(list_of_solvers=self.list_of_solvers,
+        extract(list_of_solvers=self.solvers,
                 complete=complete, resubmit=resubmit)
         self.compute_solver_results()
 
@@ -277,18 +281,18 @@ END
 
     def compute_solver_results(self):
         solver_results_df = solver_results(
-            list_of_solvers=self.list_of_solvers)
+            list_of_solvers=self.solvers)
         solver_results_df.to_csv(
             self.paths['solver_results'], index=False)
 
     def compute_conditional_means(self):
         logger.info("Computing conditional means...")
         conditional_means_df = construct_results(
-            list_of_solvers=self.list_of_solvers,
+            list_of_solvers=self.solvers,
             results_function=conditional_means)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
-
+        
 
 def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool = False) -> None:
     logger.info("Extracting data from MOP's outputs...")

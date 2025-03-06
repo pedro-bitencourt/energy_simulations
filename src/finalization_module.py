@@ -1,64 +1,98 @@
 import logging
 from pathlib import Path
-import subprocess
 import pandas as pd
 
+from typing import Any
+
+from .comparative_statics_module import load_costs
+from .run_analysis_module import analyze_run
 
 from .utils.load_configs import load_events, load_plots, load_plots_r, load_comparisons
+from .utils.auxiliary import skip_if_exists
 from .plotting_module import event_comparison_plot, line_plot
 from .constants import BASE_PATH
 
+
 logger = logging.getLogger(__name__)
 
-PATH_R_SCRIPT: Path = BASE_PATH / 'code/r/run_analysis.R'
+NROWS_TO_READ = 500_000
+
 GRAPHICS_FOLDER: Path = BASE_PATH / 'figures'
 
 class SimulationFinalizer:
-    def __init__(self, simulation_folder: Path, x_variable: dict, 
-                 participants: list[str] = ['wind', 'solar', 'thermal', 'salto'], overwrite: bool = False):
-        # Save inputs
-        self.simulation_folder: Path = simulation_folder
-        self.x_variable: dict[str, str] = x_variable
-        self.participants: list[str] = participants
+    def __init__(self,
+                 simulation_folder: Path,
+                 x_variable: dict[str, Any],
+                 endogenous_participants: list[str],
+                 costs_path: Path,
+                 overwrite: bool = False):
+        # Get name of the experiment
+        self.name: str = simulation_folder.name
 
-        self.capacities_variables: list[str] = [f'{participant}_capacity' 
-            for participant in participants]
+        # Save inputs
+        self.x_variable: dict[str, Any] = x_variable
+        self.endogenous_participants: list[str] = endogenous_participants
+
+
+        # Set up paths
+        self.paths: dict[str, Path] = self._construct_paths(simulation_folder)
 
         # Create output folder
-        self.output_folder: Path = GRAPHICS_FOLDER / simulation_folder.name
-        self.output_folder.mkdir(parents=True, exist_ok=True)
+        self.paths['output_folder'].mkdir(parents=True, exist_ok=True)
+
+        self.exogenous_values = self.get_exogenous_values()
 
         # Load data
-        self.capacities_df: pd.DataFrame = pd.read_csv(simulation_folder /
-            'results'/'solver_results.csv')[self.capacities_variables + [x_variable['name'], 'name']]
-        logger.info("Capacities data: %s", self.capacities_df.head())
-        self.conditional_means_df: pd.DataFrame = pd.read_csv(simulation_folder /
-            'results'/'conditional_means.csv')
-        logger.info("Conditional means data: %s", self.conditional_means_df.head())
-        
-        self.solver_results_df: pd.DataFrame = pd.read_csv(simulation_folder /
-            'results'/'solver_results.csv')
+        self.capacities_df: pd.DataFrame = self.load_capacities()
+        logger.debug("Capacities data: %s", self.capacities_df.head())
 
-        
+        costs_dict: dict[str, dict[str, float]] = load_costs(costs_path)
+        self.fixed_cost_dict: dict[str, float] = costs_dict["fixed_cost_dictionary"]
+        self.marginal_cost_dict: float = costs_dict["marginal_cost_dictionary"]
+
         # Process data
         self.events_data: dict[str, pd.DataFrame] = self.events_data_from_csv()
-        self.results_summary: pd.DataFrame = self.get_results_summary(overwrite)
-        logger.info("Results summary: %s", self.results_summary.head())
+        self.results: pd.DataFrame = self.get_results(overwrite)
+        logger.debug("Results: %s", self.results.head())
 
-    def get_results_summary(self, overwrite: bool = False) -> pd.DataFrame:
-        if not overwrite and (self.simulation_folder / 'results_summary.csv').exists():
-            logger.info("Results already exist for simulation %s. Skipping R script.",
-                        self.simulation_folder.name)
-            return pd.read_csv(self.simulation_folder / 'results_summary.csv')
-        logger.info("Running R script for simulation %s", self.simulation_folder.name)
-        cmd = f"Rscript {PATH_R_SCRIPT} {self.simulation_folder.name}"
-        subprocess.run(cmd, shell=True, check=True)
-        results_summary: pd.DataFrame =  pd.read_csv(self.simulation_folder / 'results_summary.csv')
-        # Merge with capacities
-        results_summary = results_summary.merge(self.solver_results_df, on='name', how='outer')
-        # Order by x_variable
-        results_summary = results_summary.sort_values(by=self.x_variable['name'])
-        return results_summary
+    def get_exogenous_values(self):
+        # Grab run files
+        run_files: list[Path] = list(self.paths['raw'].glob('*.csv'))
+        exogenous_values: list[dict[str, Any]] = [{  
+            "value": file.stem.split('_')[-1],
+            "path": file,
+            "name": file.stem
+        } for file in run_files]
+        return exogenous_values
+
+
+    def load_capacities(self):
+        capacities_variables: list[str] = [f'{participant}_capacity'
+            for participant in self.endogenous_participants]
+        solver_results_df: pd.DataFrame = pd.read_csv(self.paths['solver_results'])
+        capacities_df: pd.DataFrame = solver_results_df[capacities_variables + [self.x_variable['name'], 'name']]
+        return capacities_df
+
+    def _construct_paths(self, simulation_folder: Path):
+        paths: dict[str, Path] = {
+            'simulation_folder': simulation_folder,
+            'raw': simulation_folder / 'raw',
+            'output_folder': GRAPHICS_FOLDER / self.name,
+            'formatted_conditional_means': simulation_folder / 'formatted_conditional_means.csv',
+            'frequencies_table': simulation_folder / 'frequencies_table.csv',
+            'results': simulation_folder / 'results.csv',
+            'solver_results': simulation_folder / 'results' / 'solver_results.csv',
+            'conditional_means': simulation_folder / 'results' / 'conditional_means.csv'
+        }
+        return paths
+
+    def get_results(self, overwrite: bool) -> pd.DataFrame:
+        if skip_if_exists(self.paths['results'], overwrite):
+            return pd.read_csv(self.paths['results'])
+        results_df: pd.DataFrame = analyze_runs(self)
+        results_df = results_df.sort_values(by=self.x_variable['name'])
+        results_df.to_csv(self.paths['results'], index=False)
+        return results_df
 
     def events_data_from_csv(self) -> dict[str, pd.DataFrame]:
         """
@@ -66,26 +100,22 @@ class SimulationFinalizer:
         one for each event.
         """
         logger.info("Starting the events_data_from_csv() function at path: %s",
-                    str(self.simulation_folder))
-
+                    str(self.paths['simulation_folder']))
         # Load the data
-        events_data = events_dataframes(self.conditional_means_df)
-
+        conditional_means_df: pd.DataFrame = pd.read_csv(self.paths['simulation_folder'] / 'results' / 'conditional_means.csv')
+        events_data = events_dataframes(conditional_means_df)
         # Remove the prefixes
         for event, df in events_data.items():
             df.columns = [col.replace(f"{event}_", "") for col in df.columns]
-
             # Merge df with capacities
             df = pd.concat([df, self.capacities_df], axis=1)
-
-            df[self.x_variable['name']] = self.conditional_means_df[self.x_variable['name']]
-
+            df[self.x_variable['name']] = conditional_means_df[self.x_variable['name']]
             logger.debug("Dataframe for event %s columns after processing: %s", event, df.columns)
             events_data[event] = df
         return events_data
 
     def sim_line_plot(self, y_variables: dict[str, dict[str, str]], y_variable_axis: str, title: str, output_path: Path):
-        line_plot(self.results_summary,
+        line_plot(self.results,
                   self.x_variable['name'],
                   y_variables,
                   title,
@@ -93,35 +123,64 @@ class SimulationFinalizer:
                   y_variable_axis,
                   output_path)
 
+        
+
+def analyze_runs(simulation: SimulationFinalizer):
+    results: list[dict[str, Any]] = []
+    exogenous_values = simulation.exogenous_values
+    capacities_df: pd.DataFrame = simulation.capacities_df
+    for exogenous_value_dict in exogenous_values:
+        print("Analyzing exogenous value ", exogenous_value_dict)
+        run_name = exogenous_value_dict['name']
+        exogenous_value = exogenous_value_dict['value']
+        input_path = exogenous_value_dict['path']
+    
+        run_capacities = capacities_df.loc[capacities_df["name"] == run_name, ]
+        if run_capacities.empty:
+            logger.warning("No capacities found for run %s. Skipping.", run_name)
+            continue
+        run_data: pd.DataFrame = pd.read_csv(input_path) #, nrows= NROWS_TO_READ)
+        output_folder = simulation.paths['output_folder'] / "runs" / run_name
+        output_folder.mkdir(parents=True, exist_ok=True)
+        results_run = analyze_run(
+            data=run_data,
+            run_name=run_name,
+            output_folder=output_folder,
+            exogenous_variable_value=exogenous_value,
+            run_capacities=run_capacities,
+            fixed_cost_dict=simulation.fixed_cost_dict, 
+            marginal_cost_dict=simulation.marginal_cost_dict,
+            overwrite=True
+        )
+        results.append(results_run)
+
+        logger.critical(results_run)
+    
+    results_df: pd.DataFrame = pd.DataFrame(results)
+    results_df.to_csv(simulation.paths['results'], index=False)
+    return results_df
+
 
 def finalize(simulation: SimulationFinalizer):
-    # Call the formatting functions
     format_results(simulation)
-
-    # Call the plotting functions
     visualize(simulation)
 
 
-def visualize(simulation: SimulationFinalizer):
+def visualize(simulation: SimulationFinalizer, overwrite: bool = False):
     """
     Generate visualizations from the simulation results.
     """
-    logger.info("Starting the visualize() function at path: %s", str(simulation.simulation_folder))
+    logger.info("Starting the visualize() function at path: %s", str(simulation.paths['simulation_folder']))
 
-    # Call plotting functions
-    plot_event_comparisons(simulation)
-    plot_optimal_capacities(simulation)
-    #plot_std_revenues(simulation)
-    plot_results_summary(simulation)
+    plot_event_comparisons(simulation, overwrite)
+    plot_results(simulation)
 
-
-
-def plot_event_comparisons(simulation: SimulationFinalizer):
+def plot_event_comparisons(simulation: SimulationFinalizer, overwrite: bool = False):
     logger.info("Starting the plot_event_comparisons() function at path: %s",
-                str(simulation.simulation_folder))
+                str(simulation.paths['simulation_folder']))
 
     # Create comparisons folder
-    (simulation.simulation_folder / 'graphics/comparisons').mkdir(parents=True, exist_ok=True)
+    (simulation.paths['simulation_folder'] / 'graphics/comparisons').mkdir(parents=True, exist_ok=True)
 
     logger.info("Plotting event comparisons...")
     for comparison_name, set_events in load_comparisons().items():
@@ -132,10 +191,13 @@ def plot_event_comparisons(simulation: SimulationFinalizer):
                 # remove 'unconditional' event
                 set_events_temp = [event for event in set_events if event != 'unconditional']
 
-            comparison_folder = (simulation.output_folder/ 'comparisons' / comparison_name)
+            comparison_folder = (simulation.paths['output_folder']/ 'comparisons' / comparison_name)
             # Create folder
             comparison_folder.mkdir(parents=True, exist_ok=True)
             file_path = comparison_folder /f"{plot_name}.png"
+
+            if skip_if_exists(file_path, overwrite):
+                continue
             title = f"{plot_config['title']} - {comparison_name}"
 
             logger.debug("Plotting %s", title)
@@ -143,62 +205,26 @@ def plot_event_comparisons(simulation: SimulationFinalizer):
                       plot_config['y_label'], simulation.x_variable, file_path,
                       title)
 
-def plot_results_summary(simulation: SimulationFinalizer):
+def plot_results(simulation: SimulationFinalizer):
     # Load the plots configuration
     plots_r = load_plots_r()
 
     for plot_name, plot in plots_r.items():
         title = ""
-        output_path = simulation.output_folder / f"{plot_name}.png"
+        output_path = simulation.paths['output_folder'] / f"{plot_name}.png"
         y_variables = {variable['name']: {'label' : variable['label'],
                                           'color': variable['color']}
             for variable in plot['variables']}
-        line_plot(simulation.results_summary,
+
+        # Order results by x_variable
+        simulation.results = simulation.results.sort_values(by=simulation.x_variable['name'])
+        line_plot(simulation.results,
             simulation.x_variable['name'],
             y_variables,
             title,
             simulation.x_variable['label'],
             plot['y_label'],
             output_path)
-
-def plot_optimal_capacities(simulation: SimulationFinalizer):
-    # Load the investment simulation_folder
-    color_map = {'wind': '#2CA02C', 'solar': '#FFD600', 'salto': '#1F77B4', 'thermal': '#D62728'}
-    y_variables = {f'{participant}_capacity': {
-        'label' : f'{participant} Capacity (MW)',
-        'color': color_map[participant]} for participant in simulation.participants}     
-    y_variable_axis = 'Capacity (MW)'
-    title = 'Optimal Capacities (MW)'
-    output_path = simulation.output_folder / 'optimal_capacities.png'
-    line_plot(simulation.solver_results_df,
-              simulation.x_variable['name'],
-              y_variables,
-              title,
-              simulation.x_variable['label'],
-              y_variable_axis, output_path)
-
-
-def plot_std_revenues(simulation: SimulationFinalizer):
-    # Divide the revenue standard deviation by the capacity
-    for participant in simulation.participants:
-        if participant != 'salto':
-            std_rev_col = f'revenue_{participant}_std'
-            std_rev_col_new = f'revenue_{participant}_std_per_mw'
-            capacity_col = f'{participant}_capacity'
-            simulation.solver_results_df[std_rev_col_new] = simulation.solver_results_df[std_rev_col] / capacities[capacity_col]
-
-    # Define the variables to plot
-    color_map = {'wind': '#2CA02C', 'solar': '#FFD600', 'salto': '#1F77B4', 'thermal': '#D62728'}
-    y_variables = {f'revenue_{participant}_std_per_mw': {
-        'label' : f'{participant}',
-        'color': color_map[participant]} for participant in simulation.participants
-    }     
-    y_variable_axis = 'Standard Deviation of Expected Profitts ($)'
-    title = 'Standard Deviation of Expected Profits ($)'
-    output_path = simulation.output_folder / 'std_profits.png'
-
-    line_plot(simulation.solver_results, x_variable['name'], y_variables, title, x_variable['label'], y_variable_axis, output_path)
-            
 
 ####################################################################################################
 # Formatting functions
@@ -299,3 +325,4 @@ def events_dataframes(conditional_means_df: pd.DataFrame) -> dict:
             )
     
     return events_data
+

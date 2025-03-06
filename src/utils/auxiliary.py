@@ -7,10 +7,7 @@ import re
 import os
 import glob
 import logging
-import subprocess
-import time
-
-
+from pathlib import Path
 
 #################################
 ### General utility functions ###
@@ -18,6 +15,11 @@ import time
 
 logger = logging.getLogger(__name__)
 
+def skip_if_exists(output_path: Path, overwrite: bool) -> bool:
+    if output_path.exists() and not overwrite:
+        logger.debug("Skipping existing file: %s", output_path)
+        return True
+    return False
 
 def make_name(float_list):
     """
