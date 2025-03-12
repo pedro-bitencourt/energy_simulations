@@ -19,6 +19,6 @@ simulation = SimulationFinalizer(simulation_folder,
                                  x_variable,
                                  endogenous_participants,
                                  costs_path,
-                                 overwrite = True)
+                                 overwrite = False)
 visualize(simulation)
 
