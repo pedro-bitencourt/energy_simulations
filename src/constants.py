@@ -51,11 +51,14 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 ################################################################################################
 
 # Base path is adjusted according whether we're in Quest or not
-if sys.platform in ["linux", "linux2"]:
-    BASE_PATH: Path = Path('/projects/p32342/')
-else:
-    BASE_PATH: Path = Path(
-        '/Users/pedrobitencourt/Projects/energy_simulations/')
+    #if sys.platform in ["linux", "linux2"]:
+    #    BASE_PATH: Path = Path('/projects/p32342/')
+    #else:
+    #    BASE_PATH: Path = Path(
+    #        '/Users/pedrobitencourt/Projects/energy_simulations/')
+
+BASE_PATH: Path = Path(__file__).resolve().parent.parent.parent
+
 
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
