@@ -62,7 +62,7 @@ class SimulationFinalizer:
             "value": file.stem.split('_')[-1],
             "path": file,
             "name": file.stem
-        } for file in run_files]
+        } for file in run_files if file.is_file()] 
         return exogenous_values
 
 
