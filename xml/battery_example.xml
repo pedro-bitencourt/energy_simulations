@@ -155,7 +155,7 @@
             <tipoDemanda>residual</tipoDemanda>
             <tipoResolucionValoresBellman>incrementos</tipoResolucionValoresBellman>
         </compsGlobales>
-        <rutaSalidas>D:\salidasModeloOp</rutaSalidas>
+		<rutaSalidas>/projects/p32342</rutaSalidas>
         <iteraciones>
             <maximoIteraciones>1</maximoIteraciones>
             <numeroIteraciones>1</numeroIteraciones>
@@ -194,7 +194,7 @@
             <sortIni>0</sortIni>
             <sortFin>1</sortFin>
         </salidaOpt>
-    </parametrosGenerales>
+	</parametrosGenerales>
     <procesosEstocasticos>
         <pEstocastico>
             <nombre>upm1iniBootstrap</nombre>
@@ -1885,8 +1885,8 @@
                         </compsGenerales>
                         <datosParticipante>
                             <nombre>bateria</nombre>
+							<propietario>UTE</propietario>
                             <barra>barraPrueba1</barra>
-							<proprietario>UTE</proprietario>
                             <cantModInst>
                                 <ev tipo="const">1</ev>
                             </cantModInst>

@@ -67,12 +67,12 @@ class Run:
         self.log_run()
 
     def capacities(self):
-        endogenous_participants: list[str] = self.general_parameters.get(
-            'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT
+        participants: list[str] = self.general_parameters.get(
+            'participants', PARTICIPANTS_DEFAULT
         )
         # Create a dictionary with the capacities
-        endogenous_capacities = {participant: self.variables[f"{participant}_capacity"]
-                      for participant in endogenous_participants}
+        capacities = {participant: self.variables[f"{participant}_capacity"]
+                      for participant in participants}
 
         return capacities
 
@@ -136,13 +136,13 @@ class Run:
             # Check if files exist
             missing_files = self.get_missing_files(self.paths['sim'], complete)
             if missing_files:
-                logger.debug(
+                logger.info(
                     "Run %s is missing files: %s", self.name, missing_files)
                 return False
         else:
-            logger.debug('No sim folder found for run %s in folder %s',
-                         self.name,
-                         self.paths['subfolder'])
+            logger.info('No sim folder found for run %s in folder %s',
+                        self.name,
+                        self.paths['subfolder'])
             return False
 
         return True
@@ -255,7 +255,7 @@ class Run:
         header = slurm_header(run_config, job_name, slurm_path)
 
         memory = run_config.get('memory', MEMORY_REQUESTED)
-        temp_folder_path = f"/tmp/pdm6134/{self.name}"
+        temp_folder_path = f"/projects/p32342/temp/{self.name}"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
         wine_path = self.general_parameters.get(
             'wine_path', '/projects/p32342/software/.wine')

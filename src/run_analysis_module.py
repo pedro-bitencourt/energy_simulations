@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 import numpy as np
 
 import pandas as pd
@@ -97,7 +97,7 @@ VARIABLES_TO_QUANTILE: list[str] = [
 def analyze_run(
     data: pd.DataFrame,
     run_name: str,
-    output_folder: Path | str,
+    output_folder: Union[Path, str],
     exogenous_variable_value: float,
     run_capacities: dict[str, float],
     fixed_cost_dict: dict[str, float],

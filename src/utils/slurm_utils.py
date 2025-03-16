@@ -23,7 +23,7 @@ def slurm_header(slurm_config: dict, job_name: str, slurm_path: Path) -> str:
         email_line = f"#SBATCH --mail-user={email}"
     else:
         email_line = ""
-    mail_type = slurm_config.get('mail-type', 'NONE')
+    mail_type = slurm_config.get('mail_type', 'NONE')
     if mail_type and email:
         mail_type_line = f"#SBATCH --mail-type={mail_type}"
     else:
