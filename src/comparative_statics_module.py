@@ -198,7 +198,8 @@ class ComparativeStatics:
         """
         for solver in self.solvers:
             run = solver.last_run()
-            logger.info("Redoing equilibrium run %s", run.name)
+            logger.info("Deleting and resubmitting run %s", run.name)
+            run.delete()
             run.submit(force=True)
 
     def clear_folders(self):

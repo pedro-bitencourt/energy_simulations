@@ -25,6 +25,14 @@ logger = logging.getLogger(__name__)
 MEMORY_REQUESTED = '5'  # GB
 PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
                               'thermal', 'salto']
+PARTICIPANT_TO_VARIABLE_KEY_DICT: dict = {
+    'wind': 'wind_capacity',
+    'solar': 'solar_capacity',
+    'thermal': 'thermal_capacity',
+    'salto': 'salto_capacity',
+    'battery': 'battery_factor'
+}
+
 PARTICIPANTS_ENDOGENOUS_DEFAULT: list = ['wind', 'solar', 'thermal']
 
 
@@ -71,9 +79,8 @@ class Run:
             'participants', PARTICIPANTS_DEFAULT
         )
         # Create a dictionary with the capacities
-        capacities = {participant: self.variables[f"{participant}_capacity"]
+        capacities = {participant: self.variables[PARTICIPANT_TO_VARIABLE_KEY_DICT[participant]]
                       for participant in participants}
-
         return capacities
 
     def log_run(self):
@@ -91,7 +98,7 @@ class Run:
             logger.debug(f"  {key}: {path}")
         logger.debug("=" * 40)
 
-    def tear_down(self) -> None:
+    def delete(self) -> None:
         """
         Deletes the folder and its contents.
         """
@@ -204,7 +211,7 @@ class Run:
 
         logger.warning("Warning: this will overwrite the folder %s",)
         # Tear down the folder
-        self.tear_down()
+        self.delete()
 
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
@@ -373,8 +380,6 @@ rm -r {temp_folder_path}
         if complete:
             # TODO : CHECK this part
             run_df = full_run_df(run_df, participants)
-            revenues_variables = [f'revenue_{participant}'
-                                  for participant in participants]
 
         logger.debug("profits_data for %s:", self.name)
         logger.debug(profits_dict)
