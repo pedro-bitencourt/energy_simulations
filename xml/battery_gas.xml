@@ -308,8 +308,8 @@
             <ev tipo="const">CoefEnergConstantes</ev>
           </compCoefEnergetico>
         </compsPorDefecto>
-        <listaAtributos>energias,potencias,cotaAguasArriba</listaAtributos>
-        <listaUtilizados>salto</listaUtilizados>
+        <listaAtributos>potencias,cotaAguasArriba</listaAtributos>
+        <listaUtilizados></listaUtilizados>
         <listaGHidraulico>
 			<gHidraulico>
 			  <compsGenerales>
@@ -497,7 +497,7 @@
       </hidraulicos>
       <eolicos>
 				<listaUtilizados>eoloDeci</listaUtilizados>
-				<listaAtributos>energias,potencias</listaAtributos>
+				<listaAtributos>potencias</listaAtributos>
 				<listaGEolico>
 					<gEolico>
 						<datosParticipante>
@@ -546,7 +546,7 @@
            <fotovoltaicos>
 				<listaUtilizados>solarDeci</listaUtilizados>
 				<!---->
-				<listaAtributos>energias,potencias</listaAtributos>
+				<listaAtributos>potencias</listaAtributos>
 				<listaGFotovoltaico>
 					<gFotovoltaico>
 						<datosParticipante>
@@ -595,22 +595,22 @@
             <centralesAcumulacion>
                 <compsPorDefecto>
                     <compPaso>
-                        <ev tipo="const">cierraPaso</ev>
+                        <ev tipo="const">balanceCronologico</ev>
                     </compPaso>
                 </compsPorDefecto>
-                <listaUtilizados>bateria</listaUtilizados>
-                <listaAtributos/>
+                <listaUtilizados>battery</listaUtilizados>
+				<listaAtributos>potencias</listaAtributos>
                 <listaCentralesAcumulacion>
                     <acumulador>
                         <compsGenerales>
                             <compPaso>
-                                <ev tipo="const">cierraPaso</ev>
+                                <ev tipo="const">balanceCronologico</ev>
                             </compPaso>
                         </compsGenerales>
                         <datosParticipante>
-                            <nombre>bateria</nombre>
+                            <nombre>battery</nombre>
+							<propietario>UTE</propietario>
                             <barra>barraPrueba1</barra>
-                            <propietario>UTE</propietario>
                             <cantModInst>
                                 <ev tipo="const">1</ev>
                             </cantModInst>
@@ -621,16 +621,16 @@
                                 <ev tipo="const">0.0</ev>
                             </potMin>
                             <potMax>
-                                <ev tipo="const">180.0</ev>
+								<ev tipo="const">${battery_factor*180.0}</ev>
                             </potMax>
                             <potAlmacMin>
                                 <ev tipo="const">0.0</ev>
                             </potAlmacMin>
                             <potAlmacMax>
-                                <ev tipo="const">180.0</ev>
+                                <ev tipo="const">${battery_factor*180.0}</ev>
                             </potAlmacMax>
                             <energAlmacMax>
-                                <ev tipo="const">900.0</ev>
+                                <ev tipo="const">${battery_factor*900.0}</ev>
                             </energAlmacMax>
                             <rendIny>
                                 <ev tipo="const">1.0</ev>
@@ -663,7 +663,7 @@
                             <hayPotObligatoria>
                                 <ev tipo="const">false</ev>
                             </hayPotObligatoria>
-                            <PotObligatoria>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</PotObligatoria>
+							<PotObligatoria>0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0</PotObligatoria>
                             <CostoFallaPObligatoria>
                                 <ev tipo="const">4000.0</ev>
                             </CostoFallaPObligatoria>
@@ -675,7 +675,7 @@
     <comercioEnergia>
       <impoExpos>
         <listaUtilizados>excedentes</listaUtilizados>
-        <listaAtributos>potencias,energias,costos</listaAtributos>
+        <listaAtributos>potencias,costos</listaAtributos>
         <listaImpoExpos>
           <impoExpo>
             <datosParticipante>
