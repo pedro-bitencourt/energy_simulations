@@ -67,16 +67,13 @@ class Run:
         self.log_run()
 
     def capacities(self):
-        participants: list[str] = self.general_parameters.get(
+        endogenous_participants: list[str] = self.general_parameters.get(
             'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT
         )
         # Create a dictionary with the capacities
-        capacities = {participant: self.variables[f"{participant}_capacity"]
-                      for participant in participants}
-        if 'salto_capacity' in self.variables.keys():
-            capacities['salto'] = self.variables['salto_capacity']
-        else:
-            capacities['salto'] = 810
+        endogenous_capacities = {participant: self.variables[f"{participant}_capacity"]
+                      for participant in endogenous_participants}
+
         return capacities
 
     def log_run(self):
@@ -324,7 +321,6 @@ rm -r {temp_folder_path}
     def full_run_df(self, run_df=None):
         if run_df is None:
             run_df = self.run_df(complete=True)
-        capacities = self.capacities()
         participants = self.general_parameters.get(
             'participants', PARTICIPANTS_DEFAULT)
         run_df = full_run_df(run_df, participants)
@@ -394,6 +390,7 @@ rm -r {temp_folder_path}
         """
         participants = self.general_parameters.get(
             'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT)
+
         try:
             profits_dict: dict = self.get_profits_dict(complete=complete)
         except FileNotFoundError as file_error:
@@ -403,6 +400,7 @@ rm -r {temp_folder_path}
             if resubmit:
                 self.submit(force=True)
             return {}
+
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
                               for participant in participants}
         return profits_dict

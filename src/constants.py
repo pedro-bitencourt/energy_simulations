@@ -1,7 +1,11 @@
-# Description: This file contains the constants used in the project.
-from pathlib import Path
-import sys
+"""
+Filename: constants.py
 
+This file contains constants such as Slurm default values, paths, and configurations for parsing 
+the raw data from MOP.
+"""
+
+from pathlib import Path
 from .utils.auxiliary import make_name
 
 ################################################################################################
@@ -50,16 +54,7 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 # PATHS
 ################################################################################################
 
-# Base path is adjusted according whether we're in Quest or not
-    #if sys.platform in ["linux", "linux2"]:
-    #    BASE_PATH: Path = Path('/projects/p32342/')
-    #else:
-    #    BASE_PATH: Path = Path(
-    #        '/Users/pedrobitencourt/Projects/energy_simulations/')
-
 BASE_PATH: Path = Path(__file__).resolve().parent.parent.parent
-
-
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths = {}
