@@ -164,10 +164,6 @@ class Run:
                           r'FOTOV_solarDeci/potencias*.xlt',
                           r'DEM_demand/potencias*.xlt'
                           ]
-        # Add hydro files if complete
-        if complete:
-            files_to_check.append(r'HID_salto/cota*.xlt')
-            files_to_check.append(r'HID_salto/potencias*.xlt')
 
         missing_files: list[str] = []
         # Check if files exist
@@ -204,16 +200,16 @@ class Run:
         """
         # Break if already successful
         if self.successful() and not force:
-            logger.info(f"Run {self.name} already successful, skipping.")
+            logger.info("Run %s already successful, skipping.", self.name)
             return None
 
         logger.info("Preparing to submit run %s", self.name)
 
-        logger.warning("Warning: this will overwrite the folder %s",)
-        # Tear down the folder
+        logger.warning("Warning: this will overwrite the folder %s",
+                       self.paths['folder'])
         self.delete()
 
-        # Create the directory
+        # Create folder for the run
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
         # Create the xml file
@@ -231,11 +227,8 @@ class Run:
         job_id = submit_slurm_job(bash_path, job_name=self.name)
 
         # Check if the job was submitted successfully
-        if job_id:
-            logger.info(
-                f"Successfully submitted run {self.name} with jobid {job_id}")
-            return job_id
-        logger.error(f"Some error occurred while submitting run {self.name}")
+        logger.info(
+            f"Successfully submitted run {self.name} with jobid {job_id}")
         return job_id
 
     ##############################

@@ -659,7 +659,7 @@
                             <costoVariable>
                                 <ev tipo="const">0.0</ev>
                             </costoVariable>
-                            <salidaDetallada>false</salidaDetallada>
+                            <salidaDetallada>true</salidaDetallada>
                             <hayPotObligatoria>
                                 <ev tipo="const">false</ev>
                             </hayPotObligatoria>

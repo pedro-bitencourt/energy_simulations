@@ -12,13 +12,15 @@ name: str = 'battery_gas'
 xml_basefile: str = '/projects/p32342/code/xml/battery_gas.xml'
 costs_path: str = '/projects/p32342/code/cost_data/gas.json'
 
+participants: list[str] = ['wind', 'solar', 'thermal', 'battery']
+
 general_parameters: dict = {
     'daily': True,
     'xml_basefile': xml_basefile,
     'cost_path': costs_path,
     'annual_interest_rate': 0.0,
     'email': 'pedro.bitencourt@u.northwestern.edu',
-    'slurm': {'run': {'time': 0.75, 'mailtype': 'FAIL'}}
+    'slurm': {'run': {'time': 1.2, 'mailtype': 'FAIL'}}
 }
 
 exog_grid: list[float] = [1, 2, 5, 10, 25, 50]
@@ -49,5 +51,6 @@ comparative_statics = ComparativeStatics(
 # comparative_statics.prototype()
 # comparative_statics.submit_solvers()
 # Submit the processing job
-#comparative_statics.submit_processing()
+comparative_statics.submit_processing()
+#comparative_statics.redo_runs()
 comparative_statics.process()

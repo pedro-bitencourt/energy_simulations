@@ -45,10 +45,10 @@ from .solver_module import Solver
 from .run_module import Run
 from .data_analysis_module import conditional_means
 from .constants import (BASE_PATH,
-    SOLVER_SLURM_DEFAULT_CONFIG,
-    PROCESSING_SLURM_DEFAULT_CONFIG,
-    RUN_SLURM_DEFAULT_CONFIG,
-    initialize_paths_comparative_statics)
+                        SOLVER_SLURM_DEFAULT_CONFIG,
+                        PROCESSING_SLURM_DEFAULT_CONFIG,
+                        RUN_SLURM_DEFAULT_CONFIG,
+                        initialize_paths_comparative_statics)
 from .utils.load_configs import load_config
 
 # Get logger for current module
@@ -190,17 +190,20 @@ class ComparativeStatics:
         investment_problem_0: Solver = self.solvers[0]
         investment_problem_0.prototype()
 
-    def redo_runs(self):
+    def redo_runs(self, delete: bool = False):
         """
         Deletes and runs again the equilibrium runs.
 
-        WARNING: This method will delete the results of the runs.
+        WARNING: This method will delete the run folders if 
+        delete = True.
         """
         for solver in self.solvers:
             run = solver.last_run()
-            logger.info("Deleting and resubmitting run %s", run.name)
-            run.delete()
-            run.submit(force=True)
+            logger.info("Resubmitting run %s", run.name)
+            if delete:
+                logger.info("Deleting run %s", run.name)
+                run.delete()
+            run.submit()
 
     def clear_folders(self):
         for solver in self.solvers:
@@ -293,7 +296,7 @@ END
             results_function=conditional_means)
         conditional_means_df.to_csv(
             self.paths['conditional_means'], index=False)
-        
+
 
 def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool = False) -> None:
     logger.info("Extracting data from MOP's outputs...")
