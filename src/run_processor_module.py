@@ -43,6 +43,7 @@ PARTICIPANTS_DICT: Dict[str, Dict[str, str]] = {
     "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
     "demand": {"folder": "DEM_demand", "type": "demand"},
     "salto": {"folder": "HID_salto", "type": "hydro"},
+    "battery": {"folder": "ACUM_battery", "type": "battery"},
     # FIX
     "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
 }

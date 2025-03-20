@@ -12,7 +12,7 @@ name: str = 'battery_gas'
 xml_basefile: str = '/projects/p32342/code/xml/battery_gas.xml'
 costs_path: str = '/projects/p32342/code/cost_data/gas.json'
 
-participants: list[str] = ['wind', 'solar', 'thermal', 'battery']
+participants: list[str] = ['wind', 'solar', 'thermal']
 
 general_parameters: dict = {
     'daily': True,
@@ -20,7 +20,8 @@ general_parameters: dict = {
     'cost_path': costs_path,
     'annual_interest_rate': 0.0,
     'email': 'pedro.bitencourt@u.northwestern.edu',
-    'slurm': {'run': {'time': 1.2, 'mailtype': 'FAIL'}}
+    'slurm': {'run': {'time': 1.2, 'mailtype': 'FAIL'}},
+    'participants': participants
 }
 
 exog_grid: list[float] = [1, 2, 5, 10, 25, 50]
