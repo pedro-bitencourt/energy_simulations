@@ -60,7 +60,30 @@ def load_yaml_config()-> Dict[str, Any]:
         config = yaml.safe_load(file)
     return config
 
-def load_plot_configs() -> Dict[str, Dict[str, Any]]:
+def load_events_config(participants: List[str]) -> Dict[str, Dict[str, str]]:
+    config = load_yaml_config()
+    events_dict: Dict[str, Dict[str, Any]] = config['events']
+    if 'hydro' not in participants:
+        result = remove_hydro_events(events_dict)
+    else:
+        result = events_dict
+    return result
+
+def remove_hydro_events(events_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """
+    Remove events whose name contains 'hydro' or 'water' (case-insensitive) from the events_dict.
+    """
+    keywords = ["hydro", "water"]
+    new_events_dict = {}
+
+    for event_name, event_config in events_dict.items():
+        if any(keyword in event_name for keyword in keywords):
+            continue  # Skip events with 'hydro' or 'water' in the name.
+        new_events_dict[event_name] = event_config
+    return new_events_dict
+
+
+def load_plot_configs(participants: List[str]) -> Dict[str, Dict[str, Any]]:
     config = load_yaml_config()
     comparisons_dict: Dict[str, list[Dict[str, Any]]] = config['comparisons']
     events_dict: Dict[str, Dict[str, Any]] = config['events']
@@ -97,8 +120,36 @@ def load_plot_configs() -> Dict[str, Dict[str, Any]]:
                 comparison_item, plot_item)
             comparison_plots.update(new_config)
     new_plot_configs = {**plots_config['general'], **comparison_plots}
-    return new_plot_configs
 
+    if 'hydro' not in participants:
+        result = remove_plots_with_hydro(new_plot_configs)
+    else:
+        result = new_plot_configs
+    return result
+
+def remove_plots_with_hydro(plot_configs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """
+    Remove plots whose title contains 'hydro' or 'water' (case-insensitive) and remove 
+    any variables from remaining plots whose 'name' contains those keywords.
+    
+    The 'participant' parameter is not used in this filtering logic.
+    """
+    keywords = ["hydro", "water"]
+    new_plot_configs = {}
+
+    for plot_key, config in plot_configs.items():
+        if any(keyword in plot_key for keyword in keywords):
+            continue  # Skip plots with 'hydro' or 'water' in the title.
+
+        filtered_variables = []
+        for var in config["variables"]:
+            if any(keyword in var['name'] for keyword in keywords):
+                continue
+            filtered_variables.append(var)
+        config["variables"] = filtered_variables
+        
+        new_plot_configs[plot_key] = config
+    return new_plot_configs
 
 
 def adjust_lightness(color, amount=1.0):

@@ -1,8 +1,27 @@
+"""
+This module implements functions designed to analyze the results from a ComparativeStatics 
+exercise. Typically, they will take as arguments:
+- run_df: a pandas dataframe containing all the data extracted 
+from MOP, with rows being an hour x scenario.
+    Columns are: datetime, scenario, production_{p}, variable_costs_{p}, 
+    demand, water_level (if hydro is present), for p in participants 
+- capacities: a dictionary containing data created by the solver, 
+such as optimal capacities, and the values for the exogenous variable. 
+- costs: a dictionary containing data on the cost parameters used in the exercise.
+- participants: a list of participant names.
+
+The main function of the module is full_run_analysis, which orchestrates the work flow 
+to compute all the results. Currently, the results are organized in: 
+    - variable means
+    - variable conditional means
+    - standard deviations (over scenarios)
+    - derived results (computed using other results as inputs)
+"""
+
 from typing import Tuple, Dict, Any, List, Callable
 import pandas as pd
 import logging
 import math
-import time
 
 from .utils.auxiliary import log_exceptions
 
@@ -80,6 +99,9 @@ def variables_to_create_function(participants: List[str], costs: Dict[str, Any],
         "price_4000 = (marginal_cost >= 4000)",
         f"price_mc_thermal = (marginal_cost > {costs['marginal_cost_thermal']} - 1) & (marginal_cost < {costs['marginal_cost_thermal']} + 1)",
         f"price_mc_thermal_4000 = ((marginal_cost > {costs['marginal_cost_thermal']})  & (marginal_cost < 4000))",
+    ]
+    if "hydro" in participants:
+        other_variables.extend([
         # Marginal source variables
         "hydro_marginal = (active_hydro & ~active_thermal) | (active_hydro & price_mc_thermal_4000)",
         "thermal_marginal = (~active_hydro & active_thermal) | (active_thermal & price_mc_thermal)",
@@ -87,7 +109,7 @@ def variables_to_create_function(participants: List[str], costs: Dict[str, Any],
         # Water level variables
         "water_level_31 = (water_level_salto < 31)",
         "water_level_33 = (water_level_salto < 33)",
-    ]
+        ])
 
     # Derived variables
     derived_variables: List[str] = [

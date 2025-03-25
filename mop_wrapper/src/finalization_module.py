@@ -1,3 +1,18 @@
+"""
+This module contains functions to process and plot the data extracted from MOP.
+
+The main object is the SimulationData class, which stores all the relevant data produced by 
+the ComparativeStatics class. It contains the name of the simulation, the run data, the 
+participants, the x variable, and the cost parameters. 
+
+The main functions are: 
+- build_simulation_data: Construct a SimulationData instance by reading all CSV files in runs_folder.
+- default_analysis: Perform the default analysis on the simulation data (that is, using the 
+configurations specified in the config.yaml file and in the run_analysis_module).
+- plot_results: Plot the results of the simulation.
+- plot_densities: Plot the densities of selected variables.
+"""
+
 from typing import Iterator, Tuple, Dict, Any, List, Callable
 from pathlib import Path
 from dataclasses import dataclass
@@ -11,7 +26,7 @@ from .utils.auxiliary import log_exceptions, log_execution_time
 from .constants import BASE_PATH
 from .run_analysis_module import full_run_analysis
 from .plotting_module import line_plot
-from .utils.load_configs import load_plot_configs, load_costs, load_yaml_config
+from .utils.load_configs import load_plot_configs, load_costs, load_events_config
 from .utils.statistics_utils import plot_densities_run
 
 
@@ -37,6 +52,7 @@ class SimulationData:
           and additional information (e.g., capacities).
         - participants: a list of the participants in the simulation.
         - x_variable: a dictionary containing the name and label of the x variable.
+        - cost_parameters: a dictionary containing the cost parameters used in the simulation.
     """
     name: str
     run_data: Iterator[RunData]
@@ -105,6 +121,10 @@ def build_simulation_data(sim_name: str,
 
 
 def compute_results(run_data_iterator: Iterator[RunData], run_analysis_function: RunAnalysisFunction) -> pd.DataFrame:
+    """
+    Broadcast the input run_analysis_function over all the runs in the run_data_iterator, and 
+    returns the results as a DataFrame with each row corresponding to a run.
+    """
     @log_execution_time
     def wrapper_analysis_function(run_data: RunData) -> Dict[str, Any]:
         _, capacities = run_data
@@ -118,7 +138,7 @@ def default_analysis(simulation_data: SimulationData) -> pd.DataFrame:
     """
     Perform the default analysis on the simulation data.
     """
-    events_config: Dict[str, Dict[str, str]] = load_yaml_config()['events']
+    events_config: Dict[str, Dict[str, str]] = load_events_config(simulation_data.participants)
     run_analysis_function: RunAnalysisFunction = partial(full_run_analysis, 
                                                         participants=simulation_data.participants,
                                                         costs=simulation_data.cost_parameters,
@@ -128,7 +148,11 @@ def default_analysis(simulation_data: SimulationData) -> pd.DataFrame:
 
 def plot_results(simulation_data: SimulationData,
                  simulation_results: pd.DataFrame):
-    plot_configs: Dict[str, Dict[str, Any]] = load_plot_configs()
+    """
+    Plots the results of the simulation as configured in the config.yaml file, using 
+    the participants and x_variable attributes of the SimulationData instance.
+    """
+    plot_configs: Dict[str, Dict[str, Any]] = load_plot_configs(simulation_data.participants)
     x_variable: Dict[str, Any] = simulation_data.x_variable
     output_folder: Path = BASE_PATH / 'figures' / simulation_data.name
 
@@ -150,6 +174,9 @@ def plot_results(simulation_data: SimulationData,
 
 
 def plot_densities(simulation_data: SimulationData, overwrite: bool = False) -> None:
+    """
+    Plot the densities of selected variables as configured in the DENSITY_PLOTS list.
+    """
     def wrapper_plot_densities(run_data: RunData):
         run_df, capacities = run_data
         run_name: str = capacities['run_name']
