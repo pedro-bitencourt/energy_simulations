@@ -78,7 +78,7 @@ which takes arguments:
 - `participants` [List[str]]: the list of participants in the exercise
 - `x_variable` [Dict[str, str]]: a dictionary with the keys `name` and `label`, indicating the name of the exogenous variable and its label for plotting
 - `costs_path` [Path]: the path to the cost data file
-- `pre_processing_function` [Callable]: a function that takes the raw data and capacities and returns a processed DataFrame and capacities dictionary
+- `pre_processing_function` [Callable]: a function that takes the raw data and capacities and returns a processed DataFrame and capacities dictionary. Is useful for renaming variables, creating new ones, or any potential ad-hoc changes needed before processing and plotting.
 
 ### Running a New Exercise
 To set up a comparative statics exercise, follow these steps:
