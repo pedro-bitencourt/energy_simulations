@@ -20,7 +20,7 @@ The code in this repository allows the user to perform comparative statics exerc
 
 ## Usage Guide
 
-### Processing and visualization for a finished exercise
+### Processing a finished exercise
 After successfully running an exercise to convergence on Quest, you can process and graph the results 
 using the `finalization_module` module and the `run_analysis_module` module.
 All the plots are configured in the `config.yaml` file.
