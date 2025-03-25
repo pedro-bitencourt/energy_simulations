@@ -72,11 +72,12 @@ This script will process the raw data from the exercise and generate a series of
 The main object is the `SimulationData` object, which contains all the necessary information for processing and plotting the results. 
 To build an instance of it, you should use the `build_simulation_data` function, 
 which takes arguments:
-    - `name` [str]: the name of the exercise
-    - `participants` [List[str]]: the list of participants in the exercise
-    - `x_variable` [Dict[str, str]]: a dictionary with the keys `name` and `label`, indicating the name of the exogenous variable and its label for plotting
-    - `costs_path` [Path]: the path to the cost data file
-    - `pre_processing_function` [Callable]: a function that takes the raw data and capacities and returns a processed DataFrame and capacities dictionary
+
+- `name` [str]: the name of the exercises
+- `participants` [List[str]]: the list of participants in the exercise
+- `x_variable` [Dict[str, str]]: a dictionary with the keys `name` and `label`, indicating the name of the exogenous variable and its label for plotting
+- `costs_path` [Path]: the path to the cost data file
+- `pre_processing_function` [Callable]: a function that takes the raw data and capacities and returns a processed DataFrame and capacities dictionary
 
 ### Running a New Exercise
 To set up a comparative statics exercise, follow these steps:
@@ -159,26 +160,26 @@ comparative_statics.process()
 This script can then be run on the cluster by simply using the command `python expensive_blackout.py`.
 
 The script requires several parameters:
-        - name [str]: name for the exercise, will be used for creating folders and files.
-        - `general_parameters` [dict]: a dictionary containing:
-            - **email** (`str`): Email to receive notifications
-            - **xml_basefile** (`str`): Path to the template XML file
-            - **daily** (`bool`): Indicates if runs are daily (`True`) or weekly (`False`)
-            - **annual_interest_rate** (`float`): Annual interest rate for investment problems
-            - **slurm** (`dict`, optional): Dictionary containing options for SLURM
-              - **run** (`dict`, optional): Options for run jobs
-              - **solver** (`dict`, optional): Options for solver Jobs
-              - **processing** (`dict`, optional): Options for processing job
-                 with each of them having keys
-                 - `mail-type` (`str`)
-                 - `time` (`float`)
-                 - `memory` (`int`)
-            - **solver** (`dict`, optional): dictionary containing options for the solver
-        - variables [dict]: a dictionary containing:
-            - **endogenous** [dict]: dictionary of endogenous variables. Entries are 
-                    variable name : dictionary with key `initial_guess`, which is the initial guess for the solver.
-            - **exogenous** [dict]: dictionary of exogenous variables. Entries are 
-                    variable name : dictionary with key `grid`, which is the list of values for the exogenous variable.
+- name [str]: name for the exercise, will be used for creating folders and files.
+- `general_parameters` [dict]: a dictionary containing:
+    - **email** (`str`): Email to receive notifications
+    - **xml_basefile** (`str`): Path to the template XML file
+    - **daily** (`bool`): Indicates if runs are daily (`True`) or weekly (`False`)
+    - **annual_interest_rate** (`float`): Annual interest rate for investment problems
+    - **slurm** (`dict`, optional): Dictionary containing options for SLURM
+      - **run** (`dict`, optional): Options for run jobs
+      - **solver** (`dict`, optional): Options for solver Jobs
+      - **processing** (`dict`, optional): Options for processing job
+         with each of them having keys
+         - `mail-type` (`str`)
+         - `time` (`float`)
+         - `memory` (`int`)
+    - **solver** (`dict`, optional): dictionary containing options for the solver
+- variables [dict]: a dictionary containing:
+    - **endogenous** [dict]: dictionary of endogenous variables. Entries are 
+            variable name : dictionary with key `initial_guess`, which is the initial guess for the solver.
+    - **exogenous** [dict]: dictionary of exogenous variables. Entries are 
+            variable name : dictionary with key `grid`, which is the list of values for the exogenous variable.
 
 
 ### The zero-profit solver
