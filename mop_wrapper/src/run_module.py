@@ -8,17 +8,15 @@ Description: this file implements the Run class and related methods.
 import os
 import re
 import sys
-import shutil
 from pathlib import Path
 import logging
 import subprocess
-import json
 import pandas as pd
 
-from .utils.auxiliary import try_get_file
+from .utils.auxiliary import try_get_file, delete_folder
 from .utils.slurm_utils import slurm_header, submit_slurm_job, wait_for_jobs
-from .constants import RUN_SLURM_DEFAULT_CONFIG, initialize_paths_run, create_run_name
-from .data_analysis_module import profits_per_participant, full_run_df
+from .constants import initialize_paths_run, create_run_name
+from .data_analysis_module import profits_per_participant
 
 logger = logging.getLogger(__name__)
 
@@ -99,16 +97,7 @@ class Run:
         logger.debug("=" * 40)
 
     def delete(self) -> None:
-        """
-        Deletes the folder and its contents.
-        """
-        if self.paths['folder'].exists():
-            logger.info("Deleting folder %s...", self.paths['folder'])
-            try:
-                shutil.rmtree(self.paths['folder'])
-            except FileNotFoundError:
-                logger.warning("Could not delete folder properly")
-            logger.info("Deleted folder %s", self.paths['folder'])
+        delete_folder(self.paths['folder'])
 
     def _get_opt_and_sim_folders(self):
         '''
@@ -155,7 +144,7 @@ class Run:
         return True
 
     @staticmethod
-    def get_missing_files(sim_path: Path, complete: bool = False):
+    def get_missing_files(sim_path: Path):
         """
         Check if the run is missing files.
         """
@@ -175,17 +164,20 @@ class Run:
                              sim_path, file_name)
         return missing_files
 
-    def prototype(self):
-        # Create the directory
-        self.paths['folder'].mkdir(parents=True, exist_ok=True)
-
-        xml_path: Path = self.create_xml(
+    def create_xml(self):
+        xml_path: Path = create_xml_function(
             template_path=self.general_parameters['xml_basefile'],
             name=self.name,
             folder=self.paths['folder'],
             variables=self.variables,
-            marginal_cost=self.general_parameters['marginal_cost_dictionary']
+            cost_parameters=self.general_parameters['cost_parameters']
         )
+        return xml_path
+
+    def prototype(self):
+        # Create the directory
+        self.paths['folder'].mkdir(parents=True, exist_ok=True)
+
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
 
@@ -213,13 +205,7 @@ class Run:
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
         # Create the xml file
-        xml_path: Path = self.create_xml(
-            template_path=self.general_parameters['xml_basefile'],
-            name=self.name,
-            folder=self.paths['folder'],
-            variables=self.variables,
-            marginal_cost=self.general_parameters['marginal_cost_dictionary']
-        )
+        xml_path: Path = self.create_xml()
         # Create the bash file
         bash_path: Path = self._create_bash(xml_path)
 
@@ -242,17 +228,13 @@ class Run:
         xml_path = xml_path.replace(os.path.sep, '\\')
         job_name = f"{self.parent_name}_{self.name}"
 
-        slurm_config: dict = self.general_parameters.get("slurm", {})
-        run_config = slurm_config.get("run", RUN_SLURM_DEFAULT_CONFIG)
-        run_config = {
-            key: run_config.get(key, value)
-            for key, value in RUN_SLURM_DEFAULT_CONFIG.items()
-        }
-        run_config['email'] = self.general_parameters.get(
-            'email', None)
-
         slurm_path = self.paths['folder']
-        header = slurm_header(run_config, job_name, slurm_path)
+        
+        header = slurm_header(slurm_configs=self.general_parameters['slurm'],
+                              job_type='run',
+                              job_name=job_name,
+                              slurm_path=slurm_path,
+                              email=self.general_parameters.get('email'))
 
         memory = run_config.get('memory', MEMORY_REQUESTED)
         temp_folder_path = f"/projects/p32342/temp/{self.name}"
@@ -276,36 +258,6 @@ rm -r {temp_folder_path}
 
     ##############################
     # xml creating methods
-    @staticmethod
-    def create_xml(template_path: Path, name: str, folder: Path, variables: dict,
-                   marginal_cost: dict) -> Path:
-        """Creates a .xml file from template with variable substitution."""
-        output_path = folder / f"{name}.xml"
-        marginal_cost_variables = {
-            f'marginal_cost_{participant}': marginal_cost[participant]
-            for participant in marginal_cost.keys()
-        }
-        # Add folder path to variables for substitution
-        variables = {**variables,
-                     'output_folder': str(folder).replace('\\', '\\\\'),
-                     **marginal_cost_variables}
-
-        # Read template
-        with open(template_path, 'r') as f:
-            content = f.read()
-
-        def replace_expr(match):
-            # Replaces a ${expression} in the template by its values, using
-            # the input from self.variables
-            expr = match.group(1)
-            return str(eval(expr, {}, variables))
-
-        content = re.sub(r'\${([^}]+)}', replace_expr, content)
-        # Write output
-        with open(output_path, 'w') as f:
-            f.write(content)
-        return output_path
-
     ##############################
     # Processing methods
     def run_df(self, complete: bool = False):
@@ -318,68 +270,8 @@ rm -r {temp_folder_path}
             complete=complete)
         return run_df
 
-    def full_run_df(self, run_df=None):
-        if run_df is None:
-            run_df = self.run_df(complete=True)
-        participants = self.general_parameters.get(
-            'participants', PARTICIPANTS_DEFAULT)
-        run_df = full_run_df(run_df, participants)
-        return run_df
-
-    def results(self, results_fun, run_df_path=None, complete=True):
-        """
-        Computes results according to 'results_fun' on the run_df.
-        Args:
-            - results_fun: should be a function that takes full_run_df and the
-            capacities dictionary as input and outputs a dictionary.
-            - run_df_path: (optional) should be the path to the run_df.
-            - complete: (optional) should describe if the full run_df is needed.
-        """
-        if run_df_path is not None:
-            run_df: pd.DataFrame = pd.read_csv(run_df_path)
-            run_df = self.full_run_df(run_df)
-            if complete:
-                run_df: pd.DataFrame = self.full_run_df(run_df)
-        else:
-            run_df: pd.DataFrame = self.run_df(complete=complete)
-
-        capacities = self.capacities()
-        results_dict: dict = results_fun(run_df, capacities)
-        results_dict['name'] = self.name
-        results_dict.update(self.variables)
-        return results_dict
-
     # Refactor
-    def get_profits_dict(self, complete: bool = False, run_df_path=None):
-        """
-        To do: refactor this so it uses the results() method.
-        """
-        participants = self.general_parameters.get(
-            'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT)
-
-        if run_df_path is not None:
-            run_df: pd.DataFrame = pd.read_csv(run_df_path)
-        else:
-            run_df = self.run_df(complete=complete)
-        capacities = self.capacities()
-
-        profits_dict: dict = profits_per_participant(
-            run_df, capacities, self.general_parameters['fixed_cost_dictionary'])
-
-        # Save to disk using json
-        self.paths['folder'].joinpath(
-            'profits_data.json').write_text(json.dumps(profits_dict))
-
-        if complete:
-            # TODO : CHECK this part
-            run_df = full_run_df(run_df, participants)
-
-        logger.debug("profits_data for %s:", self.name)
-        logger.debug(profits_dict)
-        return profits_dict
-
-    # Refactor
-    def get_profits(self, complete: bool = False, resubmit: bool = False):
+    def get_profits(self):
         """
         Computes profits for the specified endogenous variables.
 
@@ -389,15 +281,10 @@ rm -r {temp_folder_path}
         participants = self.general_parameters.get(
             'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT)
 
-        try:
-            profits_dict: dict = self.get_profits_dict(complete=complete)
-        except FileNotFoundError as file_error:
-            logger.error(
-                "Run %s not successful, resubmitting and returning empty dict", self.name)
-            logger.error("File error: %s", file_error)
-            if resubmit:
-                self.submit(force=True)
-            return {}
+        run_df: pd.DataFrame = self.run_df()
+        capacities = self.capacities()
+        profits_dict: dict = profits_per_participant(
+            run_df, capacities, self.general_parameters['fixed_cost_dictionary'])
 
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
                               for participant in participants}
@@ -437,3 +324,30 @@ def submit_and_wait_for_runs(runs_dict: dict[str, Run],
         logger.critical(
             "Could not successfully finish all runs after %s attempts", max_attempts)
         sys.exit()
+
+def create_xml_function(template_path: Path, name: str, folder: Path, variables: dict,
+               cost_parameters: dict) -> Path:
+    """Creates a .xml file from template with variable substitution."""
+    output_path = folder / f"{name}.xml"
+
+    # Add folder path to variables for substitution
+    variables = {**variables,
+                 'output_folder': str(folder).replace('\\', '\\\\'),
+                 **cost_parameters}
+
+    # Read template
+    with open(template_path, 'r') as f:
+        content = f.read()
+
+    def replace_expr(match):
+        # Replaces a ${expression} in the template by its values, using
+        # the input from self.variables
+        expr = match.group(1)
+        return str(eval(expr, {}, variables))
+
+    content = re.sub(r'\${([^}]+)}', replace_expr, content)
+    # Write output
+    with open(output_path, 'w') as f:
+        f.write(content)
+    return output_path
+

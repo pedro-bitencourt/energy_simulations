@@ -10,29 +10,12 @@ from .utils.auxiliary import make_name
 
 ################################################################################################
 # SLURM DEFAULT CONFIGURATIONS
-RUN_SLURM_DEFAULT_CONFIG = {
-    'time': 0.8,
-    'memory': 5,
-    'email': None,
-    'mail-type': 'NONE'
-}
-SOLVER_SLURM_DEFAULT_CONFIG = {
-    'time': 12,
-    'memory': 5,
-    'email': None,
-    'mail-type': 'END,FAIL'
-}
-PROCESSING_SLURM_DEFAULT_CONFIG = {
-    'time': 5,
-    'memory': 5,
-    'email': None,
-    'mail-type': 'END,FAIL'
-}
+# Moved to slurm_utils.py
 
 ################################################################################################
 # NAME FUNCTIONS
 ################################################################################################
-def create_run_name(variables: dict):
+def create_run_name(variables: dict) -> str:
     # Order the variables alphabetically
     variables: dict = dict(sorted(variables.items()))
     # Extract the values directly, assuming they are floats
@@ -42,7 +25,7 @@ def create_run_name(variables: dict):
     return name
 
 
-def create_investment_name(parent_name: str, exogenous_variables: dict):
+def create_solver_name(parent_name: str, exogenous_variables: dict) -> str:
     exog_var_values: list[float] = [variable['value'] for variable in
                                     exogenous_variables.values()]
     name: str = make_name(exog_var_values)
@@ -54,7 +37,8 @@ def create_investment_name(parent_name: str, exogenous_variables: dict):
 # PATHS
 ################################################################################################
 
-BASE_PATH: Path = Path(__file__).resolve().parent.parent.parent
+BASE_PATH: Path = Path(__file__).resolve().parent.parent.parent.parent
+CONFIG_PATH: Path = BASE_PATH / 'code/config/config.yaml'
 
 def initialize_paths_comparative_statics(base_path: str, name: str) -> dict:
     paths = {}

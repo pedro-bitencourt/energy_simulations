@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 
-
 from ..comparative_statics_module import ComparativeStatics
 
 from ..logging_config import setup_logging

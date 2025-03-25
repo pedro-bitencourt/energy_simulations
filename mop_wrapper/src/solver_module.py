@@ -22,7 +22,7 @@ from .optimization_module import (Iteration,
                                   derivatives_from_profits,
                                   get_last_successful_iteration)
 from .utils.slurm_utils import submit_slurm_job, slurm_header
-from .constants import SOLVER_SLURM_DEFAULT_CONFIG, initialize_paths_solver, create_investment_name
+from .constants import initialize_paths_solver, create_solver_name
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class Solver:
         self.general_parameters: dict = general_parameters
 
         parent_name: str = parent_folder.name
-        self.name: str = create_investment_name(
+        self.name: str = create_solver_name(
             parent_name, exogenous_variable)
         self.paths: dict[str, Path] = initialize_paths_solver(
             parent_folder, self.name)
@@ -173,9 +173,7 @@ class Solver:
                 logger.info(
                     'Convergence reached. Current iteration %s', current_iteration)
 
-                solver_results_dict = self.solver_results()
-                json.dump(solver_results_dict, open(
-                    self.paths['solver_results'], 'w'), indent=4)
+                self.save_solver_results()
                 return
 
             # Compute the new investment
@@ -187,7 +185,7 @@ class Solver:
             self._save_trajectory()
 
             # Clear the runs folders, except for the current run
-            self.clear_runs_folders(current_iteration.capacities)
+            self.clear_runs_folders()
 
             # Update the current iteration loop variable
             current_iteration: Iteration = new_iteration
@@ -197,29 +195,20 @@ class Solver:
 
         # save results
         self._save_trajectory()
-        solver_results_dict = self.solver_results()
-        json.dump(solver_results_dict, open(
-            self.paths['solver_results'], 'w'), indent=4)
+        self.save_solver_results()
         return
 
-    def clear_runs_folders(self, capacities=None, force=False):
-        """
-        Deletes all the directories in self.paths['folder']
-        """
-        if capacities is None:
-            current_iteration = get_last_successful_iteration(
-                self.solver_trajectory)
-            capacities = current_iteration.capacities
-        perturbed_runs_dict: dict[str, Run] = self.perturbed_runs(
-            capacities)
-        if force:
-            perturbed_runs_names = [perturbed_runs_dict['current'].name]
-        else:
-            perturbed_runs_names = [
-                run.name for run in perturbed_runs_dict.values()]
+    def save_solver_results(self):
+        json.dump(self.solver_results(), open(
+            self.paths['solver_results'], 'w'), indent=4)
+
+    def last_capacities(self):
+        return get_last_successful_iteration(self.solver_trajectory).capacities
+
+    def clear_runs_folders(self):
+        last_run: Run = self.last_run()
         for directory in self.paths['folder'].iterdir():
-            # Check if the directory is in the perturbed runs names
-            if directory.is_dir() and directory.name not in perturbed_runs_names:
+            if directory.is_dir() and directory != last_run.folder:
                 logger.info("Deleting directory %s", directory)
                 try:
                     shutil.rmtree(directory)
@@ -227,6 +216,14 @@ class Solver:
                 except OSError:
                     logger.warning("Could not delete directory %s",
                                    directory)
+
+    def redo_run(self, delete: bool = False):
+        run = self.last_run()
+        logger.info("Resubmitting run %s", run.name)
+        if delete:
+            logger.info("Deleting run %s", run.name)
+            run.delete()
+            run.submit()
 
     def perturbed_runs(self, capacities: dict) -> dict[str, Run]:
         # Create a dict of the perturbed runs to compute the derivatives
@@ -267,7 +264,7 @@ class Solver:
             profits_perturb, self.solver_options['delta'], list(self.endogenous_variables.keys()))
         return profits_perturb['current'], derivatives
 
-    def solver_results(self, resubmit: bool = False, complete: bool = True) -> dict:
+    def solver_results(self, resubmit: bool = False) -> dict:
         """
         Returns the results of the solver for the last iteration.
 
@@ -303,7 +300,6 @@ class Solver:
             return header
 
         solver_results: dict = create_header(last_iteration)
-        # solver_results.update(self.last_run().get_profits(complete=complete))
         solver_results['convergence_reached'] = convergence_reached
 
         return solver_results
@@ -328,31 +324,28 @@ class Solver:
         job_id = submit_slurm_job(script_path, job_name=self.name)
         return job_id
 
-    def _create_bash(self):
-        # Convert the investment data to JSON to input in the bash script
+    def serialize(self):
         investment_data = {
             "parent_folder": str(self.paths['parent_folder']),
             "exogenous_variable": self.exogenous_variable,
             "endogenous_variables": self.endogenous_variables,
             "general_parameters": self.general_parameters
         }
-        investment_data_str = json.dumps(investment_data)
-        slurm_path = self.paths['bash'].parent
+        return json.dumps(investment_data)
 
-        # Retrieve configurations
-        slurm_config: dict = self.general_parameters.get("slurm",
-                                                         {})
-        solver_config = slurm_config.get(
-            'solver', SOLVER_SLURM_DEFAULT_CONFIG)
-        logging_level: str = slurm_config.get(
+    def _create_bash(self):
+        investment_data_str = self.serialize()
+
+        header = slurm_header(
+            slurm_configs=self.general_parameters['slurm'], 
+            job_name=self.name,
+            job_type="solver",
+            slurm_path=self.paths['bash'],
+            email=self.general_parameters['slurm'].get('email')
+        )
+
+        logging_level: str = self.general_parameters.get(
             'log_level', 'INFO')
-        solver_config = {
-            key: solver_config.get(key, value) for key, value in SOLVER_SLURM_DEFAULT_CONFIG.items()
-        }
-        solver_config['email'] = self.general_parameters.get('email', None)
-
-        # Create header
-        header = slurm_header(solver_config, self.name, slurm_path)
 
         # Write the bash script without a separate data file
         with open(self.paths['bash'], 'w') as f:
@@ -382,5 +375,4 @@ print('Successfully loaded the solvers data')
 solver.solve()
 END
 """)
-
         return self.paths['bash']

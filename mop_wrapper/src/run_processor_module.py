@@ -119,7 +119,7 @@ class RunProcessor(Run):
             participant_type = PARTICIPANTS_DICT[participant]['type']
             if participant_type == 'thermal':
                 # Extract variable costs data
-                marginal_cost_thermal = self.general_parameters['marginal_cost_dictionary']['thermal']
+                marginal_cost_thermal = self.general_parameters['cost_parameters']['marginal_cost_thermal']
                 # Extract variable costs data
                 df = get_variable_cost_df(
                     participant, self.paths['sim'], marginal_cost_thermal)

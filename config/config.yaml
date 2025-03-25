@@ -1,0 +1,268 @@
+# config.yaml
+
+# Define common participant settings with YAML anchors for reuse.
+participants:
+  wind: &wind_defaults
+    label: "Wind"
+    color: "#2CA02C"
+  solar: &solar_defaults
+    label: "Solar"
+    color: "#FFD600"
+  hydro: &hydro_defaults
+    label: "Hydro"
+    color: "#1F77B4"
+  thermal: &thermal_defaults
+    label: "Thermal"
+    color: "#D62728"
+
+# Event configurations.
+events:
+  unconditional:
+    name: "unconditional"
+    label: "Unconditional"
+    query: "index == index"
+  lost_load:
+    name: "lost_load"
+    label: "Lost Load"
+    query: "lost_load > 0.1"
+  positive_thermal_production:
+    name: "positive_thermal_production"
+    label: "Positive Thermal Production"
+    query: "active_thermal"
+  positive_hydro_production:
+    name: "positive_hydro_production"
+    label: "Hydro Production > 0 MW"
+    query: "active_hydro"
+  water_level:
+    name: "water_level"
+    label: "Water Level < 32 meters"
+    query: "water_level_salto < 32"
+
+# Comparison groupings.
+comparisons:
+  unconditional:
+    - unconditional
+  water_level:
+    - unconditional
+    - water_level
+  lost_load:
+    - unconditional
+    - lost_load
+  thermal_production:
+    - unconditional
+    - positive_thermal_production
+  hydro_production:
+    - unconditional
+    - positive_hydro_production
+
+# Plot configurations.
+plots:
+  events:
+    frequency:
+      title: "Frequency"
+      variables:
+        - name: "frequency"
+          label: "Frequency"
+      y_label: "Frequency of Event"
+    lost_load:
+      title: "Lost Load (MW)"
+      variables:
+        - name: "lost_load"
+          label: "Lost Load"
+          color: "#FFD600"
+      y_label: "Lost Load (MW)"
+    thermal_vs_hydro:
+      title: "Thermal vs Hydro Production (MW)"
+      variables:
+        - name: "production_hydro"
+          <<: *hydro_defaults
+        - name: "production_thermal"
+          <<: *thermal_defaults
+      y_label: "Average Production (MW)"
+    price:
+      title: "Price ($/MWh)"
+      variables:
+        - name: "marginal_cost"
+          label: "Price"
+          color: "#2CA02C"
+      y_label: "Average Price ($/MWh)"
+    profits:
+      title: "Profits ($/MW-h)"
+      variables:
+        - name: "profit_thermal"
+          <<: *thermal_defaults
+        - name: "profit_wind"
+          <<: *wind_defaults
+        - name: "profit_solar"
+          <<: *solar_defaults
+      y_label: "Average Profits ($/MW-h)"
+  ############################################################
+  # General plots
+  general:
+    mean_production:
+      title: "Production (MW)"
+      variables:
+        - name: "mean_production_wind"
+          <<: *wind_defaults
+        - name: "mean_production_solar"
+          <<: *solar_defaults
+        - name: "mean_production_hydro"
+          <<: *hydro_defaults
+        - name: "mean_production_thermal"
+          <<: *thermal_defaults
+        - name: "mean_production_excedentes"
+          label: "Excess Production"
+          color: "#9467BD"
+        - name: "mean_demand"
+          label: "Demand"
+          color: "#6A0DAD"
+      y_label: "Average Production (MW)"
+    capture_rate_by_source:
+      title: "Capture Rate by Source (USD/MWh)"
+      variables:
+        - name: "mean_capture_rate_wind"
+          <<: *wind_defaults
+        - name: "mean_capture_rate_solar"
+          <<: *solar_defaults
+        - name: "mean_capture_rate_hydro"
+          <<: *hydro_defaults
+        - name: "mean_capture_rate_thermal"
+          <<: *thermal_defaults
+      y_label: "Capture Rate by Source (USD/MWh)"
+    excess_by_source:
+      title: "Excess Production by Source (MW)"
+      variables:
+        - name: "mean_excess_wind"
+          <<: *wind_defaults
+        - name: "mean_excess_solar"
+          <<: *solar_defaults
+        - name: "mean_excess_hydro"
+          <<: *hydro_defaults
+      y_label: "Average Excess Production (MW)"
+    frequency_active:
+      title: "Frequency of Plant Activity"
+      variables:
+        - name: "mean_active_hydro"
+          <<: *hydro_defaults
+        - name: "mean_active_thermal"
+          <<: *thermal_defaults
+      y_label: "Frequency"
+    lcoe:
+      title: "Levelized Cost of Energy ($/MWh)"
+      variables:
+        - name: "lcoe"
+          label: "LCOE"
+          color: "#FFD600"
+        - name: "mean_capture_rate"
+          label: "Price"
+          color: "#2CA02C"
+      y_label: "Average LCOE and average price ($/MWh)"
+    lost_load:
+      title: "Lost Load (MW)"
+      variables:
+        - name: "mean_price_4000"
+          label: "Lost Load"
+          color: "#FFD600"
+      y_label: "Frequency of Lost Load ()"
+    mean_blackout:
+      title: "Probability of Blackout"
+      variables:
+        - name: "mean_price_4000"
+          label: "Blackout (Price = $4,000)"
+          color: "#FFD600"
+      y_label: "Frequency"
+    high_prices:
+      title: "High Price Probabilities"
+      variables:
+        - name: "mean_price_4000"
+          label: "Price = $4,000"
+          color: "#CCAA00"
+        - name: "mean_price_mc_thermal_4000"
+          label: "Price in (mc thermal,$4,0000)"
+          color: "#FFD600"
+      y_label: "Frequency"
+    marginal_technology:
+      title: "Distribution of Marginal Technology"
+      variables:
+        - name: "mean_hydro_marginal"
+          <<: *hydro_defaults
+        - name: "mean_thermal_marginal"
+          <<: *thermal_defaults
+        - name: "mean_renewables_marginal"
+          label: "Renewables"
+          color: "#FFD600"
+      y_label: "Frequency"
+    profits_thermal_decomposition:
+      title: "Thermal (Variable) Profits Decomposition ($/MW/h)"
+      variables:
+        - name: "mean_profit_thermal"
+          label: "Total (Variable) Profits"
+          color: "#FF3C3E"
+        - name: "mean_profit_thermal_price_4000"
+          label: "Profits (Price = 4,000)"
+          color: "#A91E20"
+        - name: "mean_profit_thermal_price_mc_thermal_4000"
+          label: "Profits (Price in (mc thermal,4,000))"
+          color: "#D62728"
+      y_label: "Average Profits ($/MW/h)"
+    profits_wind_decomposition:
+      title: "wind (Variable) Profits Decomposition ($/MW/h)"
+      variables:
+        - name: "mean_profit_wind"
+          label: "Total (Variable) Profits"
+          color: "#2CA02C" 
+        - name: "mean_profit_wind_price_4000"
+          label: "Profits (Price = 4,000)"
+          color: "#4C8C4A"
+        - name: "mean_profit_wind_price_mc_thermal_4000"
+          label: "Profits (Price in (mc thermal,4,000))"
+          color: "#6DBA6C"
+      y_label: "Average Profits ($/MW/h)"
+    profits_solar_decomposition:
+      title: "solar (Variable) Profits Decomposition ($/MW/h)"
+      variables:
+        - name: "mean_profit_solar"
+          label: "Total (Variable) Profits"
+          color: "#FFD600"
+        - name: "mean_profit_solar_price_4000"
+          label: "Profits (Price = 4,000)"
+          color: "#CCAB00"
+        - name: "mean_profit_solar_price_mc_thermal_4000"
+          label: "Profits (Price in (mc thermal,4,000))"
+          color: "#FFD600"
+      y_label: "Average Profits ($/MW/h)"
+      #    mean_blackout_dist_scenarios:
+      #      title: "Scenario Quartiles of Probability of Blackout"
+      #      variables:
+      #        - name: "q25_price_4000"
+      #          label: "0.25"
+      #          color: "#FFD600"
+      #        - name: "q50_price_4000"
+      #          label: "0.50"
+      #          color: "#CCAB00"
+      #        - name: "q75_price_4000"
+      #          label: "0.75"
+      #          color: "#997F00"
+      #      y_label: "Expected Hours Per Year"
+    optimal_capacities:
+      title: "Competitive Equilibrium Capacities (MW)"
+      variables:
+        - name: "wind_capacity"
+          <<: *wind_defaults
+        - name: "solar_capacity"
+          <<: *solar_defaults
+        - name: "hydro_capacity"
+          <<: *hydro_defaults
+        - name: "thermal_capacity"
+          <<: *thermal_defaults
+      y_label: "Capacity (MW)"
+    std_revenues:
+      title: "Standard Deviation of Profits ($/h)"
+      variables:
+        - name: "std_profit_solar"
+          <<: *solar_defaults
+        - name: "std_profit_wind"
+          <<: *wind_defaults
+        - name: "std_profit_thermal"
+          <<: *thermal_defaults
+      y_label: "Standard Deviation of Profits ($/h)"

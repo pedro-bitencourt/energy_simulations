@@ -7,6 +7,4 @@ DS_Store
 *.log
 *.swp
 temp.py
-finalize.py
-r/.Rhistory
 others/
