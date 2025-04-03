@@ -114,7 +114,7 @@ class ComparativeStatics:
 
     def _update_general_parameters(self):
         costs_dictionary = load_costs(self.general_parameters['cost_path'])
-        self.general_parameters.update(**costs_dictionary)
+        self.general_parameters.update({"cost_parameters": costs_dictionary})
 
     def _validate_parameters(self):
         # Check if general parameters contains cost data
