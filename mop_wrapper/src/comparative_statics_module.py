@@ -43,13 +43,9 @@ import pandas as pd
 from .utils.slurm_utils import submit_slurm_job, slurm_header
 from .solver_module import Solver
 from .run_module import Run
-from .data_analysis_module import conditional_means
 from .constants import (BASE_PATH,
-                        SOLVER_SLURM_DEFAULT_CONFIG,
-                        PROCESSING_SLURM_DEFAULT_CONFIG,
-                        RUN_SLURM_DEFAULT_CONFIG,
                         initialize_paths_comparative_statics)
-from .utils.load_configs import load_config
+from .utils.load_configs import load_costs
 
 # Get logger for current module
 logger = logging.getLogger(__name__)
@@ -89,7 +85,6 @@ class ComparativeStatics:
                  - `main` [str]: path to the main folder for the exercise.
                  - `bash` [str]: path to the bash file for the exercise.
                  - `solver_results` [str]: path to the solver results file.
-                 - `conditional_means` [str]: path to the conditional means file.
              - `list_of_solvers` [list]: list of Solver objects for the exercise.
 
 
@@ -97,8 +92,6 @@ class ComparativeStatics:
            - `submit_solvers`: submits all Solvers for the exercise.
            - `submit_processing`: submits a processing job for the exercise.
            - `clear_folders`: deletes the folder for all non-equilibrium runs.
-
-
     """
 
     def __init__(self,
@@ -109,6 +102,7 @@ class ComparativeStatics:
         logger.info("Initializing the ComparativeStatics object.")
         if base_path is None:
             base_path = str(BASE_PATH)
+            print(base_path)
 
         self.name: str = name
         self.general_parameters: dict = general_parameters
@@ -117,36 +111,14 @@ class ComparativeStatics:
         self._update_general_parameters()
         self.paths: dict = initialize_paths_comparative_statics(
             base_path, name)
-        self.solvers: list[Solver] = self._initialize_grid()
+        self.solvers: list[Solver] = self._initialize_solvers()
         self._validate_parameters()
 
     def _update_general_parameters(self):
         costs_dictionary = load_costs(self.general_parameters['cost_path'])
+        print("costs dictionary")
+        print(costs_dictionary)
         self.general_parameters.update(**costs_dictionary)
-        self._set_default_slurm_config()
-
-    def _set_default_slurm_config(self):
-        email: dict = self.general_parameters.get("email", "")
-        slurm_configs: dict = self.general_parameters.get("slurm", {})
-
-        self.general_parameters["slurm"] = slurm_configs
-
-        run_config: dict = slurm_configs.get("run", RUN_SLURM_DEFAULT_CONFIG)
-        self.general_parameters["slurm"]["run"] = self._default_slurm_config(run_config.copy(),
-                                                                             RUN_SLURM_DEFAULT_CONFIG, email)
-
-        solver_config: dict = slurm_configs.get(
-            "solver", SOLVER_SLURM_DEFAULT_CONFIG)
-        self.general_parameters["slurm"]["solver"] = self._default_slurm_config(solver_config.copy(),
-                                                                                SOLVER_SLURM_DEFAULT_CONFIG, email)
-
-    def _default_slurm_config(self, slurm_config: dict, default_config: dict,
-                              email: str):
-        for key, value in default_config.items():
-            slurm_config.setdefault(key, value)
-        slurm_config.setdefault(
-            email, self.general_parameters.get("email"))
-        return slurm_config
 
     def _validate_parameters(self):
         # Check if general parameters contains cost data
@@ -156,30 +128,26 @@ class ComparativeStatics:
 
     ############################
     # Initialization methods
-    def _initialize_grid(self):
-        # Create a Solver object for each combination of exogenous variables
+    def _initialize_solvers(self):
+        """
+        Initialize the solvers for the exercise. Currently only implemented for one exogenous
+        variable.
+        """
         grid_points = []
-        grids = self.variables['exogenous'].values()
-
-        # Currently assuming only one variable
-        exogenous_variable_0 = list(self.variables['exogenous'].keys())[0]
-        grid_0 = list(grids)[0]['grid']
-        # Iterate over exogenous variables
-        for value in grid_0:
-            exogenous_variables_dict = {
-                exogenous_variable_0: {
-                    'value': value}
-            }
-            solver: Solver = self._create_solver(exogenous_variables_dict)
-            grid_points.append(solver)
+        exogenous_variable_name, grid = list(
+            self.variables['exogenous'].items())[0]
+        for value in grid['grid']:
+            grid_points.append(self._construct_solver(
+                exogenous_variable_name, value))
         return grid_points
 
-    def _create_solver(self, exogenous_variables: dict):
-        """
-        Create an investment problem for the given exogenous variables.
-        """
+    def _construct_solver(self, exogenous_variable: str, value: float) -> Solver:
+        exogenous_variables_dict = {
+            exogenous_variable: {
+                'value': value}
+        }
         solver = Solver(self.paths['main'],
-                        exogenous_variables,
+                        exogenous_variables_dict,
                         self.variables['endogenous'],
                         self.general_parameters)
         return solver
@@ -190,55 +158,37 @@ class ComparativeStatics:
         investment_problem_0: Solver = self.solvers[0]
         investment_problem_0.prototype()
 
-    def redo_runs(self, delete: bool = False):
-        """
-        Deletes and runs again the equilibrium runs.
-
-        WARNING: This method will delete the run folders if 
-        delete = True.
-        """
+    def broadcast(self, method_name: str, *args, **kwargs):
         for solver in self.solvers:
-            run = solver.last_run()
-            logger.info("Resubmitting run %s", run.name)
-            if delete:
-                logger.info("Deleting run %s", run.name)
-                run.delete()
-            run.submit()
+            getattr(solver, method_name)(*args, **kwargs)
+
+    def submit_solvers(self):
+        self.broadcast('submit')
+
+    def redo_runs(self, delete: bool = False):
+        self.broadcast('redo', delete=delete)
 
     def clear_folders(self):
-        for solver in self.solvers:
-            solver.clear_runs_folders()
+        self.broadcast('clear_runs_folders')
 
-    ############################
-    # Submission methods
-    def submit_solvers(self):
-        """
-        Submit the jobs to the cluster.
-        """
-        for solver in self.solvers:
-            solver.submit()
-            logging.info(
-                'Submitted job for investment problem %s', solver.name)
-
-    def _create_bash(self):
-        comparative_statics_data = {
+    def serialize(self):
+        return json.dumps({
             'name': self.name,
             'variables': self.variables,
             'general_parameters': self.general_parameters
-        }
-        comparative_statics_data = json.dumps(comparative_statics_data)
+        })
 
-        processing_config = self.general_parameters['slurm'].get('processing',
-                                                                 PROCESSING_SLURM_DEFAULT_CONFIG)
-        processing_config = {key: processing_config.get(key, default)
-                             for key, default in PROCESSING_SLURM_DEFAULT_CONFIG.items()}
+    ############################
+    def _create_bash(self):
+        comparative_statics_data = self.serialize()
 
-        processing_config['email'] = self.general_parameters.get(
-            'email', None)
-        slurm_path = self.paths['bash'].parent
         header = slurm_header(
-            processing_config, f"{self.name}_processing", slurm_path)
-
+            slurm_configs=self.general_parameters['slurm'],
+            job_name=f"{self.name}_processing",
+            job_type="processing",
+            slurm_path=self.paths['bash'],
+            email=self.general_parameters['slurm'].get('email')
+        )
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''{header}
 module purge
@@ -279,23 +229,8 @@ END
         self.paths['raw'].mkdir(exist_ok=True, parents=True)
         extract(list_of_solvers=self.solvers,
                 complete=complete, resubmit=resubmit)
-        self.compute_solver_results()
-
-        self.compute_conditional_means()
-
-    def compute_solver_results(self):
-        solver_results_df = solver_results(
-            list_of_solvers=self.solvers)
-        solver_results_df.to_csv(
+        solver_results(list_of_solvers=self.solvers).to_csv(
             self.paths['solver_results'], index=False)
-
-    def compute_conditional_means(self):
-        logger.info("Computing conditional means...")
-        conditional_means_df = construct_results(
-            list_of_solvers=self.solvers,
-            results_function=conditional_means)
-        conditional_means_df.to_csv(
-            self.paths['conditional_means'], index=False)
 
 
 def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool = False) -> None:
@@ -309,7 +244,7 @@ def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool
             run.submit()
             continue
 
-        run_df = run.full_run_df()
+        run_df = run.run_df(complete=complete)
 
         logger.info(
             "Successfuly extracted data from run %s. Saving to disk...", run.name)
@@ -317,50 +252,6 @@ def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool
                       index=False)
 
 
-def profits_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
-    rows: list = []
-    for solver in list_of_solvers:
-        run_df_path = solver.paths['raw']
-        rows.append(solver.last_run().get_profits_dict(
-            run_df_path=run_df_path))
-    results_df: pd.DataFrame = pd.DataFrame(rows)
-    return results_df
-
-
 def solver_results(list_of_solvers: list[Solver]) -> pd.DataFrame:
-    rows: list = []
-    for solver in list_of_solvers:
-        rows.append(solver.solver_results())
-    results_df: pd.DataFrame = pd.DataFrame(rows)
-    return results_df
-
-
-def construct_results(list_of_solvers: list[Solver], results_function) -> pd.DataFrame:
-    rows = []
-    for solver in list_of_solvers:
-        results_dict = solver.last_run().results(
-            results_function, run_df_path=solver.paths['raw'])
-        rows.append(results_dict)
-    results_df = pd.DataFrame(rows)
-    return results_df
-
-
-def load_costs(costs_path) -> dict[str, dict]:
-    #    if costs_path is None:
-    #        costs_path = to do: set a default
-    costs_dict: dict[str, dict[str, float | int]
-                     ] = load_config(costs_path)
-    hourly_costs_dic: dict[str, float] = {
-        participant: (costs_dict[participant]['installation'] / costs_dict[participant]
-                      ['lifetime'] + costs_dict[participant]['oem']) / 8760
-        for participant in costs_dict.keys()
-    }
-
-    marginal_costs_dict: dict[str, float | None] = {
-        participant: costs_dict[participant].get('marginal_cost')
-        for participant in costs_dict.keys()
-    }
-
-    result: dict = {'fixed_cost_dictionary': hourly_costs_dic,
-                    'marginal_cost_dictionary': marginal_costs_dict}
-    return result
+    rows: list = [solver.solver_results() for solver in list_of_solvers]
+    return pd.DataFrame(rows)

@@ -1,9 +1,9 @@
+from typing import List, Dict
 import logging
 from pathlib import Path
 from typing import Optional
 import pandas as pd
 import numpy as np 
-from statsmodels.nonparametric.kernel_density import KDEMultivariate 
 from pygam import LogisticGAM, s 
 import matplotlib.pyplot as plt 
 
@@ -14,6 +14,50 @@ from .auxiliary import skip_if_exists
 
 logger = logging.getLogger(__name__)
 
+def plot_densities_run(data: pd.DataFrame, output_folder: Path,
+                       density_plots_tasks: List[Dict],
+                    overwrite: bool = False, 
+                    ) -> None:
+    logger.info("Plotting densities and nonparametric regression...")
+    output_folder.mkdir(parents=True, exist_ok=True)
+    plot_densities(data.copy(), output_folder, density_plots_tasks, overwrite=overwrite)
+    plot_nonparametric_regression(data.copy(),
+                                  y_variable="price_4000",
+                                  x_variable="water_level_salto",
+                                  output_folder=output_folder,
+                                  overwrite=overwrite)
+
+
+def plot_densities(data: pd.DataFrame, output_folder: Path,
+                   density_plots_tasks: List[Dict],
+                   overwrite: bool = False) -> None:
+    for task in density_plots_tasks:
+        col_name = task["column"]
+        x_from = task.get("x_from", None)
+        x_to = task.get("x_to", None)
+        bw = task.get("bw", 1.0)
+        condition = task.get("condition", None)
+
+        filename = task.get("filename", col_name)
+        out_path = output_folder / f"{filename}.png"
+        try:
+            if condition is not None:
+                sample = data.loc[condition(data)].copy()
+            else:
+                sample = data.copy()
+            series: pd.Series = sample[col_name]
+            plot_density(
+                series,
+                col_name,
+                out_path,
+                x_from=x_from,
+                x_to=x_to,
+                bandwidth=bw,
+                overwrite=overwrite
+            )
+        except Exception as e:
+            logger.error("Error plotting density for %s: %s", col_name, e)
+            continue
 
 def compute_kde(series: pd.Series, x_from=None, x_to=None, bandwidth=1.0):
     kde = KDEUnivariate(series)

@@ -1,50 +1,76 @@
 
 import subprocess
 import time
-import logging
 from pathlib import Path
+
+
+SLURM_DEFAULTS = {
+    'run': {
+        'time': 0.8,
+        'memory': 5,
+        'email': None,
+        'mail_type': 'NONE'
+    },
+    'solver': {
+        'time': 12,
+        'memory': 5,
+        'email': None,
+        'mail_type': 'END,FAIL'
+    },
+    'processing': {
+        'time': 5,
+        'memory': 5,
+        'email': None,
+        'mail_type': 'END,FAIL'
+    }
+}
 
 MEMORY_DEFAULT = 5  # GB
 
 
-def slurm_header(slurm_config: dict, job_name: str, slurm_path: Path) -> str:
-    """
-    Creates a bash file to be submitted to the cluster.
-    """
-    slurm_path = str(slurm_path)
-    requested_time: float = slurm_config['time']
+def format_requested_time(requested_time: float) -> str:
     hours: int = int(requested_time)
     minutes: int = int((requested_time * 60) % 60)
     seconds: int = int((requested_time * 3600) % 60)
     requested_time_run: str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return requested_time_run
 
-    email = slurm_config.get('email', None)
-    if email:
-        email_line = f"#SBATCH --mail-user={email}"
-    else:
-        email_line = ""
-    mail_type = slurm_config.get('mail_type', 'NONE')
-    if mail_type and email:
-        mail_type_line = f"#SBATCH --mail-type={mail_type}"
-    else:
-        mail_type_line = ""
-    memory = slurm_config.get('memory', MEMORY_DEFAULT)
+
+def slurm_header(slurm_configs: dict, job_name: str, job_type: str,
+                 slurm_path: Path, email=None):
+    if not slurm_configs:
+        slurm_config = SLURM_DEFAULTS[job_type]
+        slurm_configs = {job_type: slurm_config}
+    slurm_config: dict = construct_slurm_config(slurm_configs, job_type)
+
+    requested_time: float = slurm_config['time']
+    requested_time_str: str = format_requested_time(requested_time)
+    email_line: str = f"#SBATCH --mail-user={email}" if email else ""
+    mail_type_line: str = f"#SBATCH --mail-type={slurm_config['mail_type']}" if email else ""
+    memory: int = slurm_config.get('memory', MEMORY_DEFAULT)
 
     header = f'''#!/bin/bash
 #SBATCH --account=b1048
 #SBATCH --partition=b1048
-#SBATCH --time={requested_time_run}
+#SBATCH --time={requested_time_str}
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
 #SBATCH --mem={memory}G
 #SBATCH --job-name={job_name}
-#SBATCH --output={slurm_path}/slurm.out
-#SBATCH --error={slurm_path}/slurm.err
+#SBATCH --output={slurm_path.parent}/slurm.out
+#SBATCH --error={slurm_path.parent}/slurm.err
 #SBATCH --exclude=qhimem[0207-0208],qnode0255,qnode0257,qnode0260
 {email_line}
 {mail_type_line}
 '''
     return header
+
+
+def construct_slurm_config(slurm_configs: dict, job_type: str) -> dict:
+    slurm_config: dict = slurm_configs.get(job_type, {})
+    default_config: dict = SLURM_DEFAULTS[job_type]
+    slurm_config: dict = slurm_config | default_config
+    return slurm_config
 
 
 def get_job_id_by_name(job_name: str):
@@ -61,15 +87,11 @@ def get_job_id_by_name(job_name: str):
 
 def submit_new_job(script_path: str):
     """Submit a new SLURM job with given name and return its ID."""
-    try:
-        result = subprocess.run(['sbatch', script_path],
-                                capture_output=True,
-                                text=True,
-                                check=True)
-        return result.stdout.strip().split()[-1]
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error submitting job: {e.stderr}")
-        return None
+    result = subprocess.run(['sbatch', script_path],
+                            capture_output=True,
+                            text=True,
+                            check=True)
+    return result.stdout.strip().split()[-1]
 
 
 def submit_slurm_job(script_path: str, job_name: str):

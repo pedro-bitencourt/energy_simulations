@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append('/projects/p32342/code')
+sys.path.append('/projects/p32342/code/mop_wrapper')
 from src.utils.logging_config import setup_logging
 from src.comparative_statics_module import ComparativeStatics
 

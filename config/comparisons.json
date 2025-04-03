@@ -1,8 +1,0 @@
-{
-  "unconditional": ["unconditional"],
-  "water_level": ["unconditional", "water_level_34", "water_level_32"],
-  "lost_load_1": ["unconditional", "lost_load_1"],
-  "lost_load_100": ["unconditional", "lost_load_100"],
-  "thermal_production": ["unconditional", "positive_thermal_production_0.01"],
-  "hydro_production": ["unconditional", "positive_hydro_production_0.01"]
-}
