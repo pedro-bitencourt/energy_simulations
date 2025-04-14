@@ -18,7 +18,7 @@ to compute all the results. Currently, the results are organized in:
     - derived results (computed using other results as inputs)
 """
 
-from typing import Tuple, Dict, Any, List, Callable
+from typing import Tuple, Dict, Any, List, Callable, Union
 import pandas as pd
 import logging
 import math
@@ -27,6 +27,18 @@ from .utils.auxiliary import log_exceptions
 
 logger = logging.getLogger(__name__)
 
+HYDRO_VARIABLES: List[str] = [
+        # Marginal source variables
+        "hydro_marginal = (active_hydro & ~active_thermal) | (active_hydro & price_mc_thermal_4000)",
+        "thermal_marginal = (~active_hydro & active_thermal) | (active_thermal & price_mc_thermal)",
+        "renewables_marginal = (~active_hydro & ~active_thermal)", 
+        # Water level variables
+        "water_level_31 = (water_level_salto < 31)",
+        "water_level_33 = (water_level_salto < 33)",
+        ]
+
+
+
 # Custom types
 RunData = Tuple[pd.DataFrame, Dict[str, Any]]
 
@@ -34,7 +46,7 @@ def full_run_analysis(run_data: Tuple[pd.DataFrame, Dict[str, Any]],
          participants: List[str],
          costs: Dict[str, Any],
          events_queries: Dict[str, Dict[str, str]],
-         additional_results_fun: Callable | None = None) -> Dict[str, Any]:
+         additional_results_fun: Union[Callable,  None] = None) -> Dict[str, Any]:
     run_df, capacities = run_data
 
     variables_to_create: List[str] = variables_to_create_function(participants, costs, 
@@ -101,15 +113,7 @@ def variables_to_create_function(participants: List[str], costs: Dict[str, Any],
         f"price_mc_thermal_4000 = ((marginal_cost > {costs['marginal_cost_thermal']})  & (marginal_cost < 4000))",
     ]
     if "hydro" in participants:
-        other_variables.extend([
-        # Marginal source variables
-        "hydro_marginal = (active_hydro & ~active_thermal) | (active_hydro & price_mc_thermal_4000)",
-        "thermal_marginal = (~active_hydro & active_thermal) | (active_thermal & price_mc_thermal)",
-        "renewables_marginal = (~active_hydro & ~active_thermal)", 
-        # Water level variables
-        "water_level_31 = (water_level_salto < 31)",
-        "water_level_33 = (water_level_salto < 33)",
-        ])
+        other_variables.extend(HYDRO_VARIABLES)
 
     # Derived variables
     derived_variables: List[str] = [

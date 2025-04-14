@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 ###########################################################################################
 # Functions to compute the objective function of the Solver class
+
+
 def profits_per_participant(run_df: pd.DataFrame,
                             capacities: dict[str, float],
                             cost_parameters: dict) -> Dict:
@@ -65,7 +67,6 @@ def profits_per_participant(run_df: pd.DataFrame,
                                                   / (fixed_costs + variable_costs / capacity_mw))
         }
 
-        
     for participant in participants:
         if participant in ('salto', 'hydro'):
             continue

@@ -181,11 +181,13 @@ class ComparativeStatics:
         comparative_statics_data = self.serialize()
 
         header = slurm_header(
-            slurm_configs=self.general_parameters['slurm'],
+            slurm_configs=self.general_parameters.get('slurm',None),
+            #slurm_configs=self.general_parameters['slurm'],
             job_name=f"{self.name}_processing",
             job_type="processing",
             slurm_path=self.paths['bash'],
-            email=self.general_parameters['slurm'].get('email')
+            #email=self.general_parameters['slurm'].get('email')
+            email=self.general_parameters['email']
         )
         with open(self.paths['bash'], 'w') as f:
             f.write(f'''{header}

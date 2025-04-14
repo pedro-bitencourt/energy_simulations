@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5'  # GB
 PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
-                              'thermal', 'salto']
+                              'thermal']  # , 'salto']
 PARTICIPANT_TO_VARIABLE_KEY_DICT: dict = {
     'wind': 'wind_capacity',
     'solar': 'solar_capacity',
     'thermal': 'thermal_capacity',
-    'salto': 'salto_capacity',
+    #    'salto': 'salto_capacity',
     'battery': 'battery_factor'
 }
 
@@ -130,7 +130,7 @@ class Run:
         # Check if SIM folder exists
         if self.paths.get('sim', False):
             # Check if files exist
-            missing_files = self.get_missing_files(self.paths['sim'], complete)
+            missing_files = self.get_missing_files(self.paths['sim'])
             if missing_files:
                 logger.info(
                     "Run %s is missing files: %s", self.name, missing_files)
@@ -285,7 +285,7 @@ rm -r {temp_folder_path}
         run_df: pd.DataFrame = self.run_df()
         capacities = self.capacities()
         profits_dict: dict = profits_per_participant(
-            run_df, capacities, self.general_parameters['fixed_cost_dictionary'])
+            run_df, capacities, self.general_parameters['cost_parameters'])
 
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
                               for participant in participants}

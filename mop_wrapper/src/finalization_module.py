@@ -13,7 +13,7 @@ configurations specified in the config.yaml file and in the run_analysis_module)
 - plot_densities: Plot the densities of selected variables.
 """
 
-from typing import Iterator, Tuple, Dict, Any, List, Callable
+from typing import Iterator, Tuple, Dict, Any, List, Callable, Union
 from pathlib import Path
 from dataclasses import dataclass
 import pandas as pd
@@ -80,7 +80,7 @@ def build_simulation_data(sim_name: str,
                           participants: List[str],
                           x_variable: Dict[str, Any],
                           cost_parameters_file: Path, 
-                          pre_processing_function: Callable | None = None,
+                          pre_processing_function: Union[Callable, None] = None,
                           test: bool = False) -> SimulationData:
     """
     Construct a SimulationData instance by reading all CSV files in runs_folder.
