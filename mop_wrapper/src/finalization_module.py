@@ -14,6 +14,7 @@ configurations specified in the config.yaml file and in the run_analysis_module)
 """
 
 from typing import Iterator, Tuple, Dict, Any, List, Callable, Union
+import itertools
 from pathlib import Path
 from dataclasses import dataclass
 import pandas as pd
@@ -59,6 +60,32 @@ class SimulationData:
     participants: List[str]
     x_variable: Dict[str, Any]
     cost_parameters: Dict[str, Any]
+
+    def print(self) -> None:
+        # Duplicate the iterator so that we can print details without consuming the original.
+        run_iter, run_iter_restored = itertools.tee(self.run_data, 2)
+        # Restore the run_data iterator with one of the copies.
+        object.__setattr__(self, 'run_data', run_iter_restored)
+        
+        # Print simulation-level details.
+        print(f"Simulation Name: {self.name}")
+        print(f"Participants: {', '.join(self.participants)}")
+        print(f"X Variable: {self.x_variable}")
+        print("Cost Parameters:")
+        for key, value in self.cost_parameters.items():
+            print(f"  {key}: {value}")
+        print("\nRun Data:")
+        
+        # Iterate through the run iterator copy and print details for each run.
+        for idx, (df, capacities) in enumerate(run_iter, start=1):
+            run_name = capacities.get("run_name", f"Run {idx}")
+            print(f"\nRun {idx} - {run_name}:")
+            print("  DataFrame Headers:")
+            print(df.head())
+            print("  Capacities:")
+            for cap_key, cap_value in capacities.items():
+                print(f"    {cap_key}: {cap_value}")
+    
 
 
 def build_run_data(file: Path, solver_results: pd.DataFrame, test: bool = False) -> RunData:
