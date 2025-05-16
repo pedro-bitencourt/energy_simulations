@@ -58,7 +58,9 @@ class Iteration:
             return False
         for var in self.capacities.keys():
             profit = self.profits[var]
-            if self.capacities[var] == 1:
+            # accept convergence if a resource has negative profit and less
+            # than 10 MW
+            if self.capacities[var] < 10:
                 profit = np.maximum(profit, 0)
             if np.abs(profit) >= THRESHOLD_PROFITS:
                 return False

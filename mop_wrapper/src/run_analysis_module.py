@@ -49,6 +49,10 @@ def full_run_analysis(run_data: Tuple[pd.DataFrame, Dict[str, Any]],
          additional_results_fun: Union[Callable,  None] = None) -> Dict[str, Any]:
     run_df, capacities = run_data
 
+    logger.debug("run_df: %s", run_df.head())
+    logger.debug("capacities: %s", capacities)
+
+
     variables_to_create: List[str] = variables_to_create_function(participants, costs, 
                                                                   capacities)
     updated_run_df: pd.DataFrame = create_variables(run_df, variables_to_create)

@@ -10,11 +10,12 @@ from pathlib import Path
 import pandas as pd
 
 # Local imports
-from src.constants import DATETIME_FORMAT
-from src.utils import auxiliary
+from .auxiliary import try_get_file
 
 
 logger = logging.getLogger(__name__)
+
+DATETIME_FORMAT = '%m/%d/%y %H:%M'
 
 
 def text_to_table(text, delete_first_row):
@@ -186,7 +187,7 @@ def open_dataframe(option: Dict[str, Any], input_folder: Path,
             f'Option {option} does not contain all required keys.')
 
     # Get the file path; raise error if not found
-    file_path = auxiliary.try_get_file(input_folder, option['filename'])
+    file_path = try_get_file(input_folder, option['filename'])
     if not file_path:
         logger.error(
             f'File matching pattern {option["filename"]} not found in {input_folder}.')

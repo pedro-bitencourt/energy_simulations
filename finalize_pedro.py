@@ -18,7 +18,7 @@ import mop_wrapper.src.finalization_module as fm
 setup_logging('debug')
 
 # Exercise related parameters:
-name: str = "legacy_thermals_1"  # name of the exercise
+name: str = "legacy_thermals_0.5"  # name of the exercise
 costs_path: Path = BASE_PATH / \
     "code/cost_data/gas_legacy_thermals.json"  # cost filepath
 # x_variable: "name" should contain the key for the exogenous variable of the exercise,
@@ -46,10 +46,10 @@ simulation_data: fm.SimulationData = fm.build_simulation_data(name, participants
 # simulation_data.print()
 # Analysis
 # This line computes results from the raw dataframes and the capacity variables
-results: pd.DataFrame = fm.default_analysis(simulation_data)
+#results: pd.DataFrame = fm.default_analysis(simulation_data)
 # Save results to disk
-results.to_csv(BASE_PATH / f"sim/{name}/results.csv", index=False)
+#results.to_csv(BASE_PATH / f"sim/{name}/results.csv", index=False)
 # Plot results
-fm.plot_results(simulation_data, results)
+#fm.plot_results(simulation_data, results)
 # Plot densities of selected variables
 fm.plot_densities(simulation_data)

@@ -118,6 +118,7 @@ class Solver:
         }
         run_initial_guess = self.run_factory(initial_guess)
         run_initial_guess.prototype()
+        return run_initial_guess
 
     def run_factory(self, capacities: dict) -> Run:
         """
@@ -294,7 +295,6 @@ class Solver:
                 'name': self.name,
                 'iteration': last_iteration.iteration,
                 **profits_dict,
-                **last_run.capacities(),
                 **exo_vars,
                 **last_iteration.capacities
             }

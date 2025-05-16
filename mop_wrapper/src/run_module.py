@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 MEMORY_REQUESTED = '5'  # GB
 PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
-                              'thermal']  # , 'salto']
+                              'thermal']
 PARTICIPANT_TO_VARIABLE_KEY_DICT: dict = {
     'wind': 'wind_capacity',
     'solar': 'solar_capacity',
     'thermal': 'thermal_capacity',
-    #    'salto': 'salto_capacity',
+    'salto': 'salto_capacity',
     'battery': 'battery_factor'
 }
 
@@ -178,11 +178,13 @@ class Run:
         # Create the directory
         self.paths['folder'].mkdir(parents=True, exist_ok=True)
 
-        # Create the bash file
-        xml_path = self.paths['xml']
-        bash_path: Path = self._create_bash(xml_path)
+        # Create the xml file
+        xml_path: Path = self.create_xml()
+        print("xml path:")
+        print(xml_path)
 
-        # Print bash path
+        # Create the bash file
+        bash_path: Path = self._create_bash(xml_path)
         print("Bash path:")
         print(bash_path)
         subprocess.run(['bash', bash_path])
@@ -271,7 +273,7 @@ rm -r {temp_folder_path}
             complete=complete)
         return run_df
 
-    # Refactor
+    # TODO: Refactor
     def get_profits(self):
         """
         Computes profits for the specified endogenous variables.

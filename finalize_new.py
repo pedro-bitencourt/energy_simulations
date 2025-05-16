@@ -18,8 +18,8 @@ import mop_wrapper.src.finalization_module as fm
 setup_logging('debug')
 
 ## Exercise related parameters:
-name: str = "factor_compartir_gas_hi_wind" # name of the exercise
-costs_path: Path = BASE_PATH / "code/cost_data/gas_high_wind.json" # cost filepath
+name: str = "factor_compartir_gas" # name of the exercise
+costs_path: Path = BASE_PATH / "code/cost_data/gas.json" # cost filepath
 # x_variable: "name" should contain the key for the exogenous variable of the exercise, 
 # while "label" should contain the label for the x-axis in the plots
 x_variable: Dict[str, str] = {"name": "hydro_capacity", "label": "Hydro Capacity"}

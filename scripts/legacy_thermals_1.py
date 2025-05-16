@@ -1,13 +1,14 @@
 import sys
 sys.path.append('/projects/p32342/code/mop_wrapper')
+
 from src.utils.logging_config import setup_logging
 from src.comparative_statics_module import ComparativeStatics
 
 setup_logging(level="info")
 
 # Input parameters
-name: str = 'legacy_thermals'
-xml_basefile: str = '/projects/p32342/code/xml/legacy_thermals.xml'
+name: str = 'legacy_thermals_1'
+xml_basefile: str = '/projects/p32342/code/xml/legacy_thermals_1.xml'
 costs_path: str = '/projects/p32342/code/cost_data/gas.json'
 
 participants: list[str] = ['wind', 'solar', 'thermal']
@@ -22,8 +23,7 @@ general_parameters: dict = {
     'wine_path': '/home/xvw8173/.wine',
 }
 
-exog_grid: list[float] = [1, 1.25, 1.5, 2, 2.5]
-exog_grid: list[float] = [value*2025 for value in exog_grid]
+exog_grid: list[float] = [1000, 2000, 2500, 3000]
 
 exogenous_variables: dict[str, dict] = {
     'thermal_legacy': {'grid': exog_grid},
@@ -52,5 +52,4 @@ comparative_statics = ComparativeStatics(
 # comparative_statics.submit_solvers()
 # Submit the processing job
 comparative_statics.submit_processing()
-# comparative_statics.redo_runs()
 comparative_statics.process()

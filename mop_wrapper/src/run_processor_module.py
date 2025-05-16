@@ -41,8 +41,10 @@ PARTICIPANTS_DICT: Dict[str, Dict[str, str]] = {
     "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
     "thermal": {"folder": "TER_thermal", "type": "thermal"},
     "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
+    "thermal_legacy": {"folder": "TER_thermal_legacy", "type": "thermal"},
     "demand": {"folder": "DEM_demand", "type": "demand"},
     "salto": {"folder": "HID_salto", "type": "hydro"},
+    "hydro": {"folder": "HID_salto", "type": "hydro"},
     "battery": {"folder": "ACUM_battery", "type": "battery"},
     # FIX
     "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
@@ -79,8 +81,7 @@ class RunProcessor(Run):
         )
 
         if not self.successful(complete=complete):
-            missing_files = Run.get_missing_files(sim_path=self.paths['sim'],
-                                                  complete=complete)
+            missing_files = Run.get_missing_files(sim_path=self.paths['sim'])
             logger.error(f'Run {self.name} was not successful.')
             logger.error(f'Missing files: {missing_files}')
             raise FileNotFoundError(f'Run {self.name} was not successful.')
@@ -119,7 +120,8 @@ class RunProcessor(Run):
             participant_type = PARTICIPANTS_DICT[participant]['type']
             if participant_type == 'thermal':
                 # Extract variable costs data
-                marginal_cost_thermal = self.general_parameters['cost_parameters']['marginal_cost_thermal']
+                marginal_cost_thermal = self.general_parameters[
+                    'cost_parameters']['marginal_cost_thermal']
                 # Extract variable costs data
                 df = get_variable_cost_df(
                     participant, self.paths['sim'], marginal_cost_thermal)

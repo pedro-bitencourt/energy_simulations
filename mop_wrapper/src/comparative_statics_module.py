@@ -153,8 +153,8 @@ class ComparativeStatics:
     ############################
     # Utility methods
     def prototype(self):
-        investment_problem_0: Solver = self.solvers[0]
-        investment_problem_0.prototype()
+        solver_0: Solver = self.solvers[0]
+        solver_0.prototype()
 
     def broadcast(self, method_name: str, *args, **kwargs):
         for solver in self.solvers:
@@ -181,12 +181,11 @@ class ComparativeStatics:
         comparative_statics_data = self.serialize()
 
         header = slurm_header(
-            slurm_configs=self.general_parameters.get('slurm',None),
-            #slurm_configs=self.general_parameters['slurm'],
+            slurm_configs=self.general_parameters.get('slurm', None),
             job_name=f"{self.name}_processing",
             job_type="processing",
             slurm_path=self.paths['bash'],
-            #email=self.general_parameters['slurm'].get('email')
+            # email=self.general_parameters['slurm'].get('email')
             email=self.general_parameters['email']
         )
         with open(self.paths['bash'], 'w') as f:
@@ -197,9 +196,9 @@ module load python-miniconda3/4.12.0
 python - <<END
 import sys
 import json
-sys.path.append('/projects/p32342/code')
-from src.comparative_statics_module import ComparativeStatics
-from src.utils.logging_config import setup_logging
+sys.path.append('/gpfs/projects/p32342/code')
+from mop_wrapper.src.comparative_statics_module import ComparativeStatics
+from mop_wrapper.src.utils.logging_config import setup_logging
 
 setup_logging(level = "info")
 
@@ -227,10 +226,15 @@ END
     def process(self, complete=True, resubmit=True):
         print("Creating raw directory...")
         self.paths['raw'].mkdir(exist_ok=True, parents=True)
-        extract(list_of_solvers=self.solvers,
-                complete=complete, resubmit=resubmit)
+        self.extract_raw_files()
+        self.extract_solver_results()
+
+    def extract_solver_results(self):
         solver_results(list_of_solvers=self.solvers).to_csv(
             self.paths['solver_results'], index=False)
+
+    def extract_raw_files(self, resubmit: bool = False):
+        extract(list_of_solvers=self.solvers, resubmit=resubmit)
 
 
 def extract(list_of_solvers: list[Solver], complete: bool = True, resubmit: bool = False) -> None:
