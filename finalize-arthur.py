@@ -24,9 +24,9 @@ costs_path: Path = BASE_PATH / \
 # x_variable: "name" should contain the key for the exogenous variable of the exercise,
 # while "label" should contain the label for the x-axis in the plots
 x_variable: Dict[str, str] = {
-    "name": "thermal_legacy", "label": "Legacy Thermal Capacity"}
+    "name": "thermal_legacy_capacity", "label": "Legacy Thermal Capacity"}
 # participants should contain all the participants present in the exercise
-participants: List[str] = ["solar", "wind", "thermal"]
+participants: List[str] = ["solar", "wind", "thermal", "thermal_legacy", "salto"]
 
 # pre_processing_function is optional and can be used for renaming variables and
 # creating new ones before the analysis is performed. In this example,
@@ -40,7 +40,8 @@ def pre_processing_function(run_data) -> Tuple[pd.DataFrame, Dict[str, float]]:
 # This line gathers all the relevant data and stores it into a SimulationData
 # object
 simulation_data: fm.SimulationData = fm.build_simulation_data(name, participants,
-                                                              x_variable, costs_path,
+                                                              x_variable,
+                                                              costs_path,
                                                               pre_processing_function=pre_processing_function,
                                                               test=False)
 # simulation_data.print()

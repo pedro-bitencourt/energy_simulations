@@ -94,7 +94,7 @@ def submit_new_job(script_path: str):
     return result.stdout.strip().split()[-1]
 
 
-def submit_slurm_job(script_path: str, job_name: str):
+def submit_slurm_job(script_path: Path, job_name: str):
     """
     Submit a SLURM job or return ID of existing job with same name.
 

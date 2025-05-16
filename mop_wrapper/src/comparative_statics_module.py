@@ -1,8 +1,7 @@
 """
 Module: comparative_statics_module.py
 Author: Pedro Bitencourt (Northwestern University)
-Last modified: 02.24.25
-
+Last modified: 05.14.25
 
 Description:
     This module contains the ComparativeStatics class, which is the main class used in this project.
@@ -19,6 +18,13 @@ Classes:
                 - cost_path [str]: path to the cost data file.
                 - xml_basefile [str]: path to the template xml file.
                 - daily [bool]: boolean indicating if the runs are daily (True) or weekly (False).
+                - participants [dict]: dictionary containing the participants in the exercise, with keys:
+                    - `name` [str]: dictionary containing the name of the participant, with keys:
+                        - `type` [str]: type of the participant, can be 'thermal', 'wind', 'solar',
+                        'thermal_with_remainder', 'thermal_with_storage', 'storage', 'battery'.
+                        - `endogenous` [bool]: boolean indicating if the participant is endogenous
+                        (True) or exogenous (False).
+                        - `folder` [str]: folder name for the participant.
                 - annual_interest_rate [float]: annual interest rate for the investment problems.
                 - `solver` [dict]: dictionary containing options for the solver
                 - slurm [dict]: dictionary containing options for slurm, keys:
@@ -114,15 +120,18 @@ class ComparativeStatics:
         self.solvers: list[Solver] = self._initialize_solvers()
         self._validate_parameters()
 
+
     def _update_general_parameters(self):
         costs_dictionary = load_costs(self.general_parameters['cost_path'])
         self.general_parameters.update({"cost_parameters": costs_dictionary})
 
     def _validate_parameters(self):
         # Check if general parameters contains cost data
-        if 'cost_path' not in self.general_parameters:
-            raise ValueError(
-                "General parameters must contain the cost data path.")
+        expected_keys = ['cost_path', 'xml_basefile', 'participants']
+        for key in expected_keys:
+            if key not in self.general_parameters:
+                raise ValueError(
+                    f"General parameters must contain the {key}.")
 
     ############################
     # Initialization methods

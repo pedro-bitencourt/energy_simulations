@@ -20,19 +20,6 @@ from .data_analysis_module import profits_per_participant
 
 logger = logging.getLogger(__name__)
 
-MEMORY_REQUESTED = '5'  # GB
-PARTICIPANTS_DEFAULT: list = ['wind', 'solar',
-                              'thermal']
-PARTICIPANT_TO_VARIABLE_KEY_DICT: dict = {
-    'wind': 'wind_capacity',
-    'solar': 'solar_capacity',
-    'thermal': 'thermal_capacity',
-    'salto': 'salto_capacity',
-    'battery': 'battery_factor'
-}
-
-PARTICIPANTS_ENDOGENOUS_DEFAULT: list = ['wind', 'solar', 'thermal']
-
 
 class Run:
     """
@@ -72,13 +59,11 @@ class Run:
 
         self.log_run()
 
-    def capacities(self):
-        participants: list[str] = self.general_parameters.get(
-            'participants', PARTICIPANTS_DEFAULT
-        )
+    def capacities(self) -> dict:
+        participants: dict = self.general_parameters['participants']
         # Create a dictionary with the capacities
-        capacities = {participant: self.variables[PARTICIPANT_TO_VARIABLE_KEY_DICT[participant]]
-                      for participant in participants}
+        capacities = {participant: self.variables[f"{participant}_capacity"]
+                      for participant in participants.keys()}
         return capacities
 
     def log_run(self):
@@ -119,7 +104,7 @@ class Run:
                         continue
         return opt_sim_paths
 
-    def successful(self, complete: bool = False):
+    def successful(self):
         """
         Check if the run was successful by searching for a resumen* file
         in the sim folder.
@@ -239,6 +224,7 @@ class Run:
                               slurm_path=slurm_path,
                               email=self.general_parameters.get('email'))
 
+        MEMORY_REQUESTED = '5'  # GB
         memory = self.general_parameters.get('memory', MEMORY_REQUESTED)
         temp_folder_path = f"/projects/p32342/temp/{self.name}"
         temp_folder_path_windows = temp_folder_path.replace('/', '\\')
@@ -273,7 +259,15 @@ rm -r {temp_folder_path}
             complete=complete)
         return run_df
 
-    # TODO: Refactor
+    def get_endogenous_participants(self) -> dict:
+        participants: dict = self.general_parameters['participants']
+        endogenous_participants: dict = {
+            participant: participant_dict
+            for participant, participant_dict in participants.items()
+            if participant_dict['endogenous']
+        }
+        return endogenous_participants
+
     def get_profits(self):
         """
         Computes profits for the specified endogenous variables.
@@ -281,16 +275,14 @@ rm -r {temp_folder_path}
         Returns:
             dict: A dictionary of profits.
         """
-        participants = self.general_parameters.get(
-            'endogenous_participants', PARTICIPANTS_ENDOGENOUS_DEFAULT)
-
         run_df: pd.DataFrame = self.run_df()
         capacities = self.capacities()
         profits_dict: dict = profits_per_participant(
             run_df, capacities, self.general_parameters['cost_parameters'])
 
+        endogenous_participants: dict = self.get_endogenous_participants() 
         profits_dict: dict = {f"{participant}_capacity": profits_dict[f'{participant}_normalized_profits']
-                              for participant in participants}
+                              for participant in endogenous_participants.keys()}
         return profits_dict
 
 

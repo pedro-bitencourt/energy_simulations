@@ -26,30 +26,14 @@ from pathlib import Path
 import pandas as pd
 
 from .utils import parsing_module as proc
-from .run_module import Run, PARTICIPANTS_DEFAULT, PARTICIPANTS_ENDOGENOUS_DEFAULT
+from .run_module import Run
 from .constants import (
-    SALTO_WATER_LEVEL_DF,
-    MARGINAL_COST_DF, DEMAND_DF
+    WATER_LEVEL_DF,
+    MARGINAL_COST_DF,
+    DEMAND_DF
 )
 
 logger = logging.getLogger(__name__)
-
-
-# This should include all the participants that we have implemented so far
-PARTICIPANTS_DICT: Dict[str, Dict[str, str]] = {
-    "wind": {"folder": "EOLO_eoloDeci", "type": "wind"},
-    "solar": {"folder": "FOTOV_solarDeci", "type": "solar"},
-    "thermal": {"folder": "TER_thermal", "type": "thermal"},
-    "thermal_remainder": {"folder": "TER_thermal_remainder", "type": "thermal"},
-    "thermal_legacy": {"folder": "TER_thermal_legacy", "type": "thermal"},
-    "demand": {"folder": "DEM_demand", "type": "demand"},
-    "salto": {"folder": "HID_salto", "type": "hydro"},
-    "hydro": {"folder": "HID_salto", "type": "hydro"},
-    "battery": {"folder": "ACUM_battery", "type": "battery"},
-    # FIX
-    "excedentes": {"folder": "IMPOEXPO_excedentes", "type": "excedentes"}
-}
-
 
 class RunProcessor(Run):
     """
@@ -80,19 +64,15 @@ class RunProcessor(Run):
             variables=run.variables
         )
 
-        if not self.successful(complete=complete):
+        if not self.successful():
             missing_files = Run.get_missing_files(sim_path=self.paths['sim'])
-            logger.error(f'Run {self.name} was not successful.')
             logger.error(f'Missing files: {missing_files}')
             raise FileNotFoundError(f'Run {self.name} was not successful.')
 
     def construct_run_df(self, complete: bool = True) -> pd.DataFrame:
-        if complete:
-            participants: list[str] = self.general_parameters.get(
-                "participants", PARTICIPANTS_DEFAULT)
-        else:
-            participants: list[str] = self.general_parameters.get(
-                "endogenous_participants", PARTICIPANTS_ENDOGENOUS_DEFAULT)
+        participants: dict = self.general_parameters['participants']
+        if not complete: 
+            participants: dict = self.get_endogenous_participants()
 
         logging.info(f'Extracting dataframes for run {self.name}')
 
@@ -101,38 +81,43 @@ class RunProcessor(Run):
         demand_df = self.demand_df()
         random_variables_df = pd.merge(random_variables_df, demand_df, on=[
                                        'datetime', 'scenario'], how='left')
-        excedentes_df = get_production_df("excedentes", self.paths['sim'])
+        excedentes_df = get_production_df("excedentes",
+                                          "IMPOEXPO_excedentes",
+                                          self.paths['sim'])
         random_variables_df = pd.merge(random_variables_df, excedentes_df, on=[
                                        'datetime', 'scenario'], how='left')
 
-        for participant in participants:
+        for participant in participants.keys():
             logger.debug(f'Extracting data for participant: {participant}')
             original_length = len(random_variables_df)
-            logger.debug(f'Length before participant %s: %s', participant,
-                         original_length)
             # Extract production data
-            df = get_production_df(participant, self.paths['sim'])
+            df = get_production_df(participant,
+                                   participants[participant]['folder'],
+                                   self.paths['sim'],
+                                   participants[participant]['type']
+                                   )
             logger.debug("Production data for %s: %s", participant, df.head())
             random_variables_df = pd.merge(random_variables_df, df, on=[
                 'datetime', 'scenario'], how='left')
 
             # Extract variable costs
-            participant_type = PARTICIPANTS_DICT[participant]['type']
-            if participant_type == 'thermal':
+            participant_type = participants[participant]['type']
+            if participant_type in ['thermal', 'thermal_with_remainder']:
                 # Extract variable costs data
-                marginal_cost_thermal = self.general_parameters[
+                mc_thermal = self.general_parameters[
                     'cost_parameters']['marginal_cost_thermal']
                 # Extract variable costs data
-                df = get_variable_cost_df(
-                    participant, self.paths['sim'], marginal_cost_thermal)
+                df[f'variable_cost_{participant}'] = mc_thermal * df[f'production_{participant}']
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
             elif participant not in ['demand', 'excedentes']:
                 random_variables_df[f'variable_cost_{participant}'] = 0
 
             # Extract water level data
-            if participant_type == 'hydro' or participant == 'salto':
-                df = get_water_level_df(participant, self.paths['sim'])
+            if participant_type == 'hydro':
+                df = get_water_level_df(participant,
+                                        participants[participant]['folder'],
+                                        self.paths['sim'])
                 random_variables_df = pd.merge(random_variables_df, df, on=[
                     'datetime', 'scenario'], how='left')
 
@@ -165,11 +150,12 @@ class RunProcessor(Run):
         return marginal_cost_df
 
 
-def _initialize_df_configuration(key_participant: str, sim_folder: Path) -> Dict[str, Any]:
+def _initialize_df_configuration(key_participant: str,
+                                 folder_participant: str,
+                                 sim_folder: Path) -> Dict[str, Any]:
     """
     Initializes the dataframe configuration for data extraction for the given participant.
     """
-    participant_folder = PARTICIPANTS_DICT[key_participant]["folder"]
     dataframe_template = {
         "table_pattern": {"start": "CANT_POSTE", "end": None},
         "columns_options": {
@@ -184,25 +170,31 @@ def _initialize_df_configuration(key_participant: str, sim_folder: Path) -> Dict
     }
     dataframe_configuration = copy.deepcopy(dataframe_template)
     dataframe_configuration["name"] = f"{key_participant}_production"
-    dataframe_configuration["filename"] = f"{sim_folder}/{participant_folder}/potencias*.xlt"
+    dataframe_configuration["filename"] = f"{sim_folder}/{folder_participant}/potencias*.xlt"
     return dataframe_configuration
 
 
 def get_production_df(key_participant: str,
-                      sim_path: Path
+                      folder_participant: str,
+                      sim_path: Path,
+                      type_participant: str = ""
                       ) -> pd.DataFrame:
     """
     Extracts and processes the production data for the participant.
     """
-    df_config = _initialize_df_configuration(key_participant, sim_path)
+    df_config = _initialize_df_configuration(key_participant,
+                                             folder_participant,
+                                             sim_path)
     dataframe = proc.open_dataframe(
         df_config,
         sim_path)
 
     dataframe = melt_df(dataframe, f"production_{key_participant}")
 
-    if key_participant == 'thermal':
-        df_config = _initialize_df_configuration('thermal_remainder', sim_path)
+    if type_participant == 'thermal_with_remainder':
+        df_config = _initialize_df_configuration('thermal_remainder',
+                                                 'TER_thermal_remainder',
+                                                 sim_path)
         remainder_dataframe = proc.open_dataframe(
             df_config,
             sim_path)
@@ -212,59 +204,20 @@ def get_production_df(key_participant: str,
         dataframe[f"production_{key_participant}"] = dataframe[f"production_{key_participant}"] + \
             remainder_dataframe[f"production_{key_participant}"]
 
-    # FIX ME
-
     logger.debug(
         f"Successfully extracted and processed {key_participant} production data."
     )
     return dataframe
 
-
-def get_variable_cost_df(key_participant: str,
-                         sim_path: Path,
-                         marginal_cost: float) -> pd.DataFrame:
-    """
-    Extracts and processes the variable costs data for the participant.
-    """
-    participant_type = PARTICIPANTS_DICT[key_participant]["type"]
-    if participant_type != "thermal":
-        logger.error(
-            "Variable costs are only available for thermal participants.")
-        raise ValueError(
-            "Variable costs are only available for thermal participants.")
-
-    # Get the production data
-    production_df = get_production_df(key_participant, sim_path)
-
-    # Create the variable costs column
-    dataframe = production_df.copy()
-
-    # HARD CODED
-    dataframe[f'variable_cost_{key_participant}'] = marginal_cost * \
-        dataframe[f'production_{key_participant}']
-
-    dataframe.drop(columns=[f'production_{key_participant}'], inplace=True)
-
-    logger.debug(
-        f"Successfully extracted and processed {key_participant} variable costs data."
-    )
-    return dataframe
-
-
 def get_water_level_df(key_participant: str,
+                       folder_participant: str, 
                        sim_path: Path) -> pd.DataFrame:
     """
     Extracts and processes the water level data for the participant.
     """
-    participant_type = PARTICIPANTS_DICT[key_participant]["type"]
-    if participant_type != "hydro":
-        logger.error(
-            "Water level data is only available for hydro participants.")
-        raise ValueError(
-            "Water level data is only available for hydro participants.")
-
+    WATER_LEVEL_DF['filename'] = f'{folder_participant}/cota*xlt'
     dataframe = proc.open_dataframe(
-        SALTO_WATER_LEVEL_DF,
+        WATER_LEVEL_DF,
         sim_path
     )
     dataframe = melt_df(dataframe, f"water_level_{key_participant}")
@@ -305,61 +258,6 @@ def upsample_ffill(df: pd.DataFrame) -> pd.DataFrame:
     df_result = pd.concat(df_result, ignore_index=True)
 
     return df_result
-
-
-def upsample_scenario_proportional(variable_cost_df: pd.DataFrame, production_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    This function upsamples the variable costs (which are reported on a daily frequency by MOP) to hourly frequency,
-    distributing the daily costs proportionally to the hourly production.
-
-    Args:
-        variable_cost_df (pd.DataFrame): DataFrame containing the variable costs for each scenario.
-            Should have columns: 'datetime','scenario', 'variable_cost'
-        production_df (pd.DataFrame): DataFrame containing the production for each scenario
-            Should have columns: 'datetime','scenario', 'production'
-    """
-    if not pd.api.types.is_datetime64_any_dtype(variable_cost_df['datetime']):
-        variable_cost_df['datetime'] = pd.to_datetime(
-            variable_cost_df['datetime'], errors='coerce')
-    if not pd.api.types.is_datetime64_any_dtype(production_df['datetime']):
-        production_df['datetime'] = pd.to_datetime(
-            production_df['datetime'], errors='coerce')
-
-    # Merge the two dataframes
-    df = pd.merge(variable_cost_df, production_df, on=[
-                  'datetime', 'scenario'], how='outer')
-
-    results = []
-    # Loop over scenarios
-    for scenario in df['scenario'].unique():
-        # Filter df on that scenario
-        s_df = df[df['scenario'] == scenario].copy().set_index('datetime')
-        s_df = s_df.reindex(pd.date_range(
-            s_df.index.min(), s_df.index.max(), freq='H'))
-
-        # Fill in the missing values for variable costs
-        s_df['variable_cost'] = s_df['variable_cost'].ffill()
-        s_df['production'] = s_df['production'].fillna(0)
-
-        # Get the daily totals; if 0, replace with NA temporarily to avoid division by 0
-        daily_totals = s_df['production'].groupby(
-            pd.Grouper(freq='D')).transform('sum').replace(0, pd.NA)
-
-        # Get the proportional hourly costs
-        s_df['hourly_variable_cost'] = s_df['variable_cost'] * \
-            (s_df['production'] / daily_totals)
-
-        # Fill NAs with 0
-        s_df['hourly_variable_cost'] = s_df['hourly_variable_cost'].fillna(0)
-        s_df['scenario'] = scenario
-        results.append(s_df)
-
-    hourly_df = pd.concat(results).reset_index().rename(
-        columns={'index': 'datetime'})
-    # Remove the production column
-    hourly_df.drop(columns='production', inplace=True)
-    return hourly_df
-
 
 def melt_df(df: pd.DataFrame, name: str) -> pd.DataFrame:
     df = df.melt(id_vars=['datetime'],

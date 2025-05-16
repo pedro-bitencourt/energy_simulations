@@ -27,11 +27,6 @@ from .constants import initialize_paths_solver
 
 logger = logging.getLogger(__name__)
 
-# In GB
-MEMORY_REQUESTED: int = 10
-UNSUCCESSFUL_RUN: int = 13
-
-
 class Solver:
     def __init__(self,
                  parent_folder: str,

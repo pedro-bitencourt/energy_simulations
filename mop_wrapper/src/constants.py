@@ -229,9 +229,9 @@ VARIABLE_COSTS_THERMAL_DF = {
     'convert_poste': False
 }
 
-SALTO_WATER_LEVEL_DF = {
+WATER_LEVEL_DF = {
     'name': 'salto_water_level',
-    'filename': 'HID_salto/cota*xlt',
+    'filename': '',
     'table_pattern': {
         'start': 'CANT_POSTE',
         'end': None
