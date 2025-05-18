@@ -18,9 +18,9 @@ import mop_wrapper.src.finalization_module as fm
 setup_logging('debug')
 
 # Exercise related parameters:
-name: str = "legacy_thermals_1"  # name of the exercise
+name: str = "legacy_thermals_0.25"  # name of the exercise
 costs_path: Path = BASE_PATH / \
-    "code/cost_data/gas_legacy_thermals.json"  # cost filepath
+    "code/cost_data/gas_legacy_thermals_finalize.json"  # cost filepath
 # x_variable: "name" should contain the key for the exogenous variable of the exercise,
 # while "label" should contain the label for the x-axis in the plots
 x_variable: Dict[str, str] = {
@@ -33,13 +33,17 @@ participants: List[str] = ["solar", "wind", "thermal", "thermal_legacy", "salto"
 # we use it to construct the hydropower capacity using the sharing factor.
 def pre_processing_function(run_data) -> Tuple[pd.DataFrame, Dict[str, float]]:
     run_df, capacities = run_data
+    run_df["production_thermal"] = run_df["production_thermal_x"] + run_df["production_thermal_legacy_x"]
+    run_df["production_thermal_legacy"] = run_df["production_thermal_legacy_x"]
     capacities["thermal_legacy_capacity"] = capacities["thermal_legacy"]
+    capacities["salto_capacity"] = 810
     return run_df, capacities
 
 
 # This line gathers all the relevant data and stores it into a SimulationData
 # object
-simulation_data: fm.SimulationData = fm.build_simulation_data(name, participants,
+simulation_data: fm.SimulationData = fm.build_simulation_data(name,
+                                                              participants,
                                                               x_variable,
                                                               costs_path,
                                                               pre_processing_function=pre_processing_function,

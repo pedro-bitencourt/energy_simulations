@@ -1,0 +1,12 @@
+{
+  "marginal_cost_wind": 0,
+  "fixed_cost_wind": 9.134,
+  "marginal_cost_solar": 0,
+  "fixed_cost_solar": 3.442,
+  "marginal_cost_thermal": 117,
+  "fixed_cost_thermal": 7.277,
+  "marginal_cost_thermal_legacy": 117,
+  "fixed_cost_thermal_legacy": 7.277,
+  "marginal_cost_salto": 0,
+  "fixed_cost_salto": 1
+}

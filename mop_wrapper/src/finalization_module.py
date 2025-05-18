@@ -87,7 +87,6 @@ class SimulationData:
                 print(f"    {cap_key}: {cap_value}")
     
 
-
 def build_run_data(file: Path, solver_results: pd.DataFrame, test: bool = False) -> RunData:
     """
     Given a CSV file and the solver_results dataframe, construct a RunData tuple.

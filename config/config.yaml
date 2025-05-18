@@ -197,53 +197,96 @@ plots:
       variables:
         - name: "mean_profit_thermal"
           label: "Total (Variable) Profits"
-          color: "#FF3C3E"
+          color: "#000000"  # Black for better visibility
         - name: "mean_profit_thermal_price_4000"
           label: "Profits (Price = 4,000)"
-          color: "#A91E20"
+          color: "#A91E20"  # Dark Red
         - name: "mean_profit_thermal_price_mc_thermal_4000"
           label: "Profits (Price in (mc thermal,4,000))"
-          color: "#D62728"
+          color: "#D62728"  # Medium Red
       y_label: "Average Profits ($/MW/h)"
+    
     profits_wind_decomposition:
-      title: "wind (Variable) Profits Decomposition ($/MW/h)"
+      title: "Wind (Variable) Profits Decomposition ($/MW/h)"
       variables:
         - name: "mean_profit_wind"
           label: "Total (Variable) Profits"
-          color: "#2CA02C" 
+          color: "#000000"  # Black for better visibility
         - name: "mean_profit_wind_price_4000"
           label: "Profits (Price = 4,000)"
-          color: "#4C8C4A"
+          color: "#2CA02C"  # Dark Green
         - name: "mean_profit_wind_price_mc_thermal_4000"
-          label: "Profits (Price in (mc thermal,4,000))"
-          color: "#6DBA6C"
+          label: "Profits (Price in (mc thermal+1,4,000))"
+          color: "#4C8C4A"  # Medium Green
+        - name: "mean_profit_wind_price_mc_thermal"
+          label: "Profits (Price in (mc thermal-1,mc thermal+1))"
+          color: "#6DBA6C"  # Light Green
+        - name: "mean_profit_wind_price_0_mc_thermal"
+          label: "Profits (Price in (0,mc thermal-1))"
+          color: "#A9DCA2"  # Very Light Green
       y_label: "Average Profits ($/MW/h)"
+    
     profits_solar_decomposition:
-      title: "solar (Variable) Profits Decomposition ($/MW/h)"
+      title: "Solar (Variable) Profits Decomposition ($/MW/h)"
       variables:
         - name: "mean_profit_solar"
           label: "Total (Variable) Profits"
-          color: "#FFD600"
+          color: "#000000"  # Black for better visibility
         - name: "mean_profit_solar_price_4000"
           label: "Profits (Price = 4,000)"
-          color: "#CCAB00"
+          color: "#CCAB00"  # Dark Yellow
+        - name: "mean_profit_solar_price_mc_thermal"
+          label: "Profits (Price in (mc thermal-1,mc thermal+1))"
+          color: "#FFD600"  # Medium Yellow
         - name: "mean_profit_solar_price_mc_thermal_4000"
           label: "Profits (Price in (mc thermal,4,000))"
-          color: "#FFD600"
+          color: "#FFEB82"  # Light Yellow
+        - name: "mean_profit_solar_price_0_mc_thermal"
+          label: "Profits (Price in (0,mc thermal-1))"
+          color: "#FFF6B2"  # Very Light Yellow
       y_label: "Average Profits ($/MW/h)"
-      #    mean_blackout_dist_scenarios:
-      #      title: "Scenario Quartiles of Probability of Blackout"
-      #      variables:
-      #        - name: "q25_price_4000"
-      #          label: "0.25"
-      #          color: "#FFD600"
-      #        - name: "q50_price_4000"
-      #          label: "0.50"
-      #          color: "#CCAB00"
-      #        - name: "q75_price_4000"
-      #          label: "0.75"
-      #          color: "#997F00"
-      #      y_label: "Expected Hours Per Year"
+    production_thermal_decomposition:
+      title: "E[q_thermal|p]"
+      variables:
+        - name: "mean_production_thermal_price_4000"
+          label: "production (Price = 4,000)"
+          color: "#000000"  # Black for better visibility
+        - name: "mean_production_thermal_price_mc_thermal_4000"
+          label: "production (Price in (mc thermal,4,000))"
+          color: "#A91E20"  # Dark Red
+      y_label: "Average production factor"
+    production_wind_decomposition:
+      title: "E[q_wind|p]"
+      variables:
+        - name: "mean_production_wind_price_4000"
+          label: "production (Price = 4,000)"
+          color: "#000000"  # Black for better visibility
+        - name: "mean_production_wind_price_mc_thermal_4000"
+          label: "production (Price in (mc thermal+1,4,000))"
+          color: "#4C8C4A"  # Dark Green
+        - name: "mean_production_wind_price_mc_thermal"
+          label: "production (Price in (mc thermal-1,mc thermal+1))"
+          color: "#6DBA6C"  # Medium Green
+        - name: "mean_production_wind_price_0_mc_thermal"
+          label: "production (Price in (0,mc thermal-1))"
+          color: "#A9DCA2"  # Light Green
+      y_label: "Average production ($/MW/h)"
+    production_solar_decomposition:
+      title: "E[q_solar|p]"
+      variables:
+        - name: "mean_production_solar_price_4000"
+          label: "production (Price = 4,000)"
+          color: "#000000"  # Black for better visibility
+        - name: "mean_production_solar_price_mc_thermal"
+          label: "production (Price in (mc thermal-1,mc thermal+1))"
+          color: "#FFC107"  # Dark Yellow
+        - name: "mean_production_solar_price_mc_thermal_4000"
+          label: "production (Price in (mc thermal,4,000))"
+          color: "#FFD600"  # Medium Yellow
+        - name: "mean_production_solar_price_0_mc_thermal"
+          label: "production (Price in (0,mc thermal-1))"
+          color: "#FFEB82"  # Light Yellow
+      y_label: "Average production ($/MW/h)"
     optimal_capacities:
       title: "Competitive Equilibrium Capacities (MW)"
       variables:

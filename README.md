@@ -2,6 +2,13 @@
 
 
 ## Patches
+### 05.17.25
+1. Changed input for:
+    - participants: now parameters are set more explicitly
+    - costs: cost file now should have only marginal cost and fixed cost entries
+
+
+
 ### 03.24.25
 1. Completely refactored all the modules related to processing the raw files extracted from MOP, including: 
     - run_analysis_module.py

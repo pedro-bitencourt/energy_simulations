@@ -14,5 +14,11 @@
         "installation": 975000,
         "lifetime": 20,
         "marginal_cost": 111
+    },
+    "salto": {
+        "oem": 1,
+        "installation": 1,
+        "lifetime": 20,
+        "marginal_cost": 0
     }
 }

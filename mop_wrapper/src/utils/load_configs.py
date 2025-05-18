@@ -23,7 +23,7 @@ def main():
     print(plot_configs)
     pass
 
-def load_json_config(config_path: Path) -> dict:
+def read_json(config_path: Path) -> dict:
     # Load any .json configuration file
     with open(config_path, 'r') as f:
         config = json.load(f)
@@ -31,29 +31,11 @@ def load_json_config(config_path: Path) -> dict:
 
 ### Auxiliary functions
 def load_costs(costs_path) -> dict[str, dict]:
-    #    if costs_path is None:
-    #        costs_path = to do: set a default
+    """
+    """
     costs_dict: dict[str, dict[str, float | int]
-                     ] = load_json_config(costs_path)
-    hourly_costs_dic: dict[str, float] = {
-        f"fixed_cost_{participant}": (costs_dict[participant]['installation'] / costs_dict[participant]
-                      ['lifetime'] + costs_dict[participant]['oem']) / 8760
-        for participant in costs_dict.keys()
-    }
-
-    marginal_costs_dict: dict[str, float] = {
-        f"marginal_cost_{participant}": costs_dict[participant].get('marginal_cost', 0)
-        for participant in costs_dict.keys()
-    }
-
-    result: dict[str, float] = {
-        **hourly_costs_dic,
-        **marginal_costs_dict
-    }
-    result['marginal_cost_hydro'] = 0
-    result['fixed_cost_hydro'] = 0
-    return result
-
+                     ] = read_json(costs_path)
+    return costs_dict
 
 def load_yaml_config()-> Dict[str, Any]:
     with open(CONFIG_PATH, 'r') as file:

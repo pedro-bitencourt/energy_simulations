@@ -112,9 +112,10 @@ def variables_to_create_function(participants: List[str], costs: Dict[str, Any],
 
     other_variables: List[str] = [
         # Price distribution variables
-        "price_4000 = (marginal_cost >= 4000)",
+        f"price_0_mc_thermal = (marginal_cost < {costs['marginal_cost_thermal']} - 1)",
         f"price_mc_thermal = (marginal_cost > {costs['marginal_cost_thermal']} - 1) & (marginal_cost < {costs['marginal_cost_thermal']} + 1)",
-        f"price_mc_thermal_4000 = ((marginal_cost > {costs['marginal_cost_thermal']})  & (marginal_cost < 4000))",
+        f"price_mc_thermal_4000 = ((marginal_cost > {costs['marginal_cost_thermal']} + 1)  & (marginal_cost < 4000))",
+        "price_4000 = (marginal_cost >= 4000)",
     ]
     if "hydro" in participants:
         other_variables.extend(HYDRO_VARIABLES)
@@ -123,6 +124,12 @@ def variables_to_create_function(participants: List[str], costs: Dict[str, Any],
     derived_variables: List[str] = [
         *[f"profit_{p}_price_4000 = (profit_{p} * price_4000)" for p in participants],
         *[f"profit_{p}_price_mc_thermal_4000 = (profit_{p} * price_mc_thermal_4000)" for p in participants],
+        *[f"profit_{p}_price_mc_thermal = (profit_{p} * price_mc_thermal)" for p in participants],
+        *[f"profit_{p}_price_0_mc_thermal = (profit_{p} * price_0_mc_thermal)" for p in participants],
+        *[f"production_{p}_price_4000 = (production_{p} * price_4000)" for p in participants],
+        *[f"production_{p}_price_mc_thermal_4000 = (production_{p} * price_mc_thermal_4000)" for p in participants],
+        *[f"production_{p}_price_mc_thermal = (production_{p} * price_mc_thermal)" for p in participants],
+        *[f"production_{p}_price_0_mc_thermal = (production_{p} * price_0_mc_thermal)" for p in participants],
         *[f"excess_{p} = production_{p}*fraction_excess" for p in participants],
     ]
     return (core_variables + other_variables + derived_variables)
@@ -155,6 +162,23 @@ def compute_derived_results(results: dict[str, float],
     derived_results["mean_production_total"] = sum(
         results[f"mean_production_{participant}"] for participant in participants
     )
+    for p in participants:
+        derived_results[f'mean_production_{p}_price_4000'] = (
+            results[f"mean_production_{p}_price_4000"] / 
+                (results[f"{p}_capacity"] * results["mean_price_4000"])
+        )
+        derived_results[f'mean_production_{p}_price_mc_thermal_4000'] = (
+            results[f"mean_production_{p}_price_mc_thermal_4000"] / 
+                (results[f"{p}_capacity"] * results["mean_price_mc_thermal_4000"])
+        )
+        derived_results[f'mean_production_{p}_price_mc_thermal'] = (
+            results[f"mean_production_{p}_price_mc_thermal"] / 
+                (results[f"{p}_capacity"] * results["mean_price_mc_thermal"])
+        )
+        derived_results[f'mean_production_{p}_price_0_mc_thermal'] = (
+            results[f"mean_production_{p}_price_0_mc_thermal"] / 
+                (results[f"{p}_capacity"] * results["mean_price_0_mc_thermal"])
+        )
     derived_results["mean_capture_rate"] = (
         derived_results["mean_revenue_total"] / derived_results["mean_production_total"]
     )
@@ -163,7 +187,7 @@ def compute_derived_results(results: dict[str, float],
             results[f"mean_revenue_{participant}"] / results[f"mean_production_{participant}"]
         )
         derived_results[f"mean_profit_{participant}_per_mw"] = (
-            results[f"mean_profit_{participant}"] / results[f"{participant}_capacity"]
+            results[f"mean_profit_{participant}"] / results[f"{participant}_capacity"] 
         )
         derived_results[f"total_cost_{participant}"] = (
             results[f"fixed_cost_{participant}"] * results[f"{participant}_capacity"]
